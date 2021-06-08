@@ -25,11 +25,22 @@ class CostFunction
  public:
   using MatrixXd = Eigen::MatrixXd;
   using VectorXd = Eigen::VectorXd;
+
+  virtual ~CostFunction() {};
+
+  /**
+   * @brief Evaluate the cost as a single knot point
+   * 
+   * @param x 
+   * @param u 
+   * @return double 
+   */
   virtual double Evaluate(const VectorXd& x, const VectorXd& u) = 0;
   virtual void Gradient(const VectorXd& x,  const VectorXd& u, 
                         VectorXd& dx, VectorXd& du) = 0;
   virtual void Hessian(const VectorXd& x,  const VectorXd& u, 
                        MatrixXd& dxdx, MatrixXd& dxdu, MatrixXd& dudu) = 0;
+
 };
 
 } // namespace altro

@@ -7,6 +7,8 @@ class ContinuousDynamics
  public:
   using VectorXd = Eigen::VectorXd;
 
+  virtual ~ContinuousDynamics() {};
+
   /**
    * @brief Evaluate the continuous-time dynamics
    * 
@@ -55,6 +57,9 @@ class DiscreteDynamics
 {
  public:
   using VectorXd = Eigen::VectorXd;
+
+  virtual ~DiscreteDynamics() {};
+
   /**
    * @brief Evaluate the discrete-time dynamics 
    * 

@@ -9,6 +9,8 @@ class ExplicitIntegrator
  public:
   using VectorXd = Eigen::VectorXd;
   typedef VectorXd DynamicsFunc(VectorXd, VectorXd, float);
+
+  virtual ~ExplicitIntegrator() {};
   virtual VectorXd Integrate(DynamicsFunc dynamics, VectorXd x, VectorXd u, float t, float h) = 0;
 };
 
