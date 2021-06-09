@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.14)
 project(altro VERSION 0.1.0)
 
 set(CMAKE_CXX_STANDARD 17)
+add_compile_options(-Wall -Wextra -pedantic -Werror)
 
 # Add Eigen
 find_package(Eigen3 3.3 REQUIRED NO_MODULE)
@@ -23,3 +24,4 @@ include_directories(src/)
 
 add_subdirectory(src)
 
+add_subdirectory(examples)
