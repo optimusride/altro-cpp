@@ -110,5 +110,21 @@ TEST_F(QuadraticCostTest, Evaluation)
   EXPECT_TRUE(dudu.isApprox(R));
 }
 
+TEST_F(QuadraticCostTest, LQRCost)
+{
+  VectorXd xref = Eigen::Vector3d(-1,-2,-3);
+  VectorXd uref = Eigen::Vector2d(-4,-5);
+  QuadraticCost qcost = QuadraticCost::LQRCost(Q, R, xref, uref);
+  EXPECT_TRUE(qcost.Getq().isApprox(-2*Q*xref));
+  EXPECT_TRUE(qcost.Getr().isApprox(-2*R*uref));
+
+  VectorXd x = VectorXd::Random(3);
+  VectorXd u = VectorXd::Random(2);
+  VectorXd dx = x - xref;
+  VectorXd du = u - uref;
+  double J = dx.dot(Q*dx) + du.dot(R*du);
+  EXPECT_DOUBLE_EQ(J, qcost.Evaluate(x,u));
+}
+
 } // namespace examples
 } // namespace altro
