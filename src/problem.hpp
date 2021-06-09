@@ -1,6 +1,6 @@
-#include <eigen3/Eigen/Dense>
 #include <vector>
 
+#include "eigentypes.hpp"
 #include "dynamics.hpp"
 #include "costfunction.hpp"
 
@@ -18,7 +18,6 @@ namespace altro {
  */
 class Problem
 {
-  using Vector = Eigen::VectorXd;
  public:
   /**
    * @brief Construct a new Problem object, with different costs at each time step

@@ -3,7 +3,6 @@
 namespace altro {
 namespace trajectory {
 
-using VectorXd = ExplicitIntegrator::VectorXd;
 using DynamicsFunc = ExplicitIntegrator::DynamicsFunc;
 VectorXd RungeKutta4::Integrate(DynamicsFunc dynamics, VectorXd x, VectorXd u, float t, float h) 
 {

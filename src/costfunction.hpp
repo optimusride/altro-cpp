@@ -1,17 +1,15 @@
-#include <Eigen/Dense>
-
+#include "eigentypes.hpp"
 namespace altro {
 
 class CostExpansion final
 {
-  using MatrixXd = Eigen::MatrixXd;
  public:
   CostExpansion(int n, int m) : n_(n), m_(m), expansion_(MatrixXd::Zero(n+m, n+m)) {}
 
-  Eigen::MatrixXd::BlockXpr dxdx() { return expansion_.topLeftCorner(n_, n_); }
-  Eigen::MatrixXd::BlockXpr dudu() { return expansion_.bottomRightCorner(m_, m_); }
-  Eigen::MatrixXd::BlockXpr dxdu() { return expansion_.topRightCorner(n_, m_); }
-  Eigen::MatrixXd::BlockXpr dudx() { return expansion_.bottomLeftCorner(m_, n_); }
+  MatrixXd::BlockXpr dxdx() { return expansion_.topLeftCorner(n_, n_); }
+  MatrixXd::BlockXpr dudu() { return expansion_.bottomRightCorner(m_, m_); }
+  MatrixXd::BlockXpr dxdu() { return expansion_.topRightCorner(n_, m_); }
+  MatrixXd::BlockXpr dudx() { return expansion_.bottomLeftCorner(m_, n_); }
   MatrixXd& GetExpansion() { return expansion_; }
 
  private:
@@ -23,9 +21,6 @@ class CostExpansion final
 class CostFunction
 {
  public:
-  using MatrixXd = Eigen::MatrixXd;
-  using VectorXd = Eigen::VectorXd;
-
   virtual ~CostFunction() {};
 
   /**

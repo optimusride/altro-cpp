@@ -1,13 +1,10 @@
-// #include <Eigen/Dense>
-#include <Eigen/Dense>
-
+#include "eigentypes.hpp"
 namespace altro {
 namespace trajectory {
 
 class ExplicitIntegrator
 {
  public:
-  using VectorXd = Eigen::VectorXd;
   typedef VectorXd DynamicsFunc(VectorXd, VectorXd, float);
 
   virtual ~ExplicitIntegrator() {};
@@ -17,7 +14,6 @@ class ExplicitIntegrator
 class RungeKutta4 final : public ExplicitIntegrator
 {
  public:
-  using VectorXd = ExplicitIntegrator::VectorXd;
   using DynamicsFunc = ExplicitIntegrator::DynamicsFunc;
   VectorXd Integrate(DynamicsFunc dynamics, VectorXd x, VectorXd u, float t, float h) override;
 };

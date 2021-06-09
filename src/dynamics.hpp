@@ -1,11 +1,9 @@
-#include <Eigen/Dense>
-
+#include "eigentypes.hpp"
 namespace altro {
 
 class ContinuousDynamics 
 {
  public:
-  using VectorXd = Eigen::VectorXd;
 
   virtual ~ContinuousDynamics() {};
 
@@ -27,8 +25,7 @@ class ContinuousDynamics
    * @param[in] t independent variable (e.g. time)
    * @param[out] jac nxm dense dynamics Jacobian
    */
-  virtual void Jacobian(const VectorXd& x, const VectorXd& u, const float t, 
-                        Eigen::MatrixXd jac) = 0;
+  virtual void Jacobian(const VectorXd& x, const VectorXd& u, const float t, MatrixXd jac) = 0;
 
   /**
    * @brief Evaluate the derivative of the Jacobian-transpose vector product: d/dx(J^T b).
@@ -42,7 +39,7 @@ class ContinuousDynamics
    * @param hvp nxm derivative of the Jacobian-tranpose vector product
    */
   virtual void Hessian(const VectorXd& x, const VectorXd& u, const float t, 
-                                       const VectorXd& b, Eigen::MatrixXd hess);
+                                       const VectorXd& b, MatrixXd hess);
 
   /**
    * @brief Indicate whether Hessian is defined.
@@ -56,7 +53,6 @@ class ContinuousDynamics
 class DiscreteDynamics
 {
  public:
-  using VectorXd = Eigen::VectorXd;
 
   virtual ~DiscreteDynamics() {};
 
@@ -81,7 +77,7 @@ class DiscreteDynamics
    * @param[out] jac nxm dense dynamics Jacobian
    */
   virtual void Jacobian(const VectorXd& x, const VectorXd& u, const float t, const float h,
-                        Eigen::MatrixXd jac) = 0;
+                        MatrixXd jac) = 0;
 
   /**
    * @brief Evaluate the derivative of the Jacobian-transpose vector product: d/dx(J^T b).
@@ -95,7 +91,7 @@ class DiscreteDynamics
    * @param hvp nxm derivative of the Jacobian-tranpose vector product
    */
   virtual void Hessian(const VectorXd& x, const VectorXd& u, const float t, const float h,
-                                       const VectorXd& b, Eigen::MatrixXd hess);
+                                       const VectorXd& b, MatrixXd hess);
 
   /**
    * @brief Indicate whether Hessian is defined.

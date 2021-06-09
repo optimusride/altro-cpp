@@ -1,13 +1,13 @@
-#include <Eigen/Dense>
 #include <iostream>
 #include <vector>
 
+#include "eigentypes.hpp"
 namespace altro {
 
 namespace trajectory {
 class Trajectory
 {
-  using Point = Eigen::VectorXd;
+  using Point = VectorXd;
   using scalar_t = float; 
   template <class T>
   using traj_t = typename std::vector<T>;
