@@ -1,3 +1,5 @@
+add_subdirectory(utils)
+
 add_library(trajectory
   trajectory.cpp
   integration.cpp
@@ -13,6 +15,7 @@ add_library(altro
 target_link_libraries(altro
   trajectory
   Eigen3::Eigen
+  utils
 )
 
 add_subdirectory(test)

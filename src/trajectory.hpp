@@ -39,7 +39,7 @@ class Trajectory
  private:
   void CalcIndependentVariable() {
     // Make sure the number of steps is one less than the number of points
-    int N = samples_.size();
+    size_t N = samples_.size();
     if (steps_.size() == N) {
       steps_.pop_back();
     }
@@ -51,7 +51,7 @@ class Trajectory
 
     // Cumulative sum to get independent variable from time steps
     t_[0] = 0;
-    for (int k = 1; k < N; ++k) {
+    for (size_t k = 1; k < N; ++k) {
       t_[k] = t_[k-1] + steps_[k-1];
     }
   }
