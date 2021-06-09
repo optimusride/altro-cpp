@@ -35,11 +35,11 @@ class CostFunction
    * @param u 
    * @return double 
    */
-  virtual double Evaluate(const VectorXd& x, const VectorXd& u) = 0;
-  virtual void Gradient(const VectorXd& x,  const VectorXd& u, 
-                        VectorXd& dx, VectorXd& du) = 0;
-  virtual void Hessian(const VectorXd& x,  const VectorXd& u, 
-                       MatrixXd& dxdx, MatrixXd& dxdu, MatrixXd& dudu) = 0;
+  virtual double Evaluate(const VectorXd& x, const VectorXd& u) const = 0;
+  virtual void Gradient(const VectorXd& x, const VectorXd& u, 
+                        VectorXd& dx, VectorXd& du) const = 0;
+  virtual void Hessian(const VectorXd& x, const VectorXd& u, 
+                       MatrixXd& dxdx, MatrixXd& dxdu, MatrixXd& dudu) const = 0;
 
 };
 
