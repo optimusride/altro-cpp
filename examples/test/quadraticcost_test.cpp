@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include "quadraticcost.hpp"
+#include "quadratic_cost.hpp"
 #include "eigentypes.hpp" 
 #include <iostream>
 

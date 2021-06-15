@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
-#include "costfunction.hpp"
 #include <iostream>
+
+#include "costfunction.hpp"
 
 namespace altro {
 namespace costexpansion_test {

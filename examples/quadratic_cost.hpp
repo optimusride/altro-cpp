@@ -2,8 +2,7 @@
 
 #include "eigentypes.hpp"
 #include "costfunction.hpp"
-#include <iostream>
-#include "utils/assert.hpp"
+#include "utils/utils.hpp"
 
 namespace altro {
 namespace examples {

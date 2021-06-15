@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+
 #include "trajectory.hpp"
 
 namespace trajectory_test {
