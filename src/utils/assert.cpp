@@ -3,7 +3,8 @@
 #include "utils/assert.hpp"
 
 namespace altro {
-
+namespace utils {
+  
 /**
  * @brief Informative assertion that allows the developer to include a message
  *
@@ -22,4 +23,6 @@ void AssertMsg(bool expr, const char *msg, const char *expr_str, int line,
     abort();
   }
 }
+
+} // namespace utils
 } // namespace altro

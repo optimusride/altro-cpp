@@ -4,18 +4,19 @@ namespace altro {
 namespace examples {
 
 double QuadraticCost::Evaluate(const VectorXd& x, const VectorXd& u) const {
-  return x.dot(Q_ * x) + x.dot(H_ * u) + u.dot(R_ * u) + q_.dot(x) + r_.dot(u) + c_;
+  return 0.5 * x.dot(Q_ * x) + x.dot(H_ * u) + 0.5 * u.dot(R_ * u) + q_.dot(x) +
+         r_.dot(u) + c_;
 }
 
-
-void QuadraticCost::Gradient(const VectorXd& x, const VectorXd& u, 
-                             VectorXd& dx, VectorXd& du) const {
+void QuadraticCost::Gradient(const VectorXd& x, const VectorXd& u, VectorXd& dx,
+                             VectorXd& du) const {
   dx = Q_ * x + q_;
   du = R_ * u + r_;
 }
 
-void QuadraticCost::Hessian(const VectorXd& x, const VectorXd& u, 
-               MatrixXd& dxdx, MatrixXd& dxdu, MatrixXd& dudu) const {
+void QuadraticCost::Hessian(const VectorXd& x, const VectorXd& u,
+                            MatrixXd& dxdx, MatrixXd& dxdu,
+                            MatrixXd& dudu) const {
   ALTRO_UNUSED(x);
   ALTRO_UNUSED(u);
   dxdx = Q_;
@@ -23,5 +24,5 @@ void QuadraticCost::Hessian(const VectorXd& x, const VectorXd& u,
   dxdu = H_;
 }
 
-} // namespace examples
-} // namespace altro
+}  // namespace examples
+}  // namespace altro

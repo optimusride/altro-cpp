@@ -1,45 +1,45 @@
 #pragma once
 
-#include "eigentypes.hpp"
 #include "costfunction.hpp"
+#include "eigentypes.hpp"
 #include "utils/utils.hpp"
 
 namespace altro {
 namespace examples {
 
-class QuadraticCost : public CostFunction
-{
+class QuadraticCost : public CostFunction {
  public:
-  QuadraticCost(
-      const MatrixXd& Q, 
-      const MatrixXd& R, 
-      const MatrixXd& H,
-      const VectorXd& q,
-      const VectorXd& r,
-      double c = 0)
-    : n_(q.size()), m_(r.size()), isblockdiag_(H.norm() < 1e-8), Q_(Q), R_(R), H_(H), q_(q), r_(r), c_(c)
-  { 
-    Validate(); 
+  QuadraticCost(const MatrixXd& Q, const MatrixXd& R, const MatrixXd& H,
+                const VectorXd& q, const VectorXd& r, double c = 0)
+      : n_(q.size()),
+        m_(r.size()),
+        isblockdiag_(H.norm() < 1e-8),
+        Q_(Q),
+        R_(R),
+        H_(H),
+        q_(q),
+        r_(r),
+        c_(c) {
+    Validate();
   }
 
-  static QuadraticCost LQRCost(const MatrixXd& Q, const MatrixXd& R, 
-                               const VectorXd& xref, const VectorXd& uref)
-  {
+  static QuadraticCost LQRCost(const MatrixXd& Q, const MatrixXd& R,
+                               const VectorXd& xref, const VectorXd& uref) {
     int n = Q.rows();
     int m = R.rows();
     ALTRO_ASSERT(xref.size() == n, "xref is the wrong size.");
-    MatrixXd H = MatrixXd::Zero(n,m);
-    VectorXd q = -2*(Q*xref);
-    VectorXd r = -2*(R*uref);
-    double c = xref.dot(Q * xref) + uref.dot(R * uref);
-    return QuadraticCost(Q,R,H,q,r,c);
+    MatrixXd H = MatrixXd::Zero(n, m);
+    VectorXd q = -(Q * xref);
+    VectorXd r = -(R * uref);
+    double c = 0.5 * xref.dot(Q * xref) + 0.5 * uref.dot(R * uref);
+    return QuadraticCost(Q, R, H, q, r, c);
   }
 
-  double Evaluate(const VectorXd& x, const VectorXd& u) const override; 
-  void Gradient(const VectorXd& x, const VectorXd& u, 
-                VectorXd& dx, VectorXd& du) const override;
-  void Hessian(const VectorXd& x, const VectorXd& u, 
-               MatrixXd& dxdx, MatrixXd& dxdu, MatrixXd& dudu) const override; 
+  double Evaluate(const VectorXd& x, const VectorXd& u) const override;
+  void Gradient(const VectorXd& x, const VectorXd& u, VectorXd& dx,
+                VectorXd& du) const override;
+  void Hessian(const VectorXd& x, const VectorXd& u, MatrixXd& dxdx,
+               MatrixXd& dxdu, MatrixXd& dudu) const override;
 
   const MatrixXd& GetQ() const { return Q_; }
   const MatrixXd& GetR() const { return R_; }
@@ -52,8 +52,7 @@ class QuadraticCost : public CostFunction
   bool IsBlockDiagonal() const { return isblockdiag_; }
 
  private:
-  void Validate()
-  {
+  void Validate() {
     ALTRO_ASSERT(Q_.rows() == n_, "Q has the wrong number of rows");
     ALTRO_ASSERT(Q_.cols() == n_, "Q has the wrong number of columns");
     ALTRO_ASSERT(R_.rows() == m_, "R has the wrong number of rows");
@@ -67,12 +66,14 @@ class QuadraticCost : public CostFunction
 
     // Check that R is positive definite
     Rfact_.compute(R_);
-    ALTRO_ASSERT(Rfact_.info() == Eigen::Success, "R must be positive definite");
+    ALTRO_ASSERT(Rfact_.info() == Eigen::Success,
+                 "R must be positive definite");
 
     // Check if Q is positive semidefinite
     Qfact_.compute(Q_);
-    ALTRO_ASSERT(Qfact_.info() == Eigen::Success, 
-      "The LDLT decomposition could of Q could not be computed. Must be positive semi-definite");
+    ALTRO_ASSERT(Qfact_.info() == Eigen::Success,
+                 "The LDLT decomposition could of Q could not be computed. "
+                 "Must be positive semi-definite");
     Eigen::Diagonal<const MatrixXd> D = Qfact_.vectorD();
     bool ispossemidef = true;
     for (int i = 0; i < n_; ++i) {
@@ -87,7 +88,7 @@ class QuadraticCost : public CostFunction
   int n_;
   int m_;
   bool isblockdiag_;
-  MatrixXd Q_;   
+  MatrixXd Q_;
   MatrixXd R_;
   MatrixXd H_;
   VectorXd q_;
@@ -99,5 +100,5 @@ class QuadraticCost : public CostFunction
   Eigen::LLT<MatrixXd> Rfact_;
 };
 
-} // namespace examples
-} // namespace altro
+}  // namespace examples
+}  // namespace altro
