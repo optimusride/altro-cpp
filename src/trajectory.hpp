@@ -25,6 +25,12 @@ class Trajectory {
   using ControlVector = Vector<m, T>;
 
  public:
+  /**
+   * @brief Construct a new Trajectory object of size N
+   * 
+   * @param N the number of segments in the trajectory. This means there are
+   * N+1 state vectors and N control vectors.
+   */
   explicit Trajectory(int N) : traj_(N) {}
   explicit Trajectory(int _n, int _m, int N)
       : traj_(N + 1, KnotPoint<n, m, T>(_n, _m)) {}
@@ -74,7 +80,7 @@ class Trajectory {
    * @param eps tolerance check for float comparison
    * @return true if t[k+1] - t[k] == h[k] for all k
    */
-  bool CheckTimes(double eps = 1e-6) {
+  bool CheckTimeConsistency(const double eps = 1e-6) {
     for (int k = 0; k < NumSegments(); ++k) {
       float h_calc = GetTime(k + 1) - GetTime(k);
       float h_stored = GetStep(k);

@@ -2,8 +2,6 @@
 #include "triple_integrator.hpp" 
 #include "discretized_model.hpp"
 
-#include <iostream>
-
 namespace altro {
 namespace examples {
 

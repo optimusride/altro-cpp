@@ -1,7 +1,5 @@
 #pragma once
 
-#include <iostream>
-
 #ifndef NDEBUG
 #define ALTRO_ASSERT(Expr, Msg)                                                \
   altro::AssertMsg((Expr), Msg, #Expr, __LINE__, __FILE__)

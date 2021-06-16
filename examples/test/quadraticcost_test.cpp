@@ -1,7 +1,6 @@
 #include <gtest/gtest.h>
 #include "quadratic_cost.hpp"
 #include "eigentypes.hpp" 
-#include <iostream>
 
 namespace altro {
 namespace examples {

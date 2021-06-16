@@ -1,3 +1,5 @@
+#include <iostream>
+
 #include "utils/assert.hpp"
 
 namespace altro {

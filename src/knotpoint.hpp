@@ -1,7 +1,7 @@
 #pragma once
 
-// #include <iostream>
 #include "eigentypes.hpp"
+#include "utils/assert.hpp"
 
 namespace altro {
 
@@ -13,7 +13,7 @@ namespace altro {
  * Eigen::Dynamic, the vector will allocated on the heap.
  *
  * Use `StateDimension` and `ControlDimension` to query the actual state or
- * control dimesnion. Use `StateSize` and `ControlSize` to get the type
+ * control dimension. Use `StateSize` and `ControlSize` to get the type
  * parameters.
  *
  * @tparam n size of state vector. Can be Eigen::Dynamic.
@@ -33,8 +33,8 @@ class KnotPoint {
         h_(0.0),
         n_(n),
         m_(m) {}
-  KnotPoint(const StateVector& x, const ControlVector& u, float t = 0.0,
-            float h = 0.0)
+  KnotPoint(const StateVector& x, const ControlVector& u, const float t = 0.0,
+            const float h = 0.0)
       : x_(x), u_(u), t_(t), h_(h), n_(x.size()), m_(u.size()) {}
   KnotPoint(int _n, int _m)
       : x_(StateVector::Zero(_n)),
@@ -57,12 +57,19 @@ class KnotPoint {
   }
 
   KnotPoint(KnotPoint&& z)
-      : x_(std::move(z.x_)), u_(std::move(z.u_)), t_(z.t_), h_(z.h_) {}
+      : x_(std::move(z.x_)),
+        u_(std::move(z.u_)),
+        t_(z.t_),
+        h_(z.h_),
+        n_(z.n_),
+        m_(z.m_) {}
   KnotPoint& operator=(KnotPoint&& z) {
     x_ = std::move(z.x_);
     u_ = std::move(z.u_);
     t_ = z.t_;
     h_ = z.h_;
+    n_ = z.n_;
+    m_ = z.m_;
     return *this;
   }
 
@@ -81,14 +88,31 @@ class KnotPoint {
   }
   float GetTime() const { return t_; }
   float GetStep() const { return h_; }
-	bool IsTerminal() const { return h_ == 0; }
 
-	friend std::ostream& operator<<(std::ostream &os, const KnotPoint<n,m,T>& z) {
-		return os << "x: [" << z.State().transpose() 
-		          << "], u: [" << z.Control().transpose()
-							<< "], t=" << z.GetTime()
-							<< ", h=" << z.GetStep();
-}
+  /**
+   * @brief Check if the knot point is the last point in the trajectory, which
+   * has no length and only stores a state vector.
+   *
+   * @return true if the knot point is a terminal knot point
+   */
+  bool IsTerminal() const { return h_ == 0; }
+
+  /**
+   * @brief Set the knot point to be a terminal knot point, or the last
+   * knot point in the trajectory.
+   *
+   */
+  void SetTerminal() {
+    h_ = 0;
+    u_.setZero();
+  }
+
+  friend std::ostream& operator<<(std::ostream& os,
+                                  const KnotPoint<n, m, T>& z) {
+    return os << "x: [" << z.State().transpose() << "], u: ["
+              << z.Control().transpose() << "], t=" << z.GetTime()
+              << ", h=" << z.GetStep();
+  }
 
  private:
   StateVector x_;
@@ -98,7 +122,5 @@ class KnotPoint {
   int n_;    // state dimension
   int m_;    // control dimension
 };
-
-
 
 }  // namespace altro

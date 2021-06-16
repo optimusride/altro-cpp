@@ -1,4 +1,3 @@
-
 #include <gtest/gtest.h>
 
 #include "knotpoint.hpp"
@@ -31,7 +30,7 @@ TEST(KnotPointTest, Constructor) {
 	EXPECT_TRUE(z4.State().isApprox(Vector<3>::Constant(3)));
 	EXPECT_TRUE(z4.Control().isApprox(Vector<2>::Constant(2)));
 
-	z4 = std::move(z);
+	EXPECT_NO_THROW(z4 = std::move(z));
 }
 
 TEST(KnotPointTest, DynamicSize) {
@@ -51,7 +50,7 @@ TEST(KnotPointTest, Printing) {
 	float t = 0.0;
 	float h = 0.1;
 	KnotPoint<3,2> z(x,u,t,h);
-	std::cout << z << std::endl;
+	EXPECT_NO_THROW(std::cout << z << std::endl);
 }
 
 }  // namespace altro
