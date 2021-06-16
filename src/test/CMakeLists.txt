@@ -15,3 +15,13 @@ target_link_libraries(costexpansion_test
   altro 
 )
 gtest_discover_tests(costexpansion_test)
+
+
+add_executable(knotpoint_test
+  knotpoint_test.cpp
+)
+target_link_libraries(knotpoint_test
+  gtest_main
+  altro
+)
+gtest_discover_tests(knotpoint_test)
