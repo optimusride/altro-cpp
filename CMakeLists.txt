@@ -4,6 +4,14 @@ project(altro VERSION 0.1.0)
 set(CMAKE_CXX_STANDARD 17)
 add_compile_options(-Wall -Wextra -pedantic -Werror)
 
+# Check if MacOS
+if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+    set(MACOSX TRUE)
+
+    # Add the Homebrew headers for Big Sur
+    include_directories( "/opt/homebrew/include/" )
+endif()
+
 # Add Eigen
 find_package(Eigen3 3.3 REQUIRED NO_MODULE)
 
