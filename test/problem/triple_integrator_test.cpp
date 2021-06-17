@@ -2,7 +2,7 @@
 
 #include "utils/derivative_checker.hpp"
 #include "triple_integrator.hpp" 
-#include "discretized_model.hpp"
+#include "problem/discretized_model.hpp"
 
 namespace altro {
 namespace examples {
@@ -79,7 +79,7 @@ TEST(TripleIntegrator, Hessian) {
 TEST(TripleIntegrator, Discretize) {
   int degrees_of_freedom = 2;
   TripleIntegrator model_cont(degrees_of_freedom);
-  DiscretizedModel<TripleIntegrator> model_discrete(model_cont);
+  problem::DiscretizedModel<TripleIntegrator> model_discrete(model_cont);
   int n = model_discrete.StateDimension();
   int m = model_discrete.ControlDimension();
   VectorXd x = VectorXd::Random(n);
@@ -126,7 +126,7 @@ TEST(TripleIntegrator, Discretize) {
 TEST(TripleIntegratorTest, EulerIntegration) {
   int degrees_of_freedom = 2;
   TripleIntegrator model_cont(degrees_of_freedom);
-  DiscretizedModel<TripleIntegrator, ExplicitEuler> model_discrete(model_cont);
+  problem::DiscretizedModel<TripleIntegrator, problem::ExplicitEuler> model_discrete(model_cont);
   int n = model_discrete.StateDimension();
   int m = model_discrete.ControlDimension();
   VectorXd x = VectorXd::Random(n);
@@ -190,7 +190,7 @@ TEST(TripleIntegratorTest, DerivativeChecks) {
 TEST(TripleIntegratorTest, DiscreteDerivativeChecks) {
   int degrees_of_freedom = 2;
   TripleIntegrator model_cont(degrees_of_freedom);
-  DiscretizedModel<TripleIntegrator> model_discrete(model_cont);
+  problem::DiscretizedModel<TripleIntegrator> model_discrete(model_cont);
 
   for (int i = 0; i < 100; ++i) EXPECT_TRUE(model_discrete.CheckJacobian());
 }
@@ -198,7 +198,7 @@ TEST(TripleIntegratorTest, DiscreteDerivativeChecks) {
 TEST(TripleIntegratorTest, HessianChecks) {
   int degrees_of_freedom = 2;
   TripleIntegrator model_cont(degrees_of_freedom);
-  DiscretizedModel<TripleIntegrator> model_discrete(model_cont);
+  problem::DiscretizedModel<TripleIntegrator> model_discrete(model_cont);
 
   for (int i = 0; i < 10; ++i) EXPECT_TRUE(model_cont.CheckHessian());
   // TODO(bjackson) [SW-14571] add second-order RK4 derivatives

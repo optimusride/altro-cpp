@@ -1,9 +1,9 @@
 #pragma once
 
 #include "eigentypes.hpp"
-#include "dynamics.hpp"
+#include "problem/dynamics.hpp"
 namespace altro {
-
+namespace problem {
 /**
  * @brief Interface class for explicit integration methods for dynamical
  * systems.
@@ -142,4 +142,5 @@ class RungeKutta4 final : public ExplicitIntegrator
   }
 };
 
+}  // namespace problem 
 }  // namespace altro

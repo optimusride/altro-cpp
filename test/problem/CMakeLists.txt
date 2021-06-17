@@ -1,3 +1,5 @@
+
+# Quadratic Cost 
 add_executable(quadratic_cost_test
   quadratic_cost_test.cpp
 )
@@ -7,6 +9,7 @@ target_link_libraries(quadratic_cost_test
 )
 gtest_discover_tests(quadratic_cost_test)
 
+# Triple integrator
 add_executable(triple_integrator_test
   triple_integrator_test.cpp
 )

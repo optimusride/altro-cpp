@@ -5,6 +5,7 @@
 #include "utils/utils.hpp"
 
 namespace altro {
+namespace problem {
 
 class Dynamics {
  public:
@@ -258,5 +259,5 @@ class DiscreteDynamics : public Dynamics {
   }
 };
 
-
+}  // namespace problem 
 }  // namespace altro

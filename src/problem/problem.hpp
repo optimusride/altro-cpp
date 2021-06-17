@@ -3,10 +3,12 @@
 #include <vector>
 
 #include "eigentypes.hpp"
-#include "dynamics.hpp"
-#include "costfunction.hpp"
+#include "problem/problem.hpp"
+#include "problem/dynamics.hpp"
+#include "problem/costfunction.hpp"
 
 namespace altro {
+namespace problem {
 
 /**
  * @brief Describes and evaluates the trajectory optimization problem
@@ -30,7 +32,7 @@ class Problem
    * @param x0 initial state
    */
   Problem(const std::vector<DiscreteDynamics>& dynamics, const std::vector<CostFunction>& costs, 
-          const std::vector<float> h, Vector x0);
+          const std::vector<float> h, VectorXd x0);
 
   /**
    * @brief Construct a new Problem object, with uniform dynamics, costs, and 
@@ -43,11 +45,12 @@ class Problem
    * @param x0 initial state
    */
   Problem(const DiscreteDynamics& dynamics, const CostFunction& cost, size_t N, 
-          float h, const Vector& x0);
+          float h, const VectorXd& x0);
 
   CostFunction& GetCostFunction(int k);
-  Dynamics& GetDynamics(int k);
+  DiscreteDynamics& GetDynamics(int k);
   float GetStep(int k);
 };
 
+} // namespace problem 
 } // namespace altro

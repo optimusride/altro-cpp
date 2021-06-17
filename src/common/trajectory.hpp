@@ -4,7 +4,7 @@
 #include <vector>
 
 #include "eigentypes.hpp"
-#include "knotpoint.hpp"
+#include "common/knotpoint.hpp"
 #include "utils/assert.hpp"
 
 namespace altro {

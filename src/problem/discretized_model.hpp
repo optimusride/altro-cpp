@@ -1,6 +1,7 @@
-#include "integration.hpp"
+#include "problem/integration.hpp"
 
 namespace altro {
+namespace problem {
 
 template <class Model, class Integrator = RungeKutta4>
 class DiscretizedModel : public DiscreteDynamics 
@@ -37,4 +38,5 @@ class DiscretizedModel : public DiscreteDynamics
   Integrator integrator_;
 };
 	
+} // namespace problem 
 } // namespace altro

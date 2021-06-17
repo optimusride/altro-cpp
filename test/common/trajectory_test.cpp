@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 
-#include "trajectory.hpp"
+#include "common/trajectory.hpp"
 #include "utils/assert.hpp"
 
 namespace altro {

@@ -1,0 +1,9 @@
+add_library(problem
+  dynamics.cpp
+  costfunction.cpp
+  discretized_model.cpp
+  integration.cpp
+)
+target_link_libraries(problem
+	common
+)

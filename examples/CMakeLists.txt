@@ -4,7 +4,7 @@ add_library(cost_function_examples
   quadratic_cost.cpp
 )
 target_link_libraries(cost_function_examples
-  altro
+  problem
   utils
 )
 
@@ -12,7 +12,6 @@ add_library(dynamics_examples
   triple_integrator.cpp
 )
 target_link_libraries(dynamics_examples
-  altro
+  problem
+  utils
 )
-
-add_subdirectory(test)

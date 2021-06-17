@@ -1,6 +1,6 @@
 #include <iostream>
 #include <vector>
-#include "trajectory.hpp"
+#include "common/trajectory.hpp"
 
 int main() {
   int a = 10;

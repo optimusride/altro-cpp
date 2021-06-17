@@ -1,6 +1,6 @@
 #pragma once
 
-#include "dynamics.hpp"
+#include "problem/dynamics.hpp"
 #include "eigentypes.hpp"
 
 namespace altro {
@@ -15,7 +15,7 @@ namespace examples {
  * dimension i.
  *
  */
-class TripleIntegrator : public ContinuousDynamics {
+class TripleIntegrator : public problem::ContinuousDynamics {
  public:
   TripleIntegrator(int dof = 1) : dof_(dof) {
     ALTRO_ASSERT(dof > 0, "The degrees of freedom must be greater than 0.");

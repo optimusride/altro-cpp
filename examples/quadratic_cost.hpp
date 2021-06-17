@@ -1,13 +1,13 @@
 #pragma once
 
-#include "costfunction.hpp"
+#include "problem/costfunction.hpp"
 #include "eigentypes.hpp"
 #include "utils/utils.hpp"
 
 namespace altro {
 namespace examples {
 
-class QuadraticCost : public CostFunction {
+class QuadraticCost : public problem::CostFunction {
  public:
   QuadraticCost(const MatrixXd& Q, const MatrixXd& R, const MatrixXd& H,
                 const VectorXd& q, const VectorXd& r, double c = 0)
