@@ -1,5 +1,5 @@
-#include "triple_integrator.hpp"
-#include "utils/utils.hpp"
+#include "examples/triple_integrator.hpp"
+#include "altro/utils/utils.hpp"
 
 namespace altro {
 namespace examples {

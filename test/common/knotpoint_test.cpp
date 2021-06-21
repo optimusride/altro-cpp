@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 
-#include "common/knotpoint.hpp"
+#include "altro/common/knotpoint.hpp"
 
 namespace altro {
 

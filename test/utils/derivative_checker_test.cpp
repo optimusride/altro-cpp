@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 #include <iostream>
 
-#include "utils/derivative_checker.hpp"
+#include "altro/utils/derivative_checker.hpp"
 
 namespace altro {
 namespace utils {

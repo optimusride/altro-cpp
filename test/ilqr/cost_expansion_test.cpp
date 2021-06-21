@@ -1,8 +1,8 @@
 #include <gtest/gtest.h>
 #include <iostream>
 
-#include "ilqr/cost_expansion.hpp"
-#include "quadratic_cost.hpp"
+#include "altro/ilqr/cost_expansion.hpp"
+#include "examples/quadratic_cost.hpp"
 
 namespace altro {
 namespace ilqr {

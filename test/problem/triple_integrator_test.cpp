@@ -1,8 +1,8 @@
 #include <gtest/gtest.h>
 
-#include "utils/derivative_checker.hpp"
-#include "triple_integrator.hpp" 
-#include "problem/discretized_model.hpp"
+#include "altro/utils/derivative_checker.hpp"
+#include "examples/triple_integrator.hpp" 
+#include "altro/problem/discretized_model.hpp"
 
 namespace altro {
 namespace examples {

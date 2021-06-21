@@ -1,7 +1,7 @@
 #pragma once
 
-#include "problem/dynamics.hpp"
-#include "eigentypes.hpp"
+#include "altro/problem/dynamics.hpp"
+#include "altro/eigentypes.hpp"
 
 namespace altro {
 namespace examples {

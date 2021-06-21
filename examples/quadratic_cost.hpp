@@ -1,8 +1,8 @@
 #pragma once
 
-#include "problem/costfunction.hpp"
-#include "eigentypes.hpp"
-#include "utils/utils.hpp"
+#include "altro/problem/costfunction.hpp"
+#include "altro/eigentypes.hpp"
+#include "altro/utils/utils.hpp"
 
 namespace altro {
 namespace examples {

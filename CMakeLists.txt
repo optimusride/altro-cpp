@@ -1,8 +1,12 @@
 cmake_minimum_required(VERSION 3.12.1)
 project(altro VERSION 0.1.0)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 14)
+
 add_compile_options(-Wall -Wextra -pedantic -Werror)
+
+# Defines GNU standard installation directories
+include(GNUInstallDirs)
 
 # Check if MacOS
 if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
@@ -14,6 +18,9 @@ endif()
 
 # Add Eigen
 find_package(Eigen3 3.3 REQUIRED NO_MODULE)
+
+# This flag is set to ensure that gtest and gmock files do not get installed along with rest of the package. 
+set(INSTALL_GTEST off CACHE BOOL "" FORCE)
 
 # Add Google Test
 include(FetchContent)
@@ -32,10 +39,70 @@ enable_testing()
 include(GoogleTest)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-include_directories(src/)
+include_directories(${PROJECT_SOURCE_DIR})
 
-add_subdirectory(src)
 
+# Macro to allow exporting a library
+macro(export_library lib_name export_name headers relative_path)
+  set_target_properties(${lib_name} PROPERTIES PUBLIC_HEADER "${headers}")
+  target_include_directories(${lib_name}
+                           INTERFACE
+                           "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>"
+                           "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
+  )
+  install(TARGETS ${lib_name}
+        EXPORT ${export_name}
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+        PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${relative_path}
+  )
+endmacro()
+
+
+add_subdirectory(altro)
 add_subdirectory(examples)
-
 add_subdirectory(test)
+
+
+# NOTE: The following steps allow installing this project for external use. These steps should be done from the outer-most cmake file only.
+
+# Ensure that the `CMAKE_INSTALL_PREFIX` is set correctly. This is the place where the package headers and libraries will get installed. This same prefix is also used by `find_package` cmake module. 
+if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+  set(CMAKE_INSTALL_PREFIX "~/.local" CACHE PATH "..." FORCE)
+endif()
+
+# Export the altroTargets.cmake file
+install(EXPORT altroTargets
+  FILE altroTargets.cmake
+  NAMESPACE altro::
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/altro
+)
+
+# Generate the package config file that includes the exported targets
+include(CMakePackageConfigHelpers)
+configure_package_config_file(${CMAKE_CURRENT_SOURCE_DIR}/Config.cmake.in
+  "${CMAKE_CURRENT_BINARY_DIR}/altroConfig.cmake"
+  INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/altro
+)
+
+# Generate the version file for the config file
+write_basic_package_version_file(
+  "${CMAKE_CURRENT_BINARY_DIR}/altroConfigVersion.cmake"
+  VERSION "${altro_VERSION_MAJOR}.${altro_VERSION_MINOR}"
+  COMPATIBILITY AnyNewerVersion
+)
+
+# Install the configuration file and the version file
+install(FILES
+  ${CMAKE_CURRENT_BINARY_DIR}/altroConfig.cmake
+  ${CMAKE_CURRENT_BINARY_DIR}/altroConfigVersion.cmake
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/altro
+)
+
+install(EXPORT altroTargets
+       FILE altroTargets.cmake
+       NAMESPACE altro::
+       DESTINATION ${CMAKE_CURRENT_BINARY_DIR}
+)

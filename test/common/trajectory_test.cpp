@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 
-#include "common/trajectory.hpp"
-#include "utils/assert.hpp"
+#include "altro/common/trajectory.hpp"
+#include "altro/utils/assert.hpp"
 
 namespace altro {
 

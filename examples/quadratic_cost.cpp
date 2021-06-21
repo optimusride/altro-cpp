@@ -1,4 +1,4 @@
-#include "quadratic_cost.hpp"
+#include "examples/quadratic_cost.hpp"
 
 namespace altro {
 namespace examples {
