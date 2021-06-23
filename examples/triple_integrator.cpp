@@ -4,21 +4,21 @@
 namespace altro {
 namespace examples {
 
-VectorXd TripleIntegrator::Evaluate(const VectorXd& x, const VectorXd& u,
-                                    const float t) const {
+void TripleIntegrator::EvaluateInplace(const Eigen::Ref<const VectorXd>& x,
+                                       const Eigen::Ref<const VectorXd>& u,
+                                       const float t,
+                                       Eigen::Ref<VectorXd> xdot) const {
   ALTRO_UNUSED(t);
-
-  VectorXd xdot = VectorXd::Zero(3 * dof_);
   for (int i = 0; i < dof_; ++i) {
     xdot[i] = x[i + dof_];
     xdot[i + dof_] = x[i + 2 * dof_];
     xdot[i + 2 * dof_] = u[i];
   }
-  return xdot;
 }
 
-void TripleIntegrator::Jacobian(const VectorXd& x, const VectorXd& u,
-                                const float t, MatrixXd& jac) const {
+void TripleIntegrator::Jacobian(const Eigen::Ref<const VectorXd>& x,
+                                const Eigen::Ref<const VectorXd>& u,
+                                const float t, Eigen::Ref<MatrixXd> jac) const {
   ALTRO_UNUSED(x);
   ALTRO_UNUSED(u);
   ALTRO_UNUSED(t);
@@ -30,9 +30,11 @@ void TripleIntegrator::Jacobian(const VectorXd& x, const VectorXd& u,
   }
 }
 
-void TripleIntegrator::Hessian(const VectorXd& x, const VectorXd& u,
-                               const float t, const VectorXd& b,
-                               MatrixXd& hess) const {
+void TripleIntegrator::Hessian(const Eigen::Ref<const VectorXd>& x,
+                               const Eigen::Ref<const VectorXd>& u,
+                               const float t,
+                               const Eigen::Ref<const VectorXd>& b,
+                               Eigen::Ref<MatrixXd> hess) const {
   ALTRO_UNUSED(x);
   ALTRO_UNUSED(u);
   ALTRO_UNUSED(t);

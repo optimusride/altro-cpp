@@ -5,8 +5,7 @@
 
 namespace altro {
 namespace problem {
-class CostFunction
-{
+class CostFunction {
  public:
   virtual ~CostFunction(){};
 
@@ -30,8 +29,10 @@ class CostFunction
    * @param[out] dx (n,) gradient of the cost wrt the state
    * @param[out] du (m,) gradient of the cost wrt the control vector
    */
-  virtual void Gradient(const VectorXd& x, const VectorXd& u, VectorXd& dx,
-                        VectorXd& du) const = 0;
+  virtual void Gradient(const Eigen::Ref<const VectorXd>& x,
+                        const Eigen::Ref<const VectorXd>& u,
+                        Eigen::Ref<VectorXd> dx,
+                        Eigen::Ref<VectorXd> du) const = 0;
 
   /**
    * @brief Evaluate the Hessian of the cost at a single knot point
@@ -46,8 +47,10 @@ class CostFunction
    * @param[out] dxdu (n,m) Hessian cross-term between states and controls
    * @param[out] dudu (m,m) Hessian wrt to the controls
    */
-  virtual void Hessian(const VectorXd& x, const VectorXd& u, MatrixXd& dxdx,
-                       MatrixXd& dxdu, MatrixXd& dudu) const = 0;
+  virtual void Hessian(const Eigen::Ref<const VectorXd>& x,
+                       const Eigen::Ref<const VectorXd>& u,
+                       Eigen::Ref<MatrixXd> dxdx, Eigen::Ref<MatrixXd> dxdu,
+                       Eigen::Ref<MatrixXd> dudu) const = 0;
 
   /**
    * @brief Check if the gradient is correct
@@ -118,5 +121,5 @@ class CostFunction
   }
 };
 
-}  // namespace problem 
+}  // namespace problem
 }  // namespace altro

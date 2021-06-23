@@ -8,15 +8,18 @@ double QuadraticCost::Evaluate(const VectorXd& x, const VectorXd& u) const {
          r_.dot(u) + c_;
 }
 
-void QuadraticCost::Gradient(const VectorXd& x, const VectorXd& u, VectorXd& dx,
-                             VectorXd& du) const {
+void QuadraticCost::Gradient(const Eigen::Ref<const VectorXd>& x, 
+                             const Eigen::Ref<const VectorXd>& u, 
+                             Eigen::Ref<VectorXd> dx,
+                             Eigen::Ref<VectorXd> du) const {
   dx = Q_ * x + q_;
   du = R_ * u + r_;
 }
 
-void QuadraticCost::Hessian(const VectorXd& x, const VectorXd& u,
-                            MatrixXd& dxdx, MatrixXd& dxdu,
-                            MatrixXd& dudu) const {
+void QuadraticCost::Hessian(const Eigen::Ref<const VectorXd>& x, 
+               const Eigen::Ref<const VectorXd>& u, 
+               Eigen::Ref<MatrixXd> dxdx, Eigen::Ref<MatrixXd> dxdu, 
+               Eigen::Ref<MatrixXd> dudu) const {
   ALTRO_UNUSED(x);
   ALTRO_UNUSED(u);
   dxdx = Q_;

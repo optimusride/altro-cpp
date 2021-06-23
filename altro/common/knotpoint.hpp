@@ -1,5 +1,6 @@
 #pragma once
 
+#include "altro/common/state_control_sized.hpp"
 #include "altro/eigentypes.hpp"
 #include "altro/utils/assert.hpp"
 
@@ -13,7 +14,8 @@ namespace altro {
  * Eigen::Dynamic, the vector will allocated on the heap.
  *
  * Use `StateDimension` and `ControlDimension` to query the actual state or
- * control dimension. Use `StateSize` and `ControlSize` to get the type
+ * control dimension. Use `StateMemorySize` and `ControlMemorySize` to get the
+ * type
  * parameters.
  *
  * @tparam n size of state vector. Can be Eigen::Dynamic.
@@ -21,68 +23,99 @@ namespace altro {
  * @tparam T precision of state and control variables
  */
 template <int n, int m, class T = double>
-class KnotPoint {
+class KnotPoint : public StateControlSized<n, m> {
   using StateVector = Vector<n, T>;
   using ControlVector = Vector<m, T>;
 
  public:
   KnotPoint()
-      : x_(StateVector::Zero()),
+      : StateControlSized<n, m>(n, m),
+        x_(StateVector::Zero()),
         u_(ControlVector::Zero()),
         t_(0.0f),
-        h_(0.0),
-        n_(n),
-        m_(m) {}
+        h_(0.0) {}
   KnotPoint(const StateVector& x, const ControlVector& u, const float t = 0.0,
             const float h = 0.0)
-      : x_(x), u_(u), t_(t), h_(h), n_(x.size()), m_(u.size()) {}
+      : StateControlSized<n, m>(x.size(), u.size()),
+        x_(x),
+        u_(u),
+        t_(t),
+        h_(h) {}
   KnotPoint(int _n, int _m)
-      : x_(StateVector::Zero(_n)),
+      : StateControlSized<n, m>(_n, _m),
+        x_(StateVector::Zero(_n)),
         u_(ControlVector::Zero(_m)),
         t_(0.0f),
-        h_(0.0),
-        n_(_n),
-        m_(_m) {}
+        h_(0.0) {}
 
+  // Copy from a knot point of different memory location but same size
+  template <int n2, int m2>
+  KnotPoint(const KnotPoint<n2, m2>& z2)
+      : StateControlSized<n, m>(z2.StateDimension(), z2.ControlDimension()),
+        x_(z2.State()),
+        u_(z2.Control()),
+        t_(z2.GetTime()),
+        h_(z2.GetStep()) {}
+
+  // Copy operations
   KnotPoint(const KnotPoint& z)
-      : x_(z.x_), u_(z.u_), t_(z.t_), h_(z.h_), n_(z.n_), m_(z.m_) {}
+      : StateControlSized<n, m>(z.n_, z.m_),
+        x_(z.x_),
+        u_(z.u_),
+        t_(z.t_),
+        h_(z.h_) {}
   KnotPoint& operator=(const KnotPoint& z) {
     x_ = z.x_;
     u_ = z.u_;
     t_ = z.t_;
     h_ = z.h_;
-    n_ = z.n_;
-    m_ = z.m_;
+    this->n_ = z.n_;
+    this->m_ = z.m_;
     return *this;
   }
 
+  // Move operations
   KnotPoint(KnotPoint&& z)
-      : x_(std::move(z.x_)),
+      : StateControlSized<n, m>(z.n_, z.m_),
+        x_(std::move(z.x_)),
         u_(std::move(z.u_)),
         t_(z.t_),
-        h_(z.h_),
-        n_(z.n_),
-        m_(z.m_) {}
+        h_(z.h_) {}
   KnotPoint& operator=(KnotPoint&& z) {
     x_ = std::move(z.x_);
     u_ = std::move(z.u_);
     t_ = z.t_;
     h_ = z.h_;
-    n_ = z.n_;
-    m_ = z.m_;
+    this->n_ = z.n_;
+    this->m_ = z.m_;
     return *this;
   }
 
-  int StateDimension() const { return n_; }
-  int ControlDimension() const { return m_; }
-  static int StateSize() { return n; }
-  static int ControlSize() { return m; }
+  static KnotPoint Random() {
+    ALTRO_ASSERT(n > 0 && m > 0,
+                 "Must pass in size if state or control dimension is unknown "
+                 "at compile time.");
+    Vector<n> x = Vector<n>::Random();
+    Vector<m> u = Vector<m>::Random();
+    double t = static_cast<double>(rand() % 100) / 10.0;   // 0 to 10
+    double h = static_cast<double>(rand() % 100) / 100.0;  // 0 to 1
+    return KnotPoint(x, u, t, h);
+  }
+
+  static KnotPoint Random(int state_dim, int control_dim) {
+    VectorXd x = VectorXd::Random(state_dim);
+    VectorXd u = VectorXd::Random(control_dim);
+    double t = static_cast<double>(rand() % 100) / 10.0;   // 0 to 10
+    double h = static_cast<double>(rand() % 100) / 100.0;  // 0 to 1
+    return KnotPoint(x, u, t, h);
+  }
+
   StateVector& State() { return x_; }
   ControlVector& Control() { return u_; }
   const StateVector& State() const { return x_; }
   const ControlVector& Control() const { return u_; }
-  Vector<n + m, T> GetStateControl() const {
-    Vector<n + m, T> z;
+  Vector<AddSizes(n,m), T> GetStateControl() const {
+    Vector<AddSizes(n,m), T> z;
     z << x_, u_;
     return z;
   }
@@ -119,8 +152,6 @@ class KnotPoint {
   ControlVector u_;
   float t_;  // time
   float h_;  // time step
-  int n_;    // state dimension
-  int m_;    // control dimension
 };
 
 }  // namespace altro

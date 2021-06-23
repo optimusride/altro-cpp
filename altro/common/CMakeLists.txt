@@ -1,6 +1,7 @@
 add_library(common
   knotpoint.cpp
   knotpoint.hpp
+  state_control_sized.hpp
   trajectory.cpp
   trajectory.hpp
 )

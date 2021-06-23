@@ -4,23 +4,26 @@ namespace altro {
 namespace problem {
 
 template <class Model, class Integrator = RungeKutta4>
-class DiscretizedModel : public DiscreteDynamics 
-{
+class DiscretizedModel : public DiscreteDynamics {
  public:
   DiscretizedModel(const Model& model) : model_(model) {}
-  VectorXd Evaluate(const VectorXd& x, const VectorXd& u, 
-                    const float t, const float h) const override {
-    return integrator_.Integrate(model_, x, u, t, h);
-  } 
 
-  void Jacobian(const VectorXd& x, const VectorXd& u, 
-                const float t, const float h, MatrixXd& jac) const override {
+  void EvaluateInplace(const Eigen::Ref<const VectorXd>& x,
+                       const Eigen::Ref<const VectorXd>& u, const float t,
+                       const float h, Eigen::Ref<VectorXd> xnext) const {
+    integrator_.Integrate(model_, x, u, t, h, xnext);
+  }
+
+  void Jacobian(const Eigen::Ref<const VectorXd>& x,
+                const Eigen::Ref<const VectorXd>& u, const float t,
+                const float h, Eigen::Ref<MatrixXd> jac) const override {
     integrator_.Jacobian(model_, x, u, t, h, jac);
-  } 
+  }
 
-  void Hessian(const VectorXd& x, const VectorXd& u, 
-               const float t, const float h, 
-               const VectorXd& b, MatrixXd& hess) const override {
+  void Hessian(const Eigen::Ref<const VectorXd>& x,
+               const Eigen::Ref<const VectorXd>& u, const float t,
+               const float h, const Eigen::Ref<const VectorXd>& b,
+               Eigen::Ref<MatrixXd> hess) const override {
     ALTRO_UNUSED(x);
     ALTRO_UNUSED(u);
     ALTRO_UNUSED(t);
@@ -37,6 +40,6 @@ class DiscretizedModel : public DiscreteDynamics
   Model model_;
   Integrator integrator_;
 };
-	
-} // namespace problem 
-} // namespace altro
+
+}  // namespace problem
+}  // namespace altro

@@ -36,10 +36,14 @@ class QuadraticCost : public problem::CostFunction {
   }
 
   double Evaluate(const VectorXd& x, const VectorXd& u) const override;
-  void Gradient(const VectorXd& x, const VectorXd& u, VectorXd& dx,
-                VectorXd& du) const override;
-  void Hessian(const VectorXd& x, const VectorXd& u, MatrixXd& dxdx,
-               MatrixXd& dxdu, MatrixXd& dudu) const override;
+  void Gradient(const Eigen::Ref<const VectorXd>& x, 
+                const Eigen::Ref<const VectorXd>& u, 
+                Eigen::Ref<VectorXd> dx,
+                Eigen::Ref<VectorXd> du) const override;
+  void Hessian(const Eigen::Ref<const VectorXd>& x, 
+               const Eigen::Ref<const VectorXd>& u, 
+               Eigen::Ref<MatrixXd> dxdx, Eigen::Ref<MatrixXd> dxdu, 
+               Eigen::Ref<MatrixXd> dudu) const override;
 
   const MatrixXd& GetQ() const { return Q_; }
   const MatrixXd& GetR() const { return R_; }

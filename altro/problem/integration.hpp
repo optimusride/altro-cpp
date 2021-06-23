@@ -19,8 +19,7 @@ namespace problem {
  *
  * See `ContinuousDynamics` class for the expected interface.
  */
-class ExplicitIntegrator
-{
+class ExplicitIntegrator {
  public:
   virtual ~ExplicitIntegrator(){};
 
@@ -35,8 +34,10 @@ class ExplicitIntegrator
    * @param[in] h discretization step length (e.g. time step)
    * @return VectorXd state vector at the end of the time step
    */
-  virtual VectorXd Integrate(const ContinuousDynamics& dynamics, const VectorXd& x, const VectorXd& u, 
-                             float t, float h) const = 0;
+  virtual void Integrate(const ContinuousDynamics& dynamics,
+                         const Eigen::Ref<const VectorXd>& x,
+                         const Eigen::Ref<const VectorXd>& u, float t, float h,
+                         Eigen::Ref<VectorXd> xnext) const = 0;
 
   /**
    * @brief Evaluate the Jacobian of the discrete dynamics
@@ -53,8 +54,10 @@ class ExplicitIntegrator
    * @param[in] h discretization step length (e.g. time step)
    * @param[out] jac discrete dynamics Jacobian evaluated at x, u, t.
    */
-  virtual void Jacobian(const ContinuousDynamics& dynamics, const VectorXd& x, const VectorXd& u,
-                float t, float h, MatrixXd& jac) const = 0;
+  virtual void Jacobian(const ContinuousDynamics& dynamics,
+                        const Eigen::Ref<const VectorXd>& x,
+                        const Eigen::Ref<const VectorXd>& u, float t, float h,
+                        Eigen::Ref<MatrixXd> jac) const = 0;
 };
 
 /**
@@ -65,15 +68,18 @@ class ExplicitIntegrator
  *
  * @tparam DynamicsFunc
  */
-class ExplicitEuler final : public ExplicitIntegrator
-{
+class ExplicitEuler final : public ExplicitIntegrator {
  public:
-  VectorXd Integrate(const ContinuousDynamics& dynamics, const VectorXd& x, const VectorXd& u, 
-                     float t, float h) const override {
-    return x + dynamics(x, u, t) * h;
+  void Integrate(const ContinuousDynamics& dynamics,
+                 const Eigen::Ref<const VectorXd>& x,
+                 const Eigen::Ref<const VectorXd>& u, float t, float h,
+                 Eigen::Ref<VectorXd> xnext) const override {
+    xnext = x + dynamics(x, u, t) * h;
   }
-  void Jacobian(const ContinuousDynamics& dynamics, const VectorXd& x, const VectorXd& u,
-                float t, float h, MatrixXd& jac) const override {
+  void Jacobian(const ContinuousDynamics& dynamics,
+                const Eigen::Ref<const VectorXd>& x,
+                const Eigen::Ref<const VectorXd>& u, float t, float h,
+                Eigen::Ref<MatrixXd> jac) const override {
     int n = x.size();
     int m = u.size();
     dynamics.Jacobian(x, u, t, jac);
@@ -89,21 +95,22 @@ class ExplicitEuler final : public ExplicitIntegrator
  *
  * @tparam DynamicsFunc
  */
-class RungeKutta4 final : public ExplicitIntegrator
-{
+class RungeKutta4 final : public ExplicitIntegrator {
  public:
-  VectorXd Integrate(const ContinuousDynamics& dynamics, const VectorXd& x, const VectorXd& u, 
-                     float t, float h) const override {
+  void Integrate(const ContinuousDynamics& dynamics,
+                 const Eigen::Ref<const VectorXd>& x,
+                 const Eigen::Ref<const VectorXd>& u, float t, float h,
+                 Eigen::Ref<VectorXd> xnext) const override {
     VectorXd k1 = dynamics(x, u, t) * h;
     VectorXd k2 = dynamics(x + k1 * 0.5, u, t + 0.5 * h) * h;
     VectorXd k3 = dynamics(x + k2 * 0.5, u, t + 0.5 * h) * h;
     VectorXd k4 = dynamics(x + k3, u, t + h) * h;
-    VectorXd xnext = x + (k1 + 2 * k2 + 2 * k3 + k4) / 6;
-    return xnext;
+    xnext = x + (k1 + 2 * k2 + 2 * k3 + k4) / 6;
   }
-  void Jacobian(const ContinuousDynamics& dynamics, const VectorXd& x, const VectorXd& u,
-                float t, float h, MatrixXd& jac) const override {
-    dynamics.Jacobian(x, u, t, jac);
+  void Jacobian(const ContinuousDynamics& dynamics,
+                const Eigen::Ref<const VectorXd>& x,
+                const Eigen::Ref<const VectorXd>& u, float t, float h,
+                Eigen::Ref<MatrixXd> jac) const override {
     int n = dynamics.StateDimension();
     int m = dynamics.ControlDimension();
 
@@ -142,5 +149,5 @@ class RungeKutta4 final : public ExplicitIntegrator
   }
 };
 
-}  // namespace problem 
+}  // namespace problem
 }  // namespace altro

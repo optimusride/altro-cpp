@@ -1,4 +1,3 @@
-# Cost Expansion tests
 add_executable(cost_expansion_test
   cost_expansion_test.cpp
 )
@@ -7,8 +6,25 @@ target_link_libraries(cost_expansion_test
   ilqr
   cost_function_examples
 )
-target_include_directories(cost_expansion_test
-  PRIVATE
-  ${PROJECT_SOURCE_DIR}/examples
-)
 gtest_discover_tests(cost_expansion_test)
+
+add_executable(dynamics_expansion_test
+  dynamics_expansion_test.cpp
+)
+target_link_libraries(dynamics_expansion_test
+  gtest_main
+  ilqr
+  dynamics_examples
+)
+gtest_discover_tests(dynamics_expansion_test)
+
+add_executable(knot_point_functions_test
+  knot_point_functions_test.cpp
+)
+target_link_libraries(knot_point_functions_test
+  gtest_main
+  ilqr
+  dynamics_examples
+  cost_function_examples
+)
+gtest_discover_tests(knot_point_functions_test)
