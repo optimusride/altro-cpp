@@ -38,6 +38,32 @@ endif()
 enable_testing()
 include(GoogleTest)
 
+# Code Coverage
+# Build by:
+# cmake -DCMAKE_BUILD_TYPE=Debug -DBUILD_COVERAGE=ON ..
+# Run: "make coverage" and open the build/altro_test_coverage.html
+# Currently all .html and .css are littered in /build
+# TODO(jw) : move all report files to a dedicated sub-directory
+
+option(BUILD_COVERAGE "Build test coverage" OFF)
+
+if(BUILD_COVERAGE)
+    if (MACOSX)
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fprofile-instr-generate -fcoverage-mapping")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fprofile-instr-generate -fcoverage-mapping")
+    else()
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} --coverage -fprofile-arcs -ftest-coverage")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --coverage -fprofile-arcs -ftest-coverage")
+    endif (MACOSX)
+
+add_custom_target(coverage ALL
+    COMMAND gcovr -r ../ --html-details --exclude-directories='_deps' -o altro_test_coverage.html
+)
+
+endif(BUILD_COVERAGE)
+
+# Sources
+
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 include_directories(${PROJECT_SOURCE_DIR})
 
