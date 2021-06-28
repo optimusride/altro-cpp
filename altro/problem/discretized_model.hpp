@@ -10,7 +10,7 @@ class DiscretizedModel : public DiscreteDynamics {
 
   void EvaluateInplace(const Eigen::Ref<const VectorXd>& x,
                        const Eigen::Ref<const VectorXd>& u, const float t,
-                       const float h, Eigen::Ref<VectorXd> xnext) const {
+                       const float h, Eigen::Ref<VectorXd> xnext) const override {
     integrator_.Integrate(model_, x, u, t, h, xnext);
   }
 
