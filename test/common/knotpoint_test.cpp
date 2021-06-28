@@ -12,8 +12,8 @@ TEST(KnotPointTest, Constructor) {
 
 	Vector<3> x = Vector<3>::Constant(1);
 	Vector<2> u = Vector<2>::Constant(2);
-	float t = 0.0;
-	float h = 0.1;
+	constexpr float t = 0.0;
+	constexpr float h = 0.1;
 	KnotPoint<3,2> z2(x,u,t,h);
 	EXPECT_TRUE(z2.State().isApprox(Vector<3>::Constant(1)));
 	EXPECT_TRUE(z2.Control().isApprox(Vector<2>::Constant(2)));

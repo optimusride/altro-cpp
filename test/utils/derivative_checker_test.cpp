@@ -89,18 +89,21 @@ TEST(DerivativeCheckerTest, Gradient) {
   EXPECT_TRUE(ans.isApprox(grad, 1e-5));
   double err = (ans - grad).norm();
 
-  auto grad2 = FiniteDiffGradient(f, x, 1e-10);
+  constexpr double kTol = 1e-10;
+  auto grad2 = FiniteDiffGradient(f, x, kTol);
   double err2 = (ans - grad2).norm();
   EXPECT_TRUE(ans.isApprox(grad2, 1e-6));
   EXPECT_LT(err2, err);
 }
 
 TEST(DerivativeCheckerTest, GradientLambda) {
+  constexpr double kTol = 1e-10;
+
   VectorXd x = Eigen::Vector4d(1, 2, 3, 4);
   auto f = [](auto x) -> double { return x(0) * x(1) + cos(x(2) * exp(x(3))); };
   Eigen::Vector4d ans(x(1), x(0), -sin(x(2) * exp(x(3))) * exp(x(3)),
                       -sin(x(2) * exp(x(3))) * x(2) * exp(x(3)));
-  auto grad = FiniteDiffGradient(f, x, 1e-10);
+  auto grad = FiniteDiffGradient(f, x, kTol);
   EXPECT_TRUE(grad.isApprox(ans, 1e-6));
 }
 
@@ -128,7 +131,7 @@ TEST(DerivativeCheckerTest, Hessian) {
   VectorXd x = Eigen::Vector4d(1, 2, 3, 4);
   TestFuncScalar f;
   double eps = 1e-4;
-  double central = false;
+  bool central = false;
   auto hess = FiniteDiffHessian(f, x, eps, central);
   central = true;
   auto hess2 = FiniteDiffHessian(f, x, eps, central);

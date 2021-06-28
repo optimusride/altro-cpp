@@ -122,7 +122,8 @@ TEST_F(QuadraticCostTest, LQRCost) {
 
 TEST_F(QuadraticCostTest, CheckGradient) {
   QuadraticCost qcost = QuadraticCost(Q, R, H, q, r, c);
-  for (int i = 0; i < 10; ++i) {
+  constexpr std::size_t kIter = 10;
+  for (std::size_t i = 0; i < kIter; ++i) {
     VectorXd x = VectorXd::Random(3);
     VectorXd u = VectorXd::Random(2);
     EXPECT_TRUE(qcost.CheckGradient(x, u));
@@ -131,7 +132,8 @@ TEST_F(QuadraticCostTest, CheckGradient) {
 
 TEST_F(QuadraticCostTest, CheckHessian) {
   QuadraticCost qcost = QuadraticCost(Q, R, H, q, r, c);
-  for (int i = 0; i < 1; ++i) {
+  constexpr std::size_t kIter = 1;
+  for (std::size_t i = 0; i < kIter; ++i) {
     VectorXd x = VectorXd::Random(3);
     VectorXd u = VectorXd::Random(2);
     EXPECT_TRUE(qcost.CheckHessian(x, u));

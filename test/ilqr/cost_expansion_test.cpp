@@ -17,7 +17,7 @@ class CostExpansionTest : public ::testing::Test {
   double c = 1.0;
 
  protected:
-  void SetUp() {}
+  void SetUp() override {}
 };
 
 TEST_F(CostExpansionTest, Construction) {

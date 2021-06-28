@@ -36,7 +36,7 @@ TEST(TripleIntegratorTest, Evaluate) {
   EXPECT_TRUE(xdot_ans.isApprox(xdot));
 
   // Call it as a functor
-  VectorXd xdot2 = model2(x, u, 1.0f);
+  VectorXd xdot2 = model2(x, u, 1.0F);
   EXPECT_TRUE(xdot_ans.isApprox(xdot2));
 }
 
@@ -84,8 +84,8 @@ TEST(TripleIntegrator, Discretize) {
   int m = model_discrete.ControlDimension();
   VectorXd x = VectorXd::Random(n);
   VectorXd u = VectorXd::Random(m);
-  float t = 1.1;
-  float h = 0.1;
+  constexpr float t = 1.1;
+  constexpr float h = 0.1;
   VectorXd xnext = model_discrete.Evaluate(x, u, t, h);
   VectorXd xdot = model_cont.Evaluate(x, u, t);
   EXPECT_GT((xdot - xnext).norm(), 1e-6);
@@ -131,8 +131,8 @@ TEST(TripleIntegratorTest, EulerIntegration) {
   int m = model_discrete.ControlDimension();
   VectorXd x = VectorXd::Random(n);
   VectorXd u = VectorXd::Random(m);
-  float t = 1.1;
-  float h = 0.1;
+  constexpr float t = 1.1;
+  constexpr float h = 0.1;
   VectorXd xnext = model_discrete.Evaluate(x, u, t, h);
   EXPECT_TRUE(xnext.isApprox(x + model_cont(x, u, t) * h));
 
@@ -184,7 +184,10 @@ TEST(TripleIntegratorTest, DerivativeChecks) {
 
   EXPECT_TRUE(model2.CheckJacobian(x, u, t));
 
-  for (int i = 0; i < 100; ++i) EXPECT_TRUE(model2.CheckJacobian());
+  constexpr std::size_t kIter = 100;
+  for (std::size_t i = 0; i < kIter; ++i) {
+    EXPECT_TRUE(model2.CheckJacobian());
+  }
 }
 
 TEST(TripleIntegratorTest, DiscreteDerivativeChecks) {
@@ -192,7 +195,10 @@ TEST(TripleIntegratorTest, DiscreteDerivativeChecks) {
   TripleIntegrator model_cont(degrees_of_freedom);
   problem::DiscretizedModel<TripleIntegrator> model_discrete(model_cont);
 
-  for (int i = 0; i < 100; ++i) EXPECT_TRUE(model_discrete.CheckJacobian());
+  constexpr std::size_t kIter = 100;
+  for (std::size_t i = 0; i < kIter; ++i) {
+    EXPECT_TRUE(model_discrete.CheckJacobian());
+  }
 }
 
 TEST(TripleIntegratorTest, HessianChecks) {
@@ -200,10 +206,13 @@ TEST(TripleIntegratorTest, HessianChecks) {
   TripleIntegrator model_cont(degrees_of_freedom);
   problem::DiscretizedModel<TripleIntegrator> model_discrete(model_cont);
 
-  for (int i = 0; i < 10; ++i) EXPECT_TRUE(model_cont.CheckHessian());
+  constexpr std::size_t kIter = 10;
+  for (std::size_t i = 0; i < kIter; ++i) {
+    EXPECT_TRUE(model_cont.CheckHessian());
+  }
   // TODO(bjackson) [SW-14571] add second-order RK4 derivatives
   // for (int i = 0; i < 10; ++i) EXPECT_TRUE(model_discrete.CheckHessian());
 }
 
-}  // namespace dynamics_examples
+}  // namespace examples
 }  // namespace altro

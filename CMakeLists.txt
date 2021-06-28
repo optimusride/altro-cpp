@@ -62,6 +62,35 @@ add_custom_target(coverage ALL
 
 endif(BUILD_COVERAGE)
 
+# Add clang-tidy static analysis
+# You must build with: cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ..
+# On Mac with Homebrew installed LLVM, this is helpful:
+# export PATH="/opt/homebrew/opt/llvm/bin:$PATH"
+
+# Find the binary
+find_program(CLANG_TIDY_BIN clang-tidy)
+find_program(RUN_CLANG_TIDY_BIN run-clang-tidy.py)
+if (MACOSX)
+    find_program(CLANG_TIDY_BIN /opt/homebrew/opt/llvm/bin/clang-tidy)
+    find_program(RUN_CLANG_TIDY_BIN /opt/homebrew/opt/llvm/share/clang/run-clang-tidy.py)
+endif()
+
+# Options - this list of checks matches the version from vehicle repo
+# Currently checks only src - could expand by adding header-filter
+# to "src|examples|test". Currently have way too many warnings, not worth fixing
+# Also can't figure out how to exclude certain GTest headers
+# TODO(jw) : eliminate checks such as trailing return & magic number for tests
+list(APPEND RUN_CLANG_TIDY_BIN_ARGS
+     -clang-tidy-binary ${CLANG_TIDY_BIN}
+     -quiet
+     -header-filter="\".*\\b(src)\""
+     -checks=clang-diagnostic-*,clang-analyzer-*,-clang-analyzer-alpha*,google-*,readability-*,modernize-*,clang-analyzer-*,misc-*,-modernize-pass-by-value,-readability-else-after-return,-clang-analyzer-alpha.core.CastToStruct,-readability-implicit-bool-cast)
+
+# Run with "make tidy"
+add_custom_target(tidy
+                  COMMAND ${RUN_CLANG_TIDY_BIN} ${RUN_CLANG_TIDY_BIN_ARGS}
+                  COMMENT "Running clang-tidy")
+
 # Sources
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)

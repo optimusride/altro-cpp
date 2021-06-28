@@ -72,7 +72,7 @@ TEST_F(TrajectoryTest, DynamicSize) {
     if (k < N) {
       knotpoints2.emplace_back(x, u, h*k, h);
     } else {
-      knotpoints2.emplace_back(x, u*0, h*k, 0.0f);
+      knotpoints2.emplace_back(x, u*0, h*k, 0.0F);
     }
   }
 
