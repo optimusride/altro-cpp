@@ -60,6 +60,12 @@ class KnotPointFunctions : public KnotPointFunctionsBase,
                         dynamics->ControlDimension()),
         dynamics_expansion_(dynamics->StateDimension(),
                             dynamics->ControlDimension()) {}
+  KnotPointFunctions(int state_dim, int control_dim, CostFunPtr costfun) 
+      : StateControlSized<n, m>(state_dim, control_dim),
+        model_ptr_(nullptr),
+        costfun_ptr_(costfun),
+        cost_expansion_(state_dim, control_dim),
+        dynamics_expansion_(state_dim, control_dim) {}
 
   double Cost(const Eigen::Ref<const VectorXd>& x,
               const Eigen::Ref<const VectorXd>& u) const {

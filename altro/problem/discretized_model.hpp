@@ -1,3 +1,5 @@
+#pragma once
+
 #include "altro/problem/integration.hpp"
 
 namespace altro {

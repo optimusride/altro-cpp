@@ -19,3 +19,16 @@ target_link_libraries(triple_integrator_test
   utils
 )
 gtest_discover_tests(triple_integrator_test)
+
+# Problem
+add_executable(problem_test
+  problem_test.cpp
+)
+target_link_libraries(problem_test
+  gtest_main
+  problem
+  dynamics_examples
+  cost_function_examples
+  utils
+)
+gtest_discover_tests(problem_test)

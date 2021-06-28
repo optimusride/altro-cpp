@@ -28,3 +28,14 @@ target_link_libraries(knot_point_functions_test
   cost_function_examples
 )
 gtest_discover_tests(knot_point_functions_test)
+
+add_executable(ilqr_class_test
+  ilqr_class_test.cpp
+)
+target_link_libraries(ilqr_class_test
+  gtest_main
+  ilqr
+  dynamics_examples
+  cost_function_examples
+)
+gtest_discover_tests(ilqr_class_test)
