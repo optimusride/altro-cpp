@@ -82,4 +82,18 @@ TEST_F(TrajectoryTest, DynamicSize) {
   EXPECT_EQ(traj2.StateDimension(N-1), n-1);
   EXPECT_EQ(traj2.ControlDimension(N-1), m-1);
 }
+
+TEST_F(TrajectoryTest, SetStep) {
+  Trajectory<3,2> traj(knotpoints);
+  EXPECT_TRUE(traj.CheckTimeConsistency());
+  traj[1].SetTime(2 * h);
+  EXPECT_FALSE(traj.CheckTimeConsistency());
+  EXPECT_FLOAT_EQ(traj[1].GetTime(), 2 * h);
+
+  traj.SetUniformStep(2 * h);
+  EXPECT_FLOAT_EQ(traj.GetTime(N), 2 * N * h);
+  EXPECT_FLOAT_EQ(traj.GetStep(N-1), 2 * h);
+  EXPECT_FLOAT_EQ(traj.GetStep(N), 0);
+  EXPECT_TRUE(traj.CheckTimeConsistency());
+}
 }  // namespace altro

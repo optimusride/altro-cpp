@@ -3,8 +3,8 @@
 #include <iostream>
 #include <vector>
 
-#include "altro/eigentypes.hpp"
 #include "altro/common/knotpoint.hpp"
+#include "altro/eigentypes.hpp"
 #include "altro/utils/assert.hpp"
 
 namespace altro {
@@ -27,7 +27,7 @@ class Trajectory {
  public:
   /**
    * @brief Construct a new Trajectory object of size N
-   * 
+   *
    * @param N the number of segments in the trajectory. This means there are
    * N+1 state vectors and N control vectors.
    */
@@ -68,11 +68,27 @@ class Trajectory {
   const StateVector& State(int k) const { return traj_[k].State(); }
   const ControlVector& Control(int k) const { return traj_[k].Control(); }
 
+  KnotPoint<n, m, T>& GetKnotPoint(int k) { return traj_[k]; }
+  KnotPoint<n, m, T>& operator[](int k) { return GetKnotPoint(k); }
+
   int StateDimension(int k) const { return traj_[k].StateDimension(); }
   int ControlDimension(int k) const { return traj_[k].ControlDimension(); }
 
   float GetTime(int k) const { return traj_[k].GetTime(); }
   float GetStep(int k) const { return traj_[k].GetStep(); }
+
+  void SetTime(int k, float t) { traj_[k].SetTime(t); }
+  void SetStep(int k, float h) { traj_[k].SetStep(h); }
+
+  void SetUniformStep(float h) {
+    int N = NumSegments();
+    for (int k = 0; k < N; ++k) {
+      traj_[k].SetStep(h);
+      traj_[k].SetTime(k * h);
+    }
+    traj_[N].SetStep(0.0);
+    traj_[N].SetTime(h * N);
+  }
 
   /**
    * @brief Check if the times and time steps are consistent
@@ -80,15 +96,17 @@ class Trajectory {
    * @param eps tolerance check for float comparison
    * @return true if t[k+1] - t[k] == h[k] for all k
    */
-  bool CheckTimeConsistency(const double eps = 1e-6) {
+  bool CheckTimeConsistency(const double eps = 1e-6,
+                            const bool verbose = false) {
     for (int k = 0; k < NumSegments(); ++k) {
       float h_calc = GetTime(k + 1) - GetTime(k);
       float h_stored = GetStep(k);
-      if (abs(h_stored - h_calc) > eps) {
-        std::cout << "k=" << k << " h=" << h_stored << " dt=" << h_calc
-                  << std::endl;
-        std::cout << "t-" << GetTime(k) << " t+" << GetTime(k + 1)
-                  << " h=" << GetStep(k) << std::endl;
+      if (std::abs(h_stored - h_calc) > eps) {
+        if (verbose) {
+          std::cout << "k=" << k << "\t h=" << h_stored << std::endl;
+          std::cout << "t-=" << GetTime(k) << "\t t+=" << GetTime(k + 1)
+                    << "\t dt=" << h_calc << std::endl;
+        }
         return false;
       }
     }

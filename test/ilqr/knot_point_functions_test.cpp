@@ -27,8 +27,8 @@ class KnotPointFunctionsTest : public ::testing::Test {
     c = 11;
   }
 
-  template <int n, int m>
-  KnotPointFunctions<n, m> MakeKPF() {
+  template <int n_size, int m_size>
+  KnotPointFunctions<n_size, m_size> MakeKPF() {
     // Create the model
     using ModelType = problem::DiscretizedModel<examples::TripleIntegrator>;
     examples::TripleIntegrator model(dof);
@@ -41,9 +41,104 @@ class KnotPointFunctionsTest : public ::testing::Test {
         std::make_shared<examples::QuadraticCost>(costfun);
 
     // Make KPF
-    KnotPointFunctions<n, m> kpf(model_ptr, costfun_ptr);
+    KnotPointFunctions<n_size, m_size> kpf(model_ptr, costfun_ptr);
 
     return kpf;
+  }
+
+  template <int n_size, int m_size>
+  void TestGains(double rho = 0) {
+    KnotPointFunctions<n_size, m_size> kpf = MakeKPF<n_size, m_size>();
+    MatrixXd Qxu = MatrixXd::Random(n, m);
+    MatrixXd Quu = MatrixXd::Random(m, m);
+    Quu = Quu.transpose() * Quu;
+    VectorXd Qu = VectorXd::Random(m);
+    kpf.GetActionValueExpansion().dudu() = Quu;
+    kpf.GetActionValueExpansion().dxdu() = Qxu;
+    kpf.GetActionValueExpansion().du() = Qu;
+    kpf.RegularizeActionValue(rho);
+
+    kpf.CalcGains();
+    MatrixXd K =
+        (Quu + MatrixXd::Identity(m, m) * rho).ldlt().solve(Qxu.transpose());
+    kpf.GetFeedbackGain().isApprox(K);
+  }
+
+  template <int n_size, int m_size>
+  void TestTermCTG() {
+    KnotPointFunctions<n_size, m_size> kpf = MakeKPF<n_size, m_size>();
+    KnotPoint<n_size, m_size> z = KnotPoint<n_size, m_size>::Random(n, m);
+
+    kpf.CalcCostExpansion(z.State(), z.Control());
+
+    kpf.CalcTerminalCostToGo();
+    EXPECT_TRUE(kpf.GetCostToGoHessian().isApprox(Q));
+    EXPECT_TRUE(kpf.GetCostToGoGradient().isApprox(Q * z.State() + q));
+  }
+
+  template <int n_size, int m_size>
+  void TestQExpansion() {
+    KnotPointFunctions<n_size, m_size> kpf = MakeKPF<n_size, m_size>();
+    KnotPoint<n_size, m_size> z = KnotPoint<n_size, m_size>::Random(n, m);
+
+    MatrixXd Sxx_prev = MatrixXd::Random(n, n);
+    Sxx_prev = Sxx_prev.transpose() * Sxx_prev;
+    VectorXd Sx_prev = VectorXd::Random(n);
+
+    kpf.CalcCostExpansion(z.State(), z.Control());
+    kpf.CalcDynamicsExpansion(z.State(), z.Control(), z.GetTime(), z.GetStep());
+    kpf.CalcActionValueExpansion(Sxx_prev, Sx_prev);
+
+    MatrixXd A = kpf.GetDynamicsExpansion().GetA();
+    MatrixXd B = kpf.GetDynamicsExpansion().GetB();
+
+    MatrixXd Qxx = Q + A.transpose() * Sxx_prev * A;
+    MatrixXd Quu = R + B.transpose() * Sxx_prev * B;
+    MatrixXd Qxu = H + A.transpose() * Sxx_prev * B;
+    MatrixXd Qx = (Q * z.State() + q) + A.transpose() * Sx_prev;
+    MatrixXd Qu = (R * z.Control() + r) + B.transpose() * Sx_prev;
+
+    CostExpansion<n_size, m_size> Q = kpf.GetActionValueExpansion();
+    EXPECT_TRUE(Q.dxdx().isApprox(Qxx));
+    EXPECT_TRUE(Q.dxdu().isApprox(Qxu));
+    EXPECT_TRUE(Q.dudu().isApprox(Quu));
+    EXPECT_TRUE(Q.dx().isApprox(Qx));
+    EXPECT_TRUE(Q.du().isApprox(Qu));
+  }
+
+  template <int n_size, int m_size>
+  void TestCTG() {
+    MatrixXd Q = MatrixXd::Random(n + m, n + m);
+    Q = Q.transpose() * Q;
+    MatrixXd Qxx = Q.topLeftCorner(n, n);
+    MatrixXd Qxu = Q.topRightCorner(n, m);
+    MatrixXd Qux = Q.bottomLeftCorner(m, n);
+    MatrixXd Quu = Q.bottomRightCorner(m, m);
+    VectorXd Qx = VectorXd::Random(n);
+    VectorXd Qu = VectorXd::Random(m);
+
+    MatrixXd K = MatrixXd::Random(m, n);
+    VectorXd d = VectorXd::Random(m);
+    ASSERT_TRUE(Qxu.transpose().isApprox(Qux));
+
+    MatrixXd Sxx =
+        Qxx + K.transpose() * Quu * K + K.transpose() * Qux + Qxu * K;
+    MatrixXd Sx = Qx + K.transpose() * Quu * d + K.transpose() * Qu + Qxu * d;
+    double deltaV = d.dot(Qu) + 0.5 * d.dot(Quu * d);
+
+    KnotPointFunctions<n_size, m_size> kpf = this->MakeKPF<n_size, m_size>();
+    kpf.GetActionValueExpansion().dxdx() = Qxx;
+    kpf.GetActionValueExpansion().dxdu() = Qxu;
+    kpf.GetActionValueExpansion().dudu() = Quu;
+    kpf.GetActionValueExpansion().dx() = Qx;
+    kpf.GetActionValueExpansion().du() = Qu;
+    kpf.GetFeedbackGain() = K;
+    kpf.GetFeedforwardGain() = d;
+
+    kpf.CalcCostToGo();
+    EXPECT_TRUE(kpf.GetCostToGoHessian().isApprox(Sxx));
+    EXPECT_TRUE(kpf.GetCostToGoGradient().isApprox(Sx));
+    EXPECT_DOUBLE_EQ(kpf.GetCostToGoDelta(), deltaV);
   }
 
   int n = 3 * dof;
@@ -238,6 +333,38 @@ TEST_F(KnotPointFunctionsTest, DynamicsExpansion) {
   DynamicsExpansion<HEAP, HEAP> dyn_exp2 = kpf_dynamic.GetDynamicsExpansion();
   EXPECT_TRUE(dyn_exp2.GetJacobian().isApprox(jac));
 }
+
+TEST_F(KnotPointFunctionsTest, TerminalCostToGoStatic) {
+  TestTermCTG<n_static, m_static>();
+}
+
+TEST_F(KnotPointFunctionsTest, TerminalCostToGoDynamic) {
+  TestTermCTG<HEAP, HEAP>();
+}
+
+TEST_F(KnotPointFunctionsTest, ActionValueExpansionStatic) {
+  TestQExpansion<n_static, m_static>();
+}
+
+TEST_F(KnotPointFunctionsTest, ActionValueExpansionDynamic) {
+  TestQExpansion<HEAP, HEAP>();
+}
+
+TEST_F(KnotPointFunctionsTest, CalcGainsStatic) {
+  TestGains<n_static, m_static>();
+  TestGains<n_static, m_static>(1e-3);
+}
+
+TEST_F(KnotPointFunctionsTest, CalcGainsDynamic) { 
+  TestGains<HEAP, HEAP>(); 
+  TestGains<HEAP, HEAP>(1e-3);
+}
+
+TEST_F(KnotPointFunctionsTest, CalcCostToGoStatic) {
+  TestCTG<n_static, m_static>();
+}
+
+TEST_F(KnotPointFunctionsTest, CalcCostToGoDynamic) { TestCTG<HEAP, HEAP>(); }
 
 }  // namespace ilqr
 }  // namespace altro

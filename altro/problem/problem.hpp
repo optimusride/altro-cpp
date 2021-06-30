@@ -82,7 +82,6 @@ class Problem {
     models_[k] = std::move(model);
   }
 
-
   /**
    * @brief Set the dynamics model for an interval of knot points 
    * 

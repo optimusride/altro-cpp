@@ -121,6 +121,8 @@ class KnotPoint : public StateControlSized<n, m> {
   }
   float GetTime() const { return t_; }
   float GetStep() const { return h_; }
+  void SetTime(float t) { t_ = t; }
+  void SetStep(float h) { h_ = h; }
 
   /**
    * @brief Check if the knot point is the last point in the trajectory, which

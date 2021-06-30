@@ -14,14 +14,14 @@ constexpr int HEAP = Eigen::Dynamic;
 TEST(iLQRClassTest, Construction) {
   problem::Problem prob = MakeProblem();
   int N = prob.NumSegments();
-  iLQR ilqr(N);
+  iLQR<HEAP, HEAP> ilqr(N);
   EXPECT_EQ(ilqr.NumSegments(), N);
 }
 
 TEST(iLQRClassTest, ReferenceCounts) {
   problem::Problem prob = MakeProblem();
   int N = prob.NumSegments();
-  iLQR ilqr(N);
+  iLQR<HEAP, HEAP> ilqr(N);
 
   EXPECT_TRUE(prob.IsFullyDefined());
 
@@ -61,14 +61,14 @@ TEST(iLQRClassTest, ReferenceCounts) {
 TEST(iLQRClassTest, CopyFromProblem) {
   problem::Problem prob = MakeProblem();
   int N = prob.NumSegments();
-  iLQR ilqr(N);
+  iLQR<HEAP,HEAP> ilqr(N);
   ilqr.CopyFromProblem(prob, 0, N + 1);
 }
 
 TEST(iLQRClassTest, DeathTests) {
   problem::Problem prob = MakeProblem();
   int N = prob.NumSegments();
-  iLQR ilqr(N);
+  iLQR<HEAP,HEAP> ilqr(N);
 
   problem::Problem prob_undefined(N);
   EXPECT_DEATH(ilqr.CopyFromProblem(prob_undefined, 0, N + 1),
