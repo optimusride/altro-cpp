@@ -1,5 +1,5 @@
-#include <gtest/gtest.h>
 #include <eigen3/Eigen/Dense>
+#include <gtest/gtest.h>
 #include <iostream>
 
 #include "altro/common/trajectory.hpp"
@@ -29,7 +29,8 @@ class TripleIntegratoriLQRTest : public ::testing::Test {
 
   CostFunType GenCostFun(bool term = false) {
     Eigen::VectorXd uref = Eigen::VectorXd::Zero(m_static);
-    CostFunType qcost = CostFunType::LQRCost((term ? Qf : Q), R, xf, uref);
+    CostFunType qcost =
+        CostFunType::LQRCost((term ? Qf : Q), R * !term, xf, uref, term);
     return qcost;
   }
 
@@ -40,8 +41,8 @@ class TripleIntegratoriLQRTest : public ::testing::Test {
     return Z;
   }
 
-  template<int n_size, int m_size>
-  void RolloutZeroControls(altro::Trajectory<n_size, m_size>& Z) {
+  template <int n_size, int m_size>
+  void RolloutZeroControls(altro::Trajectory<n_size, m_size> &Z) {
     for (int k = 0; k < N; ++k) {
       Z.State(k) = x0;
       Z.Control(k).setZero();
@@ -121,14 +122,14 @@ TEST_F(TripleIntegratoriLQRTest, CostExpansion) {
   RolloutZeroControls(*Z);
 
   solver.UpdateExpansions();
-  altro::ilqr::KnotPointFunctions<n_static, m_static>& kpf =
+  altro::ilqr::KnotPointFunctions<n_static, m_static> &kpf =
       solver.GetKnotPointFunction(0);
   EXPECT_TRUE(kpf.GetCostExpansion().dxdx().isApprox(Q));
   EXPECT_TRUE(kpf.GetCostExpansion().dudu().isApprox(R));
   EXPECT_TRUE(kpf.GetCostExpansion().dx().isApprox(Q * (x0 - xf)));
   EXPECT_TRUE(kpf.GetCostExpansion().du().isApproxToConstant(0.0));
 
-	kpf = solver.GetKnotPointFunction(N);
+  kpf = solver.GetKnotPointFunction(N);
   EXPECT_TRUE(kpf.GetCostExpansion().dxdx().isApprox(Qf));
   EXPECT_TRUE(kpf.GetCostExpansion().dx().isApprox(Qf * (x0 - xf)));
 }
@@ -187,16 +188,142 @@ TEST_F(TripleIntegratoriLQRTest, BackwardPass) {
   // clang-autoformat off
 
   // These numbers were computed using Altro.jl
-  ctg_grad0 << 
-    -389.04658272629644,
-    -778.0931654525915,
-    -181.40881931288234,
-    -362.81763862576514,
-      -9.704677110465038,
-     -19.409354220930084;
+  ctg_grad0 << -389.04658272629644, -778.0931654525915, -181.40881931288234,
+      -362.81763862576514, -9.704677110465038, -19.409354220930084;
   d0 << 127.9313782698078, 255.862756539616;
   // clang-autoformat on
 
-  EXPECT_TRUE(solver.GetKnotPointFunction(0).GetCostToGoGradient().isApprox(ctg_grad0, 1e-2));
-  EXPECT_TRUE(solver.GetKnotPointFunction(0).GetFeedforwardGain().isApprox(d0, 1e-2));
+  EXPECT_TRUE(solver.GetKnotPointFunction(0).GetCostToGoGradient().isApprox(
+      ctg_grad0, 1e-2));
+  EXPECT_TRUE(
+      solver.GetKnotPointFunction(0).GetFeedforwardGain().isApprox(d0, 1e-2));
+}
+
+TEST_F(TripleIntegratoriLQRTest, Cost) {
+  altro::ilqr::iLQR<n_static, m_static> solver =
+      MakeSolver<n_static, m_static>();
+  solver.Rollout();
+  double J0 = solver.Cost();
+  EXPECT_DOUBLE_EQ(J0, 100 + 1e6);
+
+  // Modify the trajectory and make sure the cost changes
+  std::shared_ptr<altro::Trajectory<n_static, m_static>> Z =
+      solver.GetTrajectory();
+  for (int k = 0; k <= N; ++k) {
+    Z->State(k) = xf;
+    Z->Control(k).setZero();
+  }
+  double J = solver.Cost();
+
+  // should be zero since the entire trajectory is at the goal
+  EXPECT_DOUBLE_EQ(J, 0);
+
+  // Test on a different trajectory
+  altro::Trajectory<n_static, m_static> Z_copy(*Z);
+  Z_copy.SetZero();
+  double J2 = solver.Cost(Z_copy);
+  J = solver.Cost();
+  EXPECT_GT(std::abs(J - J2), 1e-3);
+  EXPECT_DOUBLE_EQ(J, 0);
+}
+
+TEST_F(TripleIntegratoriLQRTest, Rollout) {
+  altro::ilqr::iLQR<n_static, m_static> solver =
+      MakeSolver<n_static, m_static>();
+
+  std::shared_ptr<altro::Trajectory<n_static, m_static>> Z =
+      solver.GetTrajectory();
+
+  EXPECT_TRUE(Z->State(N).isApprox(Eigen::VectorXd::Zero(n)));
+  solver.Rollout();
+  for (const auto z : *Z) {
+    EXPECT_TRUE(z.State().isApprox(solver.GetInitialState()));
+  }
+
+  for (auto z : *Z) {
+    z.Control().setConstant(0.1);
+  }
+  solver.Rollout();
+  std::shared_ptr<altro::problem::DiscreteDynamics> model =
+      solver.GetKnotPointFunction(0).GetModelPtr();
+  altro::KnotPoint<n_static, m_static> &z = Z->GetKnotPoint(0);
+  Eigen::VectorXd x1 =
+      model->Evaluate(z.State(), z.Control(), z.GetTime(), z.GetTime());
+  x1.isApprox(Z->State(1));
+}
+
+TEST_F(TripleIntegratoriLQRTest, ForwardPass) {
+  altro::ilqr::iLQR<n_static, m_static> solver =
+      MakeSolver<n_static, m_static>();
+
+  std::shared_ptr<altro::Trajectory<n_static, m_static>> Z =
+      solver.GetTrajectory();
+
+  solver.Rollout();
+  solver.UpdateExpansions();
+  solver.BackwardPass();
+  double J0 = solver.Cost();
+  solver.ForwardPass();
+  double J = solver.Cost();
+  EXPECT_LT(J, J0);
+  double J_expected = 1945.2329136;  // from Altro.jl
+  EXPECT_LT(std::abs(J - J_expected), 1e-3);
+}
+
+TEST_F(TripleIntegratoriLQRTest, TwoSteps) {
+  altro::ilqr::iLQR<n_static, m_static> solver =
+      MakeSolver<n_static, m_static>();
+
+  std::shared_ptr<altro::Trajectory<n_static, m_static>> Z =
+      solver.GetTrajectory();
+
+  solver.Rollout();
+  std::vector<double> costs;
+  costs.push_back(solver.Cost());
+  for (int iter = 0; iter < 2; ++iter) {
+    solver.UpdateExpansions();
+    solver.BackwardPass();
+    solver.ForwardPass();
+    costs.push_back(solver.Cost());
+  }
+
+  // Test converges on first iteration
+  EXPECT_LT(costs[1] - costs[2], 1e-10);
+
+  // Check Feedback gain at first time step
+  // Compare with result from Altro.jl
+  Eigen::MatrixXd K0(m_static, n_static);
+  // clang-format off
+  K0 << -63.9657,   0.0,    -42.7673,   0.0,    -11.5189,   0.0,
+          0.0,    -63.9657,   0.0,    -42.7673,   0.0,    -11.5189;
+  // clang-format on
+  EXPECT_TRUE(
+      solver.GetKnotPointFunction(0).GetFeedbackGain().isApprox(K0, 1e-3));
+
+  // Check that the feedforward gains are all close to zero
+  for (int k = 0; k < N; ++k) {
+    EXPECT_LT(solver.GetKnotPointFunction(0).GetFeedforwardGain().norm(), 1e-8);
+  }
+}
+
+TEST_F(TripleIntegratoriLQRTest, FullSolve) {
+  altro::ilqr::iLQR<n_static, m_static> solver =
+      MakeSolver<n_static, m_static>();
+
+  std::shared_ptr<altro::Trajectory<n_static, m_static>> Z =
+      solver.GetTrajectory();
+
+  solver.Solve();
+  EXPECT_EQ(solver.GetStatus(), altro::ilqr::SolverStatus::kSolved);
+  EXPECT_EQ(solver.GetStats().iterations, 2);
+
+  // Check Feedback gain at first time step
+  // Compare with result from Altro.jl
+  Eigen::MatrixXd K0(m_static, n_static);
+  // clang-format off
+  K0 << -63.9657,   0.0,    -42.7673,   0.0,    -11.5189,   0.0,
+          0.0,    -63.9657,   0.0,    -42.7673,   0.0,    -11.5189;
+  // clang-format on
+  EXPECT_TRUE(
+      solver.GetKnotPointFunction(0).GetFeedbackGain().isApprox(K0, 1e-3));
 }

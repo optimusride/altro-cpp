@@ -1,14 +1,14 @@
 #pragma once
 
+#include "altro/eigentypes.hpp"
 #include "altro/utils/derivative_checker.hpp"
 #include "altro/utils/utils.hpp"
-#include "altro/eigentypes.hpp"
 
 namespace altro {
 namespace problem {
 
 class Dynamics {
- public:
+public:
   virtual ~Dynamics(){};
 
   virtual int StateDimension() const = 0;
@@ -24,7 +24,7 @@ class Dynamics {
 };
 
 class ContinuousDynamics : public Dynamics {
- public:
+public:
   virtual ~ContinuousDynamics(){};
 
   /**
@@ -35,19 +35,19 @@ class ContinuousDynamics : public Dynamics {
    * @param t independent variable (e.g. time)
    * @return VectorXd the state derivative
    */
-  virtual VectorXd Evaluate(const VectorXd& x, const VectorXd& u,
+  virtual VectorXd Evaluate(const VectorXd &x, const VectorXd &u,
                             const float t) const {
     VectorXd xdot(x.rows());
     EvaluateInplace(x, u, t, xdot);
     return xdot;
   }
-  VectorXd operator()(const VectorXd& x, const VectorXd& u,
+  VectorXd operator()(const VectorXd &x, const VectorXd &u,
                       const float t) const {
     return Evaluate(x, u, t);
   }
 
-  virtual void EvaluateInplace(const Eigen::Ref<const VectorXd>& x,
-                               const Eigen::Ref<const VectorXd>& u,
+  virtual void EvaluateInplace(const Eigen::Ref<const VectorXd> &x,
+                               const Eigen::Ref<const VectorXd> &u,
                                const float t,
                                Eigen::Ref<VectorXd> xdot) const = 0;
 
@@ -61,8 +61,8 @@ class ContinuousDynamics : public Dynamics {
    * @param[in] t independent variable (e.g. time)
    * @param[out] jac dense (n,m) dynamics Jacobian
   */
-  virtual void Jacobian(const Eigen::Ref<const VectorXd>& x,
-                        const Eigen::Ref<const VectorXd>& u, const float t,
+  virtual void Jacobian(const Eigen::Ref<const VectorXd> &x,
+                        const Eigen::Ref<const VectorXd> &u, const float t,
                         Eigen::Ref<MatrixXd> jac) const = 0;
 
   /**
@@ -79,9 +79,9 @@ class ContinuousDynamics : public Dynamics {
    * @param[in] b vector multiplying the Jacobian transpose (dimension n)
    * @param[out] hess nxm derivative of the Jacobian-tranpose vector product
    */
-  virtual void Hessian(const Eigen::Ref<const VectorXd>& x,
-                       const Eigen::Ref<const VectorXd>& u, const float t,
-                       const Eigen::Ref<const VectorXd>& b,
+  virtual void Hessian(const Eigen::Ref<const VectorXd> &x,
+                       const Eigen::Ref<const VectorXd> &u, const float t,
+                       const Eigen::Ref<const VectorXd> &b,
                        Eigen::Ref<MatrixXd> hess) const {
     ALTRO_UNUSED(x);
     ALTRO_UNUSED(u);
@@ -99,8 +99,8 @@ class ContinuousDynamics : public Dynamics {
     return CheckJacobian(x, u, t, eps);
   }
 
-  bool CheckJacobian(const Eigen::Ref<const VectorXd>& x,
-                     const Eigen::Ref<const VectorXd>& u, const float t,
+  bool CheckJacobian(const Eigen::Ref<const VectorXd> &x,
+                     const Eigen::Ref<const VectorXd> &u, const float t,
                      const double eps = 1e-4) const {
     int n = StateDimension();
     int m = ControlDimension();
@@ -115,7 +115,8 @@ class ContinuousDynamics : public Dynamics {
     auto fz = [&](auto z) -> VectorXd {
       return this->Evaluate(z.head(n), z.tail(m), t);
     };
-    auto fd_jac = utils::FiniteDiffJacobian<-1, -1>(fz, z);
+    auto fd_jac =
+        utils::FiniteDiffJacobian<Eigen::Dynamic, Eigen::Dynamic>(fz, z);
 
     // Compare
     double err = (fd_jac - jac).norm();
@@ -131,9 +132,9 @@ class ContinuousDynamics : public Dynamics {
     float t = static_cast<float>(rand()) / RAND_MAX;
     return CheckHessian(x, u, t, b, eps);
   }
-  bool CheckHessian(const Eigen::Ref<const VectorXd>& x,
-                    const Eigen::Ref<const VectorXd>& u, const float t,
-                    const Eigen::Ref<const VectorXd>& b,
+  bool CheckHessian(const Eigen::Ref<const VectorXd> &x,
+                    const Eigen::Ref<const VectorXd> &u, const float t,
+                    const Eigen::Ref<const VectorXd> &b,
                     const double eps = 1e-4) {
     int n = StateDimension();
     int m = ControlDimension();
@@ -154,7 +155,7 @@ class ContinuousDynamics : public Dynamics {
 };
 
 class DiscreteDynamics : public Dynamics {
- public:
+public:
   virtual ~DiscreteDynamics(){};
 
   /**
@@ -166,19 +167,19 @@ class DiscreteDynamics : public Dynamics {
    * @param[in] h segment length (e.g. time step)
    * @return VectorXd the next state vector
    */
-  virtual VectorXd Evaluate(const VectorXd& x, const VectorXd& u, const float t,
+  virtual VectorXd Evaluate(const VectorXd &x, const VectorXd &u, const float t,
                             const float h) const {
     VectorXd xnext(x.rows());
     EvaluateInplace(x, u, t, h, xnext);
     return xnext;
   }
-  VectorXd operator()(const VectorXd& x, const VectorXd& u, const float t,
+  VectorXd operator()(const VectorXd &x, const VectorXd &u, const float t,
                       const float h) const {
     return Evaluate(x, u, t, h);
   }
 
-  virtual void EvaluateInplace(const Eigen::Ref<const VectorXd>& x,
-                               const Eigen::Ref<const VectorXd>& u,
+  virtual void EvaluateInplace(const Eigen::Ref<const VectorXd> &x,
+                               const Eigen::Ref<const VectorXd> &u,
                                const float t, const float h,
                                Eigen::Ref<VectorXd> xnext) const = 0;
 
@@ -193,8 +194,8 @@ class DiscreteDynamics : public Dynamics {
    * @param[in] h segment length (e.g. time step)
    * @param[out] jac dense (n,m) dynamics Jacobian
    */
-  virtual void Jacobian(const Eigen::Ref<const VectorXd>& x,
-                        const Eigen::Ref<const VectorXd>& u, const float t,
+  virtual void Jacobian(const Eigen::Ref<const VectorXd> &x,
+                        const Eigen::Ref<const VectorXd> &u, const float t,
                         const float h, Eigen::Ref<MatrixXd> jac) const = 0;
 
   /**
@@ -211,9 +212,9 @@ class DiscreteDynamics : public Dynamics {
    * @param[in] b (n,) vector multiplying the Jacobian transpose (dimension n)
    * @param hvp nxm derivative of the Jacobian-tranpose vector product
    */
-  virtual void Hessian(const Eigen::Ref<const VectorXd>& x,
-                       const Eigen::Ref<const VectorXd>& u, const float t,
-                       const float h, const Eigen::Ref<const VectorXd>& b,
+  virtual void Hessian(const Eigen::Ref<const VectorXd> &x,
+                       const Eigen::Ref<const VectorXd> &u, const float t,
+                       const float h, const Eigen::Ref<const VectorXd> &b,
                        Eigen::Ref<MatrixXd> hess) const {
     ALTRO_UNUSED(x);
     ALTRO_UNUSED(u);
@@ -233,8 +234,8 @@ class DiscreteDynamics : public Dynamics {
     return CheckJacobian(x, u, t, h, eps);
   }
 
-  bool CheckJacobian(const Eigen::Ref<const VectorXd>& x,
-                     const Eigen::Ref<const VectorXd>& u, const float t,
+  bool CheckJacobian(const Eigen::Ref<const VectorXd> &x,
+                     const Eigen::Ref<const VectorXd> &u, const float t,
                      const float h, const double eps = 1e-4) const {
     int n = StateDimension();
     int m = ControlDimension();
@@ -249,7 +250,8 @@ class DiscreteDynamics : public Dynamics {
     auto fz = [&](auto z) -> VectorXd {
       return this->Evaluate(z.head(n), z.tail(m), t, h);
     };
-    auto fd_jac = utils::FiniteDiffJacobian<-1, -1>(fz, z);
+    auto fd_jac =
+        utils::FiniteDiffJacobian<Eigen::Dynamic, Eigen::Dynamic>(fz, z);
 
     // Compare
     double err = (fd_jac - jac).norm();
@@ -267,9 +269,9 @@ class DiscreteDynamics : public Dynamics {
     return CheckHessian(x, u, t, h, b, eps);
   }
 
-  bool CheckHessian(const Eigen::Ref<const VectorXd>& x,
-                    const Eigen::Ref<const VectorXd>& u, const float t,
-                    const float h, const Eigen::Ref<const VectorXd>& b,
+  bool CheckHessian(const Eigen::Ref<const VectorXd> &x,
+                    const Eigen::Ref<const VectorXd> &u, const float t,
+                    const float h, const Eigen::Ref<const VectorXd> &b,
                     const double eps = 1e-4) {
     int n = StateDimension();
     int m = ControlDimension();
@@ -289,5 +291,5 @@ class DiscreteDynamics : public Dynamics {
   }
 };
 
-}  // namespace problem
-}  // namespace altro
+} // namespace problem
+} // namespace altro

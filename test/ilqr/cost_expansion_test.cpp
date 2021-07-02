@@ -68,6 +68,7 @@ TEST_F(CostExpansionTest, Copy) {
   expansion.dxdx() *= 2;
   expansion.dxdu() *= 3;
   expansion.du() *= 4;
+
   // Make sure it doesn't modify the copy
   EXPECT_TRUE(expansion_copy.dxdx().isApprox(Qxx));
   EXPECT_TRUE(expansion_copy.dxdu().isApprox(Qxu));
@@ -97,7 +98,7 @@ TEST_F(CostExpansionTest, GetParts) {
 }
 
 TEST_F(CostExpansionTest, QuadraticCostExpansionDynamic) {
-  CostExpansion<-1, -1> expansion(n, m);
+  CostExpansion<HEAP, HEAP> expansion(n, m);
   examples::QuadraticCost costfun(Q, R, H, q, r, c);
   KnotPoint<HEAP, HEAP> z = KnotPoint<HEAP, HEAP>::Random(n, m);
   KnotPoint<n_static, m_static> z_static =
@@ -148,7 +149,7 @@ TEST_F(CostExpansionTest, QuadraticCostExpansionStatic) {
   EXPECT_EQ(expansion.StateMemorySize(), n);
   EXPECT_EQ(expansion.ControlMemorySize(), m);
   constexpr int n_mem = CostExpansion<n_static, m_static>::StateMemorySize();
-  Vector<n_mem> x_test;
+  VectorN<n_mem> x_test;
   EXPECT_EQ(n_mem, n);
   EXPECT_EQ(x_test.SizeAtCompileTime, n);
 }

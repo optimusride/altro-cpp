@@ -190,8 +190,8 @@ TEST_F(KnotPointFunctionsTest, Cost) {
   KnotPoint<HEAP, HEAP> z_dynamic(z_static);
 
   // Extract out states and controls
-  Vector<n_static> x_static = z_static.State();
-  Vector<m_static> u_static = z_static.Control();
+  VectorN<n_static> x_static = z_static.State();
+  VectorN<m_static> u_static = z_static.Control();
   VectorXd x = z_dynamic.State();
   VectorXd u = z_dynamic.Control();
   EXPECT_TRUE(x.isApprox(x_static));
@@ -225,8 +225,8 @@ TEST_F(KnotPointFunctionsTest, Dynamics) {
   KnotPoint<HEAP, HEAP> z_dynamic(z_static);
 
   // Extract out states and controls
-  Vector<n_static> x_static = z_static.State();
-  Vector<m_static> u_static = z_static.Control();
+  VectorN<n_static> x_static = z_static.State();
+  VectorN<m_static> u_static = z_static.Control();
   VectorXd x = z_dynamic.State();
   VectorXd u = z_dynamic.Control();
   float t = z_static.GetTime();
@@ -241,7 +241,7 @@ TEST_F(KnotPointFunctionsTest, Dynamics) {
 
   // Evaluate the dynamics
   VectorXd xnext(n);
-  Vector<n_static> xnext_static;
+  VectorN<n_static> xnext_static;
   kpf_static.Dynamics(x_static, u_static, t, h, xnext_static);
   kpf_dynamic.Dynamics(x, u, t, h, xnext);
   EXPECT_TRUE(xnext.isApprox(xnext_static));
@@ -266,8 +266,8 @@ TEST_F(KnotPointFunctionsTest, CostExpansion) {
   KnotPoint<HEAP, HEAP> z_dynamic(z_static);
 
   // Extract out states and controls
-  Vector<n_static> x_static = z_static.State();
-  Vector<m_static> u_static = z_static.Control();
+  VectorN<n_static> x_static = z_static.State();
+  VectorN<m_static> u_static = z_static.Control();
   VectorXd x = z_dynamic.State();
   VectorXd u = z_dynamic.Control();
   EXPECT_TRUE(x.isApprox(x_static));
@@ -306,8 +306,8 @@ TEST_F(KnotPointFunctionsTest, DynamicsExpansion) {
   KnotPoint<HEAP, HEAP> z_dynamic(z_static);
 
   // Extract out states and controls
-  Vector<n_static> x_static = z_static.State();
-  Vector<m_static> u_static = z_static.Control();
+  VectorN<n_static> x_static = z_static.State();
+  VectorN<m_static> u_static = z_static.Control();
   VectorXd x = z_dynamic.State();
   VectorXd u = z_dynamic.Control();
   float t = z_static.GetTime();

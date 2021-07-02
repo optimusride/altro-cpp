@@ -21,8 +21,8 @@ namespace altro {
  */
 template <int n, int m, class T = double>
 class Trajectory {
-  using StateVector = Vector<n, T>;
-  using ControlVector = Vector<m, T>;
+  using StateVector = VectorN<n, T>;
+  using ControlVector = VectorN<m, T>;
 
  public:
   /**
@@ -43,7 +43,7 @@ class Trajectory {
    * @param U (N,) vector of controls
    * @param times (N+1,) vector of times
    */
-  Trajectory(std::vector<Vector<n, T>> X, std::vector<Vector<m, T>> U,
+  Trajectory(std::vector<VectorN<n, T>> X, std::vector<VectorN<m, T>> U,
              std::vector<float> times) {
     ALTRO_ASSERT(X.size() == U.size() + 1,
                  "Length of control vector must be one less than the length of "
@@ -60,6 +60,30 @@ class Trajectory {
     traj_.emplace_back(X[N], 0 * U[N], times[N], 0.0);
   }
 
+
+  /***************************** Copying **************************************/
+  Trajectory(const Trajectory& Z) : traj_(Z.traj_) {}
+  Trajectory& operator=(const Trajectory& Z) {
+    traj_ = Z.traj_;
+    return *this;
+  }
+
+  /***************************** Moving ***************************************/
+  Trajectory(Trajectory&& Z) : traj_(std::move(Z.traj_)) {}
+  Trajectory& operator=(Trajectory&& Z) {
+    traj_ = std::move(Z.traj_);
+    return *this;
+  }
+
+  /*************************** Iteration **************************************/
+  typedef typename std::vector<KnotPoint<n,m>>::iterator iterator;
+  typedef typename std::vector<KnotPoint<n,m>>::const_iterator const_iterator;
+  iterator begin() { return traj_.begin(); }
+  const_iterator begin() const { return traj_.begin(); }
+  iterator end() { return traj_.end(); }
+  const_iterator end() const { return traj_.end(); }
+
+  /*************************** Getters ****************************************/
   int NumSegments() const { return traj_.size() - 1; }
   StateVector& State(int k) { return traj_[k].State(); }
   ControlVector& Control(int k) { return traj_[k].Control(); }
@@ -76,6 +100,19 @@ class Trajectory {
 
   float GetTime(int k) const { return traj_[k].GetTime(); }
   float GetStep(int k) const { return traj_[k].GetStep(); }
+
+  /*************************** Setters ****************************************/
+
+  /**
+   * @brief Set the states and controls to zero 
+   * 
+   */
+  void SetZero() {
+    for (iterator z_ptr = begin(); z_ptr != end(); ++z_ptr) {
+      z_ptr->State().setZero();
+      z_ptr->Control().setZero();
+    }
+  }
 
   void SetTime(int k, float t) { traj_[k].SetTime(t); }
   void SetStep(int k, float h) { traj_[k].SetStep(h); }

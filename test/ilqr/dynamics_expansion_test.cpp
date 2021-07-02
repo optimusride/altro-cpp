@@ -20,9 +20,10 @@ class DynamicsExpansionTest : public ::testing::Test {
 
 constexpr int STATE_DIM = 6;
 constexpr int CONTROL_DIM = 2;
+constexpr int HEAP = Eigen::Dynamic;
 
 TEST_F(DynamicsExpansionTest, Construction) {
-  DynamicsExpansion<-1, -1> expansion(n, m);
+  DynamicsExpansion<HEAP, HEAP> expansion(n, m);
   EXPECT_EQ(expansion.StateDimension(), n);
   EXPECT_EQ(expansion.ControlDimension(), m);
   EXPECT_EQ(expansion.StateMemorySize(), Eigen::Dynamic);
@@ -56,7 +57,7 @@ TEST_F(DynamicsExpansionTest, ConstructionDeath) {
 }
 
 TEST_F(DynamicsExpansionTest, SetJac) {
-  DynamicsExpansion<-1, -1> expansion(n, m);
+  DynamicsExpansion<HEAP, HEAP> expansion(n, m);
   expansion.GetA() = MatrixXd::Constant(n, n, 2);
   auto B = expansion.GetB();
   B = MatrixXd::Constant(n, m, 5);
@@ -94,8 +95,8 @@ TEST_F(DynamicsExpansionTest, SetJacStatic) {
 }
 
 TEST_F(DynamicsExpansionTest, CalcJacobian) {
-  DynamicsExpansion<-1, -1> expansion(n, m);
-  KnotPoint<-1, -1> z = KnotPoint<-1, -1>::Random(n, m);
+  DynamicsExpansion<HEAP, HEAP> expansion(n, m);
+  KnotPoint<HEAP, HEAP> z = KnotPoint<HEAP, HEAP>::Random(n, m);
   problem::DiscretizedModel<examples::TripleIntegrator> model_d(model);
 
   EXPECT_THROW(expansion.CalcExpansion(model, z), std::runtime_error);

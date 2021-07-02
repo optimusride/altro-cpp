@@ -24,8 +24,8 @@ namespace altro {
  */
 template <int n, int m, class T = double>
 class KnotPoint : public StateControlSized<n, m> {
-  using StateVector = Vector<n, T>;
-  using ControlVector = Vector<m, T>;
+  using StateVector = VectorN<n, T>;
+  using ControlVector = VectorN<m, T>;
 
  public:
   KnotPoint()
@@ -95,8 +95,8 @@ class KnotPoint : public StateControlSized<n, m> {
     ALTRO_ASSERT(n > 0 && m > 0,
                  "Must pass in size if state or control dimension is unknown "
                  "at compile time.");
-    Vector<n> x = Vector<n>::Random();
-    Vector<m> u = Vector<m>::Random();
+    VectorN<n> x = VectorN<n>::Random();
+    VectorN<m> u = VectorN<m>::Random();
     double t = static_cast<double>(rand() % 100) / 10.0;   // 0 to 10
     double h = static_cast<double>(rand() % 100) / 100.0;  // 0 to 1
     return KnotPoint(x, u, t, h);
@@ -114,8 +114,8 @@ class KnotPoint : public StateControlSized<n, m> {
   ControlVector& Control() { return u_; }
   const StateVector& State() const { return x_; }
   const ControlVector& Control() const { return u_; }
-  Vector<AddSizes(n,m), T> GetStateControl() const {
-    Vector<AddSizes(n,m), T> z;
+  VectorN<AddSizes(n,m), T> GetStateControl() const {
+    VectorN<AddSizes(n,m), T> z;
     z << x_, u_;
     return z;
   }

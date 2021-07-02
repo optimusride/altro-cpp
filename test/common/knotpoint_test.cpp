@@ -7,29 +7,29 @@ namespace altro {
 
 TEST(KnotPointTest, Constructor) {
   KnotPoint<3,2> z;
-	EXPECT_TRUE(z.State().isApprox(Vector<3>::Zero()));
-	EXPECT_TRUE(z.Control().isApprox(Vector<2>::Zero()));
+	EXPECT_TRUE(z.State().isApprox(VectorN<3>::Zero()));
+	EXPECT_TRUE(z.Control().isApprox(VectorN<2>::Zero()));
 
-	Vector<3> x = Vector<3>::Constant(1);
-	Vector<2> u = Vector<2>::Constant(2);
+	VectorN<3> x = VectorN<3>::Constant(1);
+	VectorN<2> u = VectorN<2>::Constant(2);
 	constexpr float t = 0.0;
 	constexpr float h = 0.1;
 	KnotPoint<3,2> z2(x,u,t,h);
-	EXPECT_TRUE(z2.State().isApprox(Vector<3>::Constant(1)));
-	EXPECT_TRUE(z2.Control().isApprox(Vector<2>::Constant(2)));
+	EXPECT_TRUE(z2.State().isApprox(VectorN<3>::Constant(1)));
+	EXPECT_TRUE(z2.Control().isApprox(VectorN<2>::Constant(2)));
 
 	KnotPoint<3,2> z3(z);
-	EXPECT_TRUE(z3.State().isApprox(Vector<3>::Zero()));
-	EXPECT_TRUE(z3.Control().isApprox(Vector<2>::Zero()));
+	EXPECT_TRUE(z3.State().isApprox(VectorN<3>::Zero()));
+	EXPECT_TRUE(z3.Control().isApprox(VectorN<2>::Zero()));
 
 	z3 = z2;
-	EXPECT_TRUE(z3.State().isApprox(Vector<3>::Constant(1)));
-	EXPECT_TRUE(z3.Control().isApprox(Vector<2>::Constant(2)));
+	EXPECT_TRUE(z3.State().isApprox(VectorN<3>::Constant(1)));
+	EXPECT_TRUE(z3.Control().isApprox(VectorN<2>::Constant(2)));
 
 	KnotPoint<3,2> ztmp = KnotPoint<3,2>(3*x,u,t,h);
 	KnotPoint<3,2> z4(std::move(ztmp));
-	EXPECT_TRUE(z4.State().isApprox(Vector<3>::Constant(3)));
-	EXPECT_TRUE(z4.Control().isApprox(Vector<2>::Constant(2)));
+	EXPECT_TRUE(z4.State().isApprox(VectorN<3>::Constant(3)));
+	EXPECT_TRUE(z4.Control().isApprox(VectorN<2>::Constant(2)));
 
 	EXPECT_NO_THROW(z4 = std::move(z));
 }
@@ -61,13 +61,13 @@ TEST(KnotPointTest, DynamicSize) {
 	EXPECT_EQ(z.ControlDimension(), 2);
 	EXPECT_EQ(z.ControlMemorySize(), Eigen::Dynamic);
 
-	EXPECT_TRUE(z.State().isApprox(Vector<3>::Zero()));
-	EXPECT_TRUE(z.Control().isApprox(Vector<2>::Zero()));
+	EXPECT_TRUE(z.State().isApprox(VectorN<3>::Zero()));
+	EXPECT_TRUE(z.Control().isApprox(VectorN<2>::Zero()));
 }
 
 TEST(KnotPointTest, Printing) {
-	Vector<3> x = Vector<3>::Constant(1);
-	Vector<2> u = Vector<2>::Constant(2);
+	VectorN<3> x = VectorN<3>::Constant(1);
+	VectorN<2> u = VectorN<2>::Constant(2);
 	float t = 0.0;
 	float h = 0.1;
 	KnotPoint<3,2> z(x,u,t,h);

@@ -32,7 +32,7 @@ TEST(iLQRClassTest, ReferenceCounts) {
   EXPECT_EQ(model.use_count(), N + 1);
 
   // Create a storage container for the base class
-  std::vector<std::unique_ptr<ilqr::KnotPointFunctionsBase>> ptrs;
+  std::vector<std::unique_ptr<ilqr::KnotPointFunctions<HEAP, HEAP>>> ptrs;
 
   // Add the first knot point
   ptrs.emplace_back(

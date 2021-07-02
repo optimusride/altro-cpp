@@ -105,7 +105,7 @@ class Problem {
    * 
    * @return reference to the initial state vector 
    */
-  VectorXd& GetInitialState() { return initial_state_; }
+  const VectorXd& GetInitialState() const { return initial_state_; }
 
   /**
    * @brief Get the Cost Function object at time step k

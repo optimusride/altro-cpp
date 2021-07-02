@@ -10,7 +10,8 @@ namespace examples {
 class QuadraticCost : public problem::CostFunction {
  public:
   QuadraticCost(const MatrixXd& Q, const MatrixXd& R, const MatrixXd& H,
-                const VectorXd& q, const VectorXd& r, double c = 0)
+                const VectorXd& q, const VectorXd& r, double c = 0, 
+                bool terminal = false)
       : n_(q.size()),
         m_(r.size()),
         isblockdiag_(H.norm() < 1e-8),
@@ -19,12 +20,14 @@ class QuadraticCost : public problem::CostFunction {
         H_(H),
         q_(q),
         r_(r),
-        c_(c) {
+        c_(c),
+        terminal_(terminal) {
     Validate();
   }
 
   static QuadraticCost LQRCost(const MatrixXd& Q, const MatrixXd& R,
-                               const VectorXd& xref, const VectorXd& uref) {
+                               const VectorXd& xref, const VectorXd& uref,
+                               bool terminal = false) {
     int n = Q.rows();
     int m = R.rows();
     ALTRO_ASSERT(xref.size() == n, "xref is the wrong size.");
@@ -32,7 +35,7 @@ class QuadraticCost : public problem::CostFunction {
     VectorXd q = -(Q * xref);
     VectorXd r = -(R * uref);
     double c = 0.5 * xref.dot(Q * xref) + 0.5 * uref.dot(R * uref);
-    return QuadraticCost(Q, R, H, q, r, c);
+    return QuadraticCost(Q, R, H, q, r, c, terminal);
   }
 
   double Evaluate(const VectorXd& x, const VectorXd& u) const override;
@@ -69,9 +72,11 @@ class QuadraticCost : public problem::CostFunction {
     ALTRO_ASSERT(R_.isApprox(R_.transpose()), "R is not symmetric");
 
     // Check that R is positive definite
-    Rfact_.compute(R_);
-    ALTRO_ASSERT(Rfact_.info() == Eigen::Success,
-                 "R must be positive definite");
+    if (!terminal_) {
+      Rfact_.compute(R_);
+      ALTRO_ASSERT(Rfact_.info() == Eigen::Success,
+                  "R must be positive definite");
+    }
 
     // Check if Q is positive semidefinite
     Qfact_.compute(Q_);
@@ -98,6 +103,7 @@ class QuadraticCost : public problem::CostFunction {
   VectorXd q_;
   VectorXd r_;
   double c_;
+  bool terminal_;
 
   // decompositions of Q and R
   Eigen::LDLT<MatrixXd> Qfact_;

@@ -12,16 +12,16 @@ class TrajectoryTest : public ::testing::Test
     int n = 3;
     int m = 2;
     float h = 0.1;
-    std::vector<Vector<3>> X;
-    std::vector<Vector<2>> U;
+    std::vector<VectorN<3>> X;
+    std::vector<VectorN<2>> U;
     std::vector<KnotPoint<3,2>> knotpoints;
     std::vector<float> times;
   protected:
     void SetUp() override {
       for (int k = 0; k <= N; ++k) {
-        X.push_back(Vector<3>::Constant(k));
+        X.push_back(VectorN<3>::Constant(k));
         if (k < N) {
-          U.push_back(Vector<2>::Constant(N+k));
+          U.push_back(VectorN<2>::Constant(N+k));
         }
         times.push_back(k*h);
       }
@@ -96,4 +96,53 @@ TEST_F(TrajectoryTest, SetStep) {
   EXPECT_FLOAT_EQ(traj.GetStep(N), 0);
   EXPECT_TRUE(traj.CheckTimeConsistency());
 }
+
+TEST_F(TrajectoryTest, Iteration) {
+  Trajectory<3,2> traj(knotpoints);
+  std::vector<KnotPoint<3,2>>::iterator z_itr = traj.begin();
+  EXPECT_TRUE(z_itr->State().isApprox(X[0]));
+  ++z_itr;   
+  EXPECT_TRUE(z_itr->State().isApprox(X[1]));
+  --z_itr;
+  EXPECT_TRUE(z_itr->State().isApprox(X[0]));
+
+  std::vector<KnotPoint<3,2>>::iterator z_itr_end = traj.end();
+  EXPECT_TRUE((--z_itr_end)->State().isApprox(X[N]));
+
+  int k = 0;
+  for (auto z = traj.begin(); z != traj.end(); ++z, ++k) {
+    EXPECT_TRUE(z->State().isApprox(X[k]));
+  }
+  EXPECT_EQ(k, N+1);
+
+  k = 0;
+  for (const auto z : traj) {
+    EXPECT_TRUE(z.State().isApprox(X[k]));
+    ++k;
+  }
+  EXPECT_EQ(k, N+1);
+}
+
+TEST_F(TrajectoryTest, Copy) {
+  Trajectory<3,2> traj(knotpoints);
+  Trajectory<3,2> traj2(traj);
+  for (int k = 0; k < N; ++k) {
+    EXPECT_TRUE(traj[k].GetStateControl().isApprox(traj2[k].GetStateControl()));
+    EXPECT_FLOAT_EQ(traj[k].GetTime(), traj2[k].GetTime());
+    EXPECT_FLOAT_EQ(traj[k].GetStep(), traj2[k].GetStep());
+  }
+  traj.State(0).setConstant(5.0);
+  EXPECT_FALSE(traj.State(0).isApprox(traj2.State(0)));
+}
+
+TEST_F(TrajectoryTest, SetZero) {
+  Trajectory<3,2> traj(knotpoints);
+  traj.SetZero();
+  for (auto z : traj) {
+    EXPECT_FLOAT_EQ(z.GetStateControl().norm(), 0);
+  }
+  EXPECT_FLOAT_EQ(traj.GetStep(0), h);
+  EXPECT_TRUE(traj.CheckTimeConsistency());
+}
+
 }  // namespace altro
