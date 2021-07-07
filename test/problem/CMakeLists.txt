@@ -20,6 +20,17 @@ target_link_libraries(triple_integrator_test
 )
 gtest_discover_tests(triple_integrator_test)
 
+# Unicycle
+add_executable(unicycle_test
+  unicycle_test.cpp
+)
+target_link_libraries(unicycle_test
+  gtest_main
+  dynamics_examples
+  utils
+)
+gtest_discover_tests(unicycle_test)
+
 # Problem
 add_executable(problem_test
   problem_test.cpp

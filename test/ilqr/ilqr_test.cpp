@@ -21,7 +21,7 @@ using CostFunType = altro::examples::QuadraticCost;
 
 class TripleIntegratoriLQRTest : public ::testing::Test {
  protected:
-  void SetUp() {
+  void SetUp() override {
     xf(0) = 1;
     xf(1) = 2;
     x0 = - xf;
@@ -185,9 +185,9 @@ TEST_F(TripleIntegratoriLQRTest, BackwardPass) {
 
   Eigen::VectorXd ctg_grad0(n);
   Eigen::VectorXd d0(m);
-  // clang-autoformat off
 
   // These numbers were computed using Altro.jl
+  // clang-autoformat off
   ctg_grad0 << -389.04658272629644, -778.0931654525915, -181.40881931288234,
       -362.81763862576514, -9.704677110465038, -19.409354220930084;
   d0 << 127.9313782698078, 255.862756539616;

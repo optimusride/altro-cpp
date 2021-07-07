@@ -51,3 +51,15 @@ target_link_libraries(ilqr_test
   cost_function_examples
 )
 gtest_discover_tests(ilqr_test)
+
+add_executable(unicycle_ilqr_test
+  unicycle_ilqr_test.cpp
+)
+target_link_libraries(unicycle_ilqr_test
+  gtest_main
+  altro
+  ilqr
+  dynamics_examples
+  cost_function_examples
+)
+gtest_discover_tests(unicycle_ilqr_test)

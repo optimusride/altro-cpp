@@ -1,5 +1,7 @@
 #pragma once
 
+#include <iostream>
+
 #include "altro/eigentypes.hpp"
 #include "altro/utils/derivative_checker.hpp"
 #include "altro/utils/utils.hpp"
@@ -101,7 +103,7 @@ public:
 
   bool CheckJacobian(const Eigen::Ref<const VectorXd> &x,
                      const Eigen::Ref<const VectorXd> &u, const float t,
-                     const double eps = 1e-4) const {
+                     const double eps = 1e-4, const bool verbose = false) const {
     int n = StateDimension();
     int m = ControlDimension();
     VectorXd z(n + m);
@@ -120,28 +122,38 @@ public:
 
     // Compare
     double err = (fd_jac - jac).norm();
+
+    // Print results
+    if (verbose) {
+      if (err > eps) {
+        std::cout << "Provided:\n" << jac << std::endl;
+        std::cout << "Finite Difference:\n" << fd_jac << std::endl;
+      }
+      std::cout << "Error: " << err << std::endl;
+    }
+
     return err < eps;
   }
 
-  bool CheckHessian(const double eps = 1e-4) {
+  bool CheckHessian(const double eps = 1e-4, const bool verbose = false) {
     int n = StateDimension();
     int m = ControlDimension();
     VectorXd x = VectorXd::Random(n);
     VectorXd u = VectorXd::Random(m);
     VectorXd b = VectorXd::Random(n);
     float t = static_cast<float>(rand()) / RAND_MAX;
-    return CheckHessian(x, u, t, b, eps);
+    return CheckHessian(x, u, t, b, eps, verbose);
   }
   bool CheckHessian(const Eigen::Ref<const VectorXd> &x,
                     const Eigen::Ref<const VectorXd> &u, const float t,
                     const Eigen::Ref<const VectorXd> &b,
-                    const double eps = 1e-4) {
+                    const double eps = 1e-4, const bool verbose = false) {
     int n = StateDimension();
     int m = ControlDimension();
     VectorXd z(n + m);
     z << x, u;
 
-    MatrixXd hess(n + m, n + m);
+    MatrixXd hess = MatrixXd::Zero(n + m, n + m);
     Hessian(x, u, t, b, hess);
 
     auto jvp = [&](auto z) -> double {
@@ -150,6 +162,15 @@ public:
     MatrixXd fd_hess = utils::FiniteDiffHessian(jvp, z);
 
     double err = (fd_hess - hess).norm();
+
+    if (verbose) {
+      if (err > eps) {
+        std::cout << "Provided:\n" << hess << std::endl;
+        std::cout << "Finite Difference:\n" << fd_hess << std::endl;
+      }
+      std::cout << "Error: " << err << std::endl;
+    }
+
     return err < eps;
   }
 };
@@ -224,19 +245,19 @@ public:
     ALTRO_UNUSED(hess);
   }
 
-  bool CheckJacobian(const double eps = 1e-4) const {
+  bool CheckJacobian(const double eps = 1e-4, const bool verbose = false) const {
     int n = StateDimension();
     int m = ControlDimension();
     VectorXd x = VectorXd::Random(n);
     VectorXd u = VectorXd::Random(m);
     float t = static_cast<float>(rand()) / RAND_MAX;
     float h = 0.1;
-    return CheckJacobian(x, u, t, h, eps);
+    return CheckJacobian(x, u, t, h, eps, verbose);
   }
 
   bool CheckJacobian(const Eigen::Ref<const VectorXd> &x,
                      const Eigen::Ref<const VectorXd> &u, const float t,
-                     const float h, const double eps = 1e-4) const {
+                     const float h, const double eps = 1e-4, const bool verbose = false) const {
     int n = StateDimension();
     int m = ControlDimension();
     VectorXd z(n + m);
@@ -250,15 +271,24 @@ public:
     auto fz = [&](auto z) -> VectorXd {
       return this->Evaluate(z.head(n), z.tail(m), t, h);
     };
-    auto fd_jac =
-        utils::FiniteDiffJacobian<Eigen::Dynamic, Eigen::Dynamic>(fz, z);
+    auto fd_jac = utils::FiniteDiffJacobian<Eigen::Dynamic, Eigen::Dynamic>(fz, z);
 
     // Compare
     double err = (fd_jac - jac).norm();
+
+    // Print result
+    if (verbose) {
+      if (err > eps) {
+        std::cout << "Provided:\n" << jac << std::endl;
+        std::cout << "Finite Difference:\n" << fd_jac << std::endl;
+      }
+      std::cout << "Error: " << err << std::endl;
+    }
+
     return err < eps;
   }
 
-  bool CheckHessian(const double eps = 1e-4) {
+  bool CheckHessian(const double eps = 1e-4, const bool verbose = false) {
     int n = StateDimension();
     int m = ControlDimension();
     VectorXd x = VectorXd::Random(n);
@@ -266,19 +296,19 @@ public:
     VectorXd b = VectorXd::Random(n);
     float t = static_cast<float>(rand()) / RAND_MAX;
     float h = 0.1;
-    return CheckHessian(x, u, t, h, b, eps);
+    return CheckHessian(x, u, t, h, b, eps, verbose);
   }
 
   bool CheckHessian(const Eigen::Ref<const VectorXd> &x,
                     const Eigen::Ref<const VectorXd> &u, const float t,
                     const float h, const Eigen::Ref<const VectorXd> &b,
-                    const double eps = 1e-4) {
+                    const double eps = 1e-4, const bool verbose = false) {
     int n = StateDimension();
     int m = ControlDimension();
     VectorXd z(n + m);
     z << x, u;
 
-    MatrixXd hess(n + m, n + m);
+    MatrixXd hess = MatrixXd::Zero(n + m, n + m);
     Hessian(x, u, t, h, b, hess);
 
     auto jvp = [&](auto z) -> double {
@@ -287,6 +317,15 @@ public:
     MatrixXd fd_hess = utils::FiniteDiffHessian(jvp, z);
 
     double err = (fd_hess - hess).norm();
+
+    if (verbose) {
+      if (err > eps) {
+        std::cout << "Provided:\n" << hess << std::endl;
+        std::cout << "Finite Difference:\n" << fd_hess << std::endl;
+      }
+      std::cout << "Error: " << err << std::endl;
+    }
+
     return err < eps;
   }
 };

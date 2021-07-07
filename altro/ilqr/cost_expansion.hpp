@@ -120,6 +120,14 @@ class CostExpansion : public StateControlSized<n, m> {
     costfun.Hessian(x, u, dxdx_, dxdu_, dudu_);
   }
 
+  void SetZero() {
+    dxdx_.setZero();
+    dxdu_.setZero();
+    dudu_.setZero();
+    dx_.setZero();
+    du_.setZero();
+  }
+
  private:
   Eigen::Matrix<double, n, n> dxdx_;
   Eigen::Matrix<double, n, m> dxdu_;

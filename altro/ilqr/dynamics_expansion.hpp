@@ -57,6 +57,8 @@ class DynamicsExpansion : public StateControlSized<n, m> {
         "Cannot call CalcExpansion on Continuous Dynamics.");
   }
 
+  void SetZero() { jac_.setZero(); }
+
  private:
   JacType jac_;
 };

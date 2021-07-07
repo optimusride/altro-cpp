@@ -36,7 +36,8 @@ struct iLQROptions {
   int line_search_max_iterations = 20;    // Maximum number of line search iterations before increasing regularization
   double line_search_lower_bound = 1e-8;  // Sufficient improvement condition
   double line_search_upper_bound = 10.0;  // Can't make too much more improvement than expected
-  double line_search_decrease_factor = 2; // How much to decrease the line search each iteration
+  double line_search_decrease_factor = 2; // How much the line search step size is decreased each iteration
+  int verbose = 0;                        // Control output level
   // clang-format on
 };
 
@@ -52,9 +53,10 @@ struct iLQRStats {
   int iterations = 0;
   std::vector<double> cost;
   std::vector<double> alpha;
-  std::vector<double> improvement_ratio;  // ratio of actual to expected improvement in cost
+  std::vector<double> improvement_ratio;  // ratio of actual to expected cost decrease
   std::vector<double> gradient;
   std::vector<double> cost_decrease;
+  std::vector<double> regularization;
 
   void SetCapacity(int n) {
     cost.reserve(n);
@@ -72,6 +74,16 @@ struct iLQRStats {
     gradient.clear();
     cost_decrease.clear();
     SetCapacity(cur_capacity);
+  }
+
+  void PrintLast() {
+    // clang-format off
+    std::cout << "Iter " << iterations << ": \tCost = " << cost.back()
+              << "\t dJ = " << cost_decrease.back() 
+              << "\t z = " << improvement_ratio.back() 
+              << "\t alpha = " << alpha.back()
+              << "\tgrad = " << gradient.back() << std::endl;
+    // clang-format on
   }
 };
 
@@ -111,7 +123,6 @@ template <int n = Eigen::Dynamic, int m = Eigen::Dynamic>
 class iLQR {
  public:
   explicit iLQR(int N) : N_(N), opts_(), knotpoints_() { Init(); }
-
   explicit iLQR(const problem::Problem& prob)
       : N_(prob.NumSegments()), initial_state_(prob.GetInitialState()) {
     CopyFromProblem(prob, 0, N_ + 1);
@@ -149,8 +160,7 @@ class iLQR {
       if (model) {
         state_dim = model->StateDimension();
         control_dim = model->ControlDimension();
-        knotpoints_.emplace_back(
-            std::make_unique<ilqr::KnotPointFunctions<n2, m2>>(model, costfun));
+        knotpoints_.emplace_back(std::make_unique<ilqr::KnotPointFunctions<n2, m2>>(model, costfun));
       } else {
         // To construct the KPF at the terminal knot point we need to tell
         // it the state and control dimensions since we don't have a dynamics
@@ -167,6 +177,7 @@ class iLQR {
   }
 
   /***************************** Getters **************************************/
+
   /**
    * @brief Get a pointer to the trajectory
    *
@@ -177,7 +188,6 @@ class iLQR {
    * @brief Return the number of segments in the trajectory
    */
   int NumSegments() const { return N_; }
-
   /**
    * @brief Get the Knot Point Function object, which contains all of the
    * data for each knot point, including cost and dynamics expansions,
@@ -192,11 +202,14 @@ class iLQR {
   }
 
   iLQRStats& GetStats() { return stats_; }
+  iLQROptions& GetOptions() { return opts_; }
   VectorXd& GetCosts() { return costs_; }
   SolverStatus GetStatus() const { return status_; }
   VectorNd<n>& GetInitialState() { return initial_state_; }
+  double GetRegularization() { return rho_; }
 
   /***************************** Setters **************************************/
+
   /**
    * @brief Store a pointer to the trajectory
    *
@@ -224,12 +237,16 @@ class iLQR {
   void Solve() {
     Initialize();  // reset any internal variables
     Rollout();     // simulate the system forward using initial controls
+    stats_.initial_cost = Cost();
 
     for (int iter = 0; iter < opts_.max_iterations; ++iter) {
       UpdateExpansions();
       BackwardPass();
       ForwardPass();
       UpdateConvergenceStatistics();
+      if (opts_.verbose >= 1) {
+        stats_.PrintLast();
+      }
       if (IsDone()) {
         break;
       }
@@ -305,6 +322,8 @@ class iLQR {
     Eigen::Matrix<double, n, 1>* Sx_prev = &(knotpoints_[N_]->GetCostToGoGradient());
 
     int max_reg_count = 0;
+    deltaV_[0] = 0.0;
+    deltaV_[1] = 0.0;
     for (int k = N_ - 1; k >= 0; --k) {
       knotpoints_[k]->CalcActionValueExpansion(*Sxx_prev, *Sx_prev);
       knotpoints_[k]->RegularizeActionValue(rho_);
@@ -312,6 +331,7 @@ class iLQR {
 
       // Handle solve failure
       if (info != Eigen::Success) {
+        std::cout << "Failed solve at knot point" << k << std::endl;
         IncreaseRegularization();
         k = N_ - 1;  // Start at the beginning of the trajectory again
 
@@ -335,6 +355,8 @@ class iLQR {
       Sxx_prev = &(knotpoints_[k]->GetCostToGoHessian());
       Sx_prev = &(knotpoints_[k]->GetCostToGoGradient());
     }
+    stats_.regularization.push_back(rho_);
+    DecreaseRegularization();
   }
 
   /**
@@ -366,7 +388,7 @@ class iLQR {
 
       // TODO(bjackson): Make this a function of the dynamics
       VectorNd<n> dx = Zbar_->State(k) - Z_->State(k);
-      Zbar_->Control(k) += K * dx + d * alpha;
+      Zbar_->Control(k) = Z_->Control(k) + K * dx + d * alpha;
 
       // Simulate forward with feedback
       GetKnotPointFunction(k).Dynamics(Zbar_->State(k), Zbar_->Control(k), Zbar_->GetTime(k),
@@ -433,11 +455,6 @@ class iLQR {
 
     if (success) {
       (*Z_) = (*Zbar_);
-      // for (int k = 0; k < N_; ++k) {
-      //   Z_->State(k) = Zbar_->State(k);
-      //   Z_->Control(k) = Zbar_->Control(k);
-      // }
-      // Z_->State(N_) = Zbar_->State(N_);
     } else {
       IncreaseRegularization();
       J = J0;
@@ -522,9 +539,9 @@ class iLQR {
   double NormalizedFeedforwardGain() {
     for (int k = 0; k < N_; ++k) {
       VectorNd<m>& d = GetKnotPointFunction(k).GetFeedforwardGain();
-      grad_(k) = (d.array() / (Z_->Control(k).array() + 1)).matrix().norm();
+      grad_(k) = (d.array().abs() / (Z_->Control(k).array().abs() + 1)).maxCoeff();
     }
-    return grad_.lpNorm<Eigen::Infinity>();
+    return grad_.sum() / grad_.size();
   }
 
  private:
@@ -532,7 +549,11 @@ class iLQR {
     status_ = SolverStatus::kUnsolved;
     costs_ = VectorXd::Zero(N_ + 1);
     grad_ = VectorXd::Zero(N_);
+    deltaV_[0] = 0.0;
+    deltaV_[1] = 0.0;
     stats_.SetCapacity(opts_.max_iterations);
+    rho_ = opts_.bp_reg_initial;
+    drho_ = 0.0;
   }
 
   /**
@@ -577,13 +598,13 @@ class iLQR {
   std::shared_ptr<Trajectory<n, m>> Z_;     // current guess for the trajectory
   std::unique_ptr<Trajectory<n, m>> Zbar_;  // temporary trajectory for forward pass
 
-  SolverStatus status_;
+  SolverStatus status_ = SolverStatus::kUnsolved;
 
-  VectorXd costs_;    // costs at each knot point
-  VectorXd grad_;     // gradient at each knot point
-  double rho_;        // regularization
-  double drho_;       // regularization derivative (damping)
-  double deltaV_[2];  // terms of the expected cost decrease
+  VectorXd costs_;                 // costs at each knot point
+  VectorXd grad_;                  // gradient at each knot point
+  double rho_ = 0.0;               // regularization
+  double drho_ = 0.0;              // regularization derivative (damping)
+  double deltaV_[2] = {0.0, 0.0};  // terms of the expected cost decrease
 };
 
 }  // namespace ilqr

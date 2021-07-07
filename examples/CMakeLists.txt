@@ -8,6 +8,8 @@ target_link_libraries(cost_function_examples
 )
 
 add_library(dynamics_examples
+  unicycle.hpp
+  unicycle.cpp
   triple_integrator.cpp
   triple_integrator.hpp
 )

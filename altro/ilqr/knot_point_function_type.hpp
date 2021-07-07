@@ -113,6 +113,7 @@ public:
    */
   void CalcCostExpansion(const Eigen::Ref<const VectorXd> &x,
                          const Eigen::Ref<const VectorXd> &u) {
+    cost_expansion_.SetZero();
     cost_expansion_.CalcExpansion(*costfun_ptr_, x, u);
   }
 
@@ -128,6 +129,7 @@ public:
                              const Eigen::Ref<const VectorXd> &u, const float t,
                              const float h) {
     if (model_ptr_) {
+      dynamics_expansion_.SetZero();
       dynamics_expansion_.CalcExpansion(*model_ptr_, x, u, t, h);
     }
   }
@@ -175,7 +177,7 @@ public:
    * @pre The action value expansion must be calculated.
    *
    * @param rho Amount of regularization
-   * @param reg_type How to incorporate the regularzation.
+   * @param reg_type How to incorporate the regularization.
    */
   void RegularizeActionValue(const double rho,
                              BackwardPassRegularization reg_type =
@@ -197,7 +199,7 @@ public:
    *
    * @pre The regularized action-value expansion must be calculated.
    *
-   * @return Eigen::ComputationInfo
+   * @return Eigen enum describing the result of the Cholesky factorization.
    */
   Eigen::ComputationInfo CalcGains() {
     // TODO(bjackson): Store factorization in the class
@@ -258,6 +260,9 @@ public:
   }
   CostExpansion<n, m> &GetActionValueExpansion() {
     return action_value_expansion_;
+  }
+  CostExpansion<n, m> &GetActionValueExpansionRegularized() {
+    return action_value_expansion_regularized_;
   }
   Eigen::Matrix<double, m, n> &GetFeedbackGain() { return feedback_gain_; }
   Eigen::Matrix<double, m, 1> &GetFeedforwardGain() {
