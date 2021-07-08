@@ -112,8 +112,8 @@ class CostExpansion : public StateControlSized<n, m> {
   }
 
   void CalcExpansion(const problem::CostFunction& costfun,
-                     const Eigen::Ref<const VectorXd>& x,
-                     const Eigen::Ref<const VectorXd>& u) {
+                     const VectorXdRef& x,
+                     const VectorXdRef& u) {
     ALTRO_ASSERT(x.rows() == this->n_, "Inconsistent state dimension.");
     ALTRO_ASSERT(u.rows() == this->m_, "Inconsistent control dimension.");
     costfun.Gradient(x, u, dx_, du_);

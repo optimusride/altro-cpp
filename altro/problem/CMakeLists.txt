@@ -11,6 +11,7 @@ add_library(problem
   problem.hpp
 )
 target_link_libraries(problem
-	common
+  common
+  constraints
 )
 export_library(problem altroTargets "costfunction.hpp;discretized_model.hpp;dynamics.hpp;integration.hpp;problem.hpp" altro/problem)

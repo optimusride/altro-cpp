@@ -35,8 +35,8 @@ class ExplicitIntegrator {
    * @return VectorXd state vector at the end of the time step
    */
   virtual void Integrate(const ContinuousDynamics& dynamics,
-                         const Eigen::Ref<const VectorXd>& x,
-                         const Eigen::Ref<const VectorXd>& u, float t, float h,
+                         const VectorXdRef& x,
+                         const VectorXdRef& u, float t, float h,
                          Eigen::Ref<VectorXd> xnext) const = 0;
 
   /**
@@ -55,8 +55,8 @@ class ExplicitIntegrator {
    * @param[out] jac discrete dynamics Jacobian evaluated at x, u, t.
    */
   virtual void Jacobian(const ContinuousDynamics& dynamics,
-                        const Eigen::Ref<const VectorXd>& x,
-                        const Eigen::Ref<const VectorXd>& u, float t, float h,
+                        const VectorXdRef& x,
+                        const VectorXdRef& u, float t, float h,
                         Eigen::Ref<MatrixXd> jac) const = 0;
 };
 
@@ -71,14 +71,14 @@ class ExplicitIntegrator {
 class ExplicitEuler final : public ExplicitIntegrator {
  public:
   void Integrate(const ContinuousDynamics& dynamics,
-                 const Eigen::Ref<const VectorXd>& x,
-                 const Eigen::Ref<const VectorXd>& u, float t, float h,
+                 const VectorXdRef& x,
+                 const VectorXdRef& u, float t, float h,
                  Eigen::Ref<VectorXd> xnext) const override {
     xnext = x + dynamics(x, u, t) * h;
   }
   void Jacobian(const ContinuousDynamics& dynamics,
-                const Eigen::Ref<const VectorXd>& x,
-                const Eigen::Ref<const VectorXd>& u, float t, float h,
+                const VectorXdRef& x,
+                const VectorXdRef& u, float t, float h,
                 Eigen::Ref<MatrixXd> jac) const override {
     int n = x.size();
     int m = u.size();
@@ -98,8 +98,8 @@ class ExplicitEuler final : public ExplicitIntegrator {
 class RungeKutta4 final : public ExplicitIntegrator {
  public:
   void Integrate(const ContinuousDynamics& dynamics,
-                 const Eigen::Ref<const VectorXd>& x,
-                 const Eigen::Ref<const VectorXd>& u, float t, float h,
+                 const VectorXdRef& x,
+                 const VectorXdRef& u, float t, float h,
                  Eigen::Ref<VectorXd> xnext) const override {
     VectorXd k1 = dynamics(x, u, t) * h;
     VectorXd k2 = dynamics(x + k1 * 0.5, u, t + 0.5 * h) * h;
@@ -108,8 +108,8 @@ class RungeKutta4 final : public ExplicitIntegrator {
     xnext = x + (k1 + 2 * k2 + 2 * k3 + k4) / 6;
   }
   void Jacobian(const ContinuousDynamics& dynamics,
-                const Eigen::Ref<const VectorXd>& x,
-                const Eigen::Ref<const VectorXd>& u, float t, float h,
+                const VectorXdRef& x,
+                const VectorXdRef& u, float t, float h,
                 Eigen::Ref<MatrixXd> jac) const override {
     int n = dynamics.StateDimension();
     int m = dynamics.ControlDimension();

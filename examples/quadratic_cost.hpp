@@ -1,7 +1,7 @@
 #pragma once
 
-#include "altro/problem/costfunction.hpp"
 #include "altro/eigentypes.hpp"
+#include "altro/problem/costfunction.hpp"
 #include "altro/utils/utils.hpp"
 
 namespace altro {
@@ -9,9 +9,8 @@ namespace examples {
 
 class QuadraticCost : public problem::CostFunction {
  public:
-  QuadraticCost(const MatrixXd& Q, const MatrixXd& R, const MatrixXd& H,
-                const VectorXd& q, const VectorXd& r, double c = 0, 
-                bool terminal = false)
+  QuadraticCost(const MatrixXd& Q, const MatrixXd& R, const MatrixXd& H, const VectorXd& q,
+                const VectorXd& r, double c = 0, bool terminal = false)
       : n_(q.size()),
         m_(r.size()),
         isblockdiag_(H.norm() < 1e-8),
@@ -25,9 +24,8 @@ class QuadraticCost : public problem::CostFunction {
     Validate();
   }
 
-  static QuadraticCost LQRCost(const MatrixXd& Q, const MatrixXd& R,
-                               const VectorXd& xref, const VectorXd& uref,
-                               bool terminal = false) {
+  static QuadraticCost LQRCost(const MatrixXd& Q, const MatrixXd& R, const VectorXd& xref,
+                               const VectorXd& uref, bool terminal = false) {
     int n = Q.rows();
     int m = R.rows();
     ALTRO_ASSERT(xref.size() == n, "xref is the wrong size.");
@@ -38,14 +36,12 @@ class QuadraticCost : public problem::CostFunction {
     return QuadraticCost(Q, R, H, q, r, c, terminal);
   }
 
-  double Evaluate(const VectorXd& x, const VectorXd& u) const override;
-  void Gradient(const Eigen::Ref<const VectorXd>& x, 
-                const Eigen::Ref<const VectorXd>& u, 
-                Eigen::Ref<VectorXd> dx,
-                Eigen::Ref<VectorXd> du) const override;
-  void Hessian(const Eigen::Ref<const VectorXd>& x, 
-               const Eigen::Ref<const VectorXd>& u, 
-               Eigen::Ref<MatrixXd> dxdx, Eigen::Ref<MatrixXd> dxdu, 
+  double Evaluate(const VectorXdRef& x,
+                  const VectorXdRef& u) const override;
+  void Gradient(const VectorXdRef& x, const VectorXdRef& u,
+                Eigen::Ref<VectorXd> dx, Eigen::Ref<VectorXd> du) const override;
+  void Hessian(const VectorXdRef& x, const VectorXdRef& u,
+               Eigen::Ref<MatrixXd> dxdx, Eigen::Ref<MatrixXd> dxdu,
                Eigen::Ref<MatrixXd> dudu) const override;
 
   const MatrixXd& GetQ() const { return Q_; }
@@ -74,8 +70,7 @@ class QuadraticCost : public problem::CostFunction {
     // Check that R is positive definite
     if (!terminal_) {
       Rfact_.compute(R_);
-      ALTRO_ASSERT(Rfact_.info() == Eigen::Success,
-                  "R must be positive definite");
+      ALTRO_ASSERT(Rfact_.info() == Eigen::Success, "R must be positive definite");
     }
 
     // Check if Q is positive semidefinite

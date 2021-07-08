@@ -177,7 +177,6 @@ class iLQR {
   }
 
   /***************************** Getters **************************************/
-
   /**
    * @brief Get a pointer to the trajectory
    *
@@ -209,7 +208,6 @@ class iLQR {
   double GetRegularization() { return rho_; }
 
   /***************************** Setters **************************************/
-
   /**
    * @brief Store a pointer to the trajectory
    *
@@ -520,7 +518,7 @@ class iLQR {
    *
    */
   void Initialize() { stats_.Reset(); }
-
+  
   /**
    * @brief Perform any operations needed to return the solver to a desireable
    * state after the iterations have stopped.

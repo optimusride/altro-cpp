@@ -85,8 +85,8 @@ public:
    * @param u control vector
    * @return double
    */
-  double Cost(const Eigen::Ref<const VectorXd> &x,
-              const Eigen::Ref<const VectorXd> &u) const {
+  double Cost(const VectorXdRef &x,
+              const VectorXdRef &u) const {
     return costfun_ptr_->Evaluate(x, u);
   }
 
@@ -99,8 +99,8 @@ public:
    * @param h step in independent variable
    * @param xnext states at the next knot point
    */
-  void Dynamics(const Eigen::Ref<const VectorXd> &x,
-                const Eigen::Ref<const VectorXd> &u, float t, float h,
+  void Dynamics(const VectorXdRef &x,
+                const VectorXdRef &u, float t, float h,
                 Eigen::Ref<VectorXd> xnext) const {
     model_ptr_->EvaluateInplace(x, u, t, h, xnext);
   }
@@ -111,8 +111,8 @@ public:
    * @param x state vector
    * @param u control vector
    */
-  void CalcCostExpansion(const Eigen::Ref<const VectorXd> &x,
-                         const Eigen::Ref<const VectorXd> &u) {
+  void CalcCostExpansion(const VectorXdRef &x,
+                         const VectorXdRef &u) {
     cost_expansion_.SetZero();
     cost_expansion_.CalcExpansion(*costfun_ptr_, x, u);
   }
@@ -125,8 +125,8 @@ public:
    * @param t independent variable (e.g. time)
    * @param h step in independent variable
    */
-  void CalcDynamicsExpansion(const Eigen::Ref<const VectorXd> &x,
-                             const Eigen::Ref<const VectorXd> &u, const float t,
+  void CalcDynamicsExpansion(const VectorXdRef &x,
+                             const VectorXdRef &u, const float t,
                              const float h) {
     if (model_ptr_) {
       dynamics_expansion_.SetZero();

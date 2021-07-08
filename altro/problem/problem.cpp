@@ -7,22 +7,18 @@
 namespace altro {
 namespace problem {
 
-void Problem::SetCostFunction(std::shared_ptr<CostFunction> costfun, int k_start,
-                              int k_stop) {
+void Problem::SetCostFunction(std::shared_ptr<CostFunction> costfun, int k_start, int k_stop) {
   ALTRO_ASSERT(k_start >= 0, "Invalid starting knot point index.");
-  ALTRO_ASSERT(k_start < k_stop,
-               "Starting index must be less than terminal index.");
+  ALTRO_ASSERT(k_start < k_stop, "Starting index must be less than terminal index.");
   ALTRO_ASSERT(k_stop <= N_ + 1, "Invalid terminal knot point index.");
   for (int k = k_start; k < k_stop; ++k) {
     SetCostFunction(costfun, k);
   }
 }
 
-void Problem::SetDynamics(std::shared_ptr<DiscreteDynamics> model, int k_start,
-                          int k_stop) {
+void Problem::SetDynamics(std::shared_ptr<DiscreteDynamics> model, int k_start, int k_stop) {
   ALTRO_ASSERT(k_start >= 0, "Invalid starting knot point index.");
-  ALTRO_ASSERT(k_start < k_stop,
-               "Starting index must be less than terminal index.");
+  ALTRO_ASSERT(k_start < k_stop, "Starting index must be less than terminal index.");
   ALTRO_ASSERT(k_stop <= N_, "Invalid terminal knot point index.");
   for (int k = k_start; k < k_stop; ++k) {
     SetDynamics(model, k);
@@ -40,9 +36,7 @@ bool Problem::IsFullyDefined(bool verbose) const {
     bool good_state_dim = true;
     if (k == 0) {
       has_initial_state = initial_state_.size() > 0;
-      good_state_dim =
-          has_initial_state &&
-          (models_[k]->StateDimension() == initial_state_.size());
+      good_state_dim = has_initial_state && (models_[k]->StateDimension() == initial_state_.size());
       valid_k = valid_k && has_initial_state && good_state_dim;
     }
     valid = valid && valid_k;
@@ -59,6 +53,18 @@ bool Problem::IsFullyDefined(bool verbose) const {
     }
   }
   return valid;
+}
+
+template <>
+void Problem::SetConstraint<constraints::Equality>(
+    std::shared_ptr<constraints::Constraint<constraints::Equality>> con, int k) {
+  eq_[k].emplace_back(std::move(con));
+}
+
+template <>
+void Problem::SetConstraint<constraints::NegativeOrthant>(
+    std::shared_ptr<constraints::Constraint<constraints::NegativeOrthant>> con, int k) {
+  ineq_[k].emplace_back(std::move(con));
 }
 
 }  // namespace problem

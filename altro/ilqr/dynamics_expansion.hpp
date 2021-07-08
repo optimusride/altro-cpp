@@ -37,16 +37,16 @@ class DynamicsExpansion : public StateControlSized<n, m> {
   }
 
   void CalcExpansion(const problem::DiscreteDynamics& model,
-                     const Eigen::Ref<const VectorXd>& x,
-                     const Eigen::Ref<const VectorXd>& u, const float t,
+                     const VectorXdRef& x,
+                     const VectorXdRef& u, const float t,
                      const float h) {
     model.Jacobian(x, u, t, h, jac_);
   }
 
   // Include this just to provide a more descriptive error message
   void CalcExpansion(const problem::ContinuousDynamics& model,
-                     const Eigen::Ref<const VectorXd>& x,
-                     const Eigen::Ref<const VectorXd>& u, const float t,
+                     const VectorXdRef& x,
+                     const VectorXdRef& u, const float t,
                      const float h) {
     ALTRO_UNUSED(model);
     ALTRO_UNUSED(x);

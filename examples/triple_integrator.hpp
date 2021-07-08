@@ -24,15 +24,15 @@ class TripleIntegrator : public problem::ContinuousDynamics {
   int StateDimension() const override { return 3 * dof_; }
   int ControlDimension() const override { return dof_; }
 
-  void EvaluateInplace(const Eigen::Ref<const VectorXd>& x,
-                       const Eigen::Ref<const VectorXd>& u, const float t,
+  void EvaluateInplace(const VectorXdRef& x,
+                       const VectorXdRef& u, const float t,
                        Eigen::Ref<VectorXd> xdot) const override;
-  void Jacobian(const Eigen::Ref<const VectorXd>& x,
-                const Eigen::Ref<const VectorXd>& u, const float t,
+  void Jacobian(const VectorXdRef& x,
+                const VectorXdRef& u, const float t,
                 Eigen::Ref<MatrixXd> jac) const override;
-  void Hessian(const Eigen::Ref<const VectorXd>& x,
-               const Eigen::Ref<const VectorXd>& u, const float t,
-               const Eigen::Ref<const VectorXd>& b,
+  void Hessian(const VectorXdRef& x,
+               const VectorXdRef& u, const float t,
+               const VectorXdRef& b,
                Eigen::Ref<MatrixXd> hess) const override;
   bool HasHessian() const override { return true; };
 

@@ -36,6 +36,8 @@ add_executable(problem_test
   problem_test.cpp
 )
 target_link_libraries(problem_test
+  constraints
+	constraint_examples
   gtest_main
   problem
   dynamics_examples

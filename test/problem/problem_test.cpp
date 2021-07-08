@@ -5,8 +5,10 @@
 #include "altro/problem/problem.hpp"
 #include "altro/problem/dynamics.hpp"
 #include "altro/problem/discretized_model.hpp"
+#include "altro/constraints/constraint.hpp"
 #include "examples/quadratic_cost.hpp"
 #include "examples/triple_integrator.hpp"
+#include "examples/basic_constraints.hpp"
 
 namespace altro {
 namespace problem {
@@ -98,6 +100,31 @@ TEST(ProblemTests, FullyDefined) {
 	prob.SetInitialState(x0_bad);
 
 	EXPECT_FALSE(prob.IsFullyDefined());
+}
+
+TEST(ProblemTests, AddConstraints) {
+  int N = 10;
+  problem::Problem prob(N);
+
+  // Goal Constraint
+  Eigen::Vector4d xf(1.0, 2.0, 3.0, 4.0);
+  constraints::ConstraintPtr<constraints::Equality> goal =
+      std::make_shared<examples::GoalConstraint>(xf);
+  prob.SetConstraint(goal, N);
+  EXPECT_EQ(prob.NumConstraints(N), 4);
+
+  // Control Bound Constraint
+  std::vector<double> lb = {-2, -3};
+  std::vector<double> ub = {2, 3};
+  constraints::ConstraintPtr<constraints::Inequality> ubnd =
+      std::make_shared<examples::ControlBound>(lb, ub);
+  EXPECT_EQ(prob.NumConstraints(1), 0);
+  EXPECT_EQ(ubnd->OutputDimension(), 4);
+  for (int k = 0; k < N; ++k) {
+    prob.SetConstraint(ubnd, k);
+  }
+  EXPECT_EQ(prob.NumConstraints(0), 4);
+  EXPECT_EQ(prob.NumConstraints(N - 1), 4);
 }
 
 }  // namespace problem

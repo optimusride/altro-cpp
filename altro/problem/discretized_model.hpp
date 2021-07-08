@@ -10,21 +10,21 @@ class DiscretizedModel : public DiscreteDynamics {
  public:
   DiscretizedModel(const Model& model) : model_(model) {}
 
-  void EvaluateInplace(const Eigen::Ref<const VectorXd>& x,
-                       const Eigen::Ref<const VectorXd>& u, const float t,
+  void EvaluateInplace(const VectorXdRef& x,
+                       const VectorXdRef& u, const float t,
                        const float h, Eigen::Ref<VectorXd> xnext) const override {
     integrator_.Integrate(model_, x, u, t, h, xnext);
   }
 
-  void Jacobian(const Eigen::Ref<const VectorXd>& x,
-                const Eigen::Ref<const VectorXd>& u, const float t,
+  void Jacobian(const VectorXdRef& x,
+                const VectorXdRef& u, const float t,
                 const float h, Eigen::Ref<MatrixXd> jac) const override {
     integrator_.Jacobian(model_, x, u, t, h, jac);
   }
 
-  void Hessian(const Eigen::Ref<const VectorXd>& x,
-               const Eigen::Ref<const VectorXd>& u, const float t,
-               const float h, const Eigen::Ref<const VectorXd>& b,
+  void Hessian(const VectorXdRef& x,
+               const VectorXdRef& u, const float t,
+               const float h, const VectorXdRef& b,
                Eigen::Ref<MatrixXd> hess) const override {
     ALTRO_UNUSED(x);
     ALTRO_UNUSED(u);

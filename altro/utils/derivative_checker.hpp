@@ -23,7 +23,7 @@ namespace utils {
  */
 template <class Func>
 Eigen::MatrixXd FiniteDiffJacobian(const Func &f,
-                                   const Eigen::Ref<const VectorXd> &x,
+                                   const VectorXdRef &x,
                                    const double eps = 1e-6,
                                    const bool central = false) {
   return FiniteDiffJacobian<-1, -1, Func>(f, x, eps, central);

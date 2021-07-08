@@ -8,7 +8,7 @@
 namespace altro {
 namespace problem {
 class CostFunction {
-public:
+ public:
   virtual ~CostFunction(){};
 
   /**
@@ -18,7 +18,7 @@ public:
    * @param u control vector
    * @return double the cost
    */
-  virtual double Evaluate(const VectorXd &x, const VectorXd &u) const = 0;
+  virtual double Evaluate(const VectorXdRef& x, const VectorXdRef& u) const = 0;
 
   /**
    * @brief Evaluate the gradient of the cost at a single knot point
@@ -31,9 +31,7 @@ public:
    * @param[out] dx (n,) gradient of the cost wrt the state
    * @param[out] du (m,) gradient of the cost wrt the control vector
    */
-  virtual void Gradient(const Eigen::Ref<const VectorXd> &x,
-                        const Eigen::Ref<const VectorXd> &u,
-                        Eigen::Ref<VectorXd> dx,
+  virtual void Gradient(const VectorXdRef& x, const VectorXdRef& u, Eigen::Ref<VectorXd> dx,
                         Eigen::Ref<VectorXd> du) const = 0;
 
   /**
@@ -49,10 +47,8 @@ public:
    * @param[out] dxdu (n,m) Hessian cross-term between states and controls
    * @param[out] dudu (m,m) Hessian wrt to the controls
    */
-  virtual void Hessian(const Eigen::Ref<const VectorXd> &x,
-                       const Eigen::Ref<const VectorXd> &u,
-                       Eigen::Ref<MatrixXd> dxdx, Eigen::Ref<MatrixXd> dxdu,
-                       Eigen::Ref<MatrixXd> dudu) const = 0;
+  virtual void Hessian(const VectorXdRef& x, const VectorXdRef& u, Eigen::Ref<MatrixXd> dxdx,
+                       Eigen::Ref<MatrixXd> dxdu, Eigen::Ref<MatrixXd> dudu) const = 0;
 
   /**
    * @brief Check if the gradient is correct
@@ -66,9 +62,8 @@ public:
    * @param eps_fd finite difference step size
    * @return true if gradient is correct
    */
-  bool CheckGradient(const VectorXd &x, const VectorXd &u,
-                     const double eps = 1e-4, const double eps_fd = 1e-6,
-                     const bool verbose = false) {
+  bool CheckGradient(const VectorXdRef& x, const VectorXdRef& u, const double eps = 1e-4,
+                     const double eps_fd = 1e-6, const bool verbose = false) {
     int n = x.size();
     int m = u.size();
     VectorXd z(n + m);
@@ -78,9 +73,7 @@ public:
     VectorXd du = VectorXd::Zero(m);
     Gradient(x, u, dx, du);
 
-    auto fz = [&](auto z) -> double {
-      return this->Evaluate(z.head(n), z.tail(m));
-    };
+    auto fz = [&](auto z) -> double { return this->Evaluate(z.head(n), z.tail(m)); };
     VectorXd fd_grad = utils::FiniteDiffGradient(fz, z, eps * eps_fd);
 
     double err_x = (dx - fd_grad.head(n)).norm();
@@ -112,9 +105,8 @@ public:
    * @param eps_fd finite difference step size
    * @return true if Hessian is correct
    */
-  bool CheckHessian(const VectorXd &x, const VectorXd &u,
-                    const double eps = 1e-4, const double eps_fd = 1e-4,
-                    const bool verbose = false) {
+  bool CheckHessian(const VectorXdRef& x, const VectorXdRef& u, const double eps = 1e-4,
+                    const double eps_fd = 1e-4, const bool verbose = false) {
     int n = x.size();
     int m = u.size();
     VectorXd z(n + m);
@@ -125,9 +117,7 @@ public:
     MatrixXd dudu = MatrixXd::Zero(m, m);
     Hessian(x, u, dxdx, dxdu, dudu);
 
-    auto fz = [&](auto z) -> double {
-      return this->Evaluate(z.head(n), z.tail(m));
-    };
+    auto fz = [&](auto z) -> double { return this->Evaluate(z.head(n), z.tail(m)); };
     MatrixXd fd_hess = utils::FiniteDiffHessian(fz, z, eps_fd);
 
     double err_xx = (dxdx - fd_hess.topLeftCorner(n, n)).norm();
@@ -142,13 +132,13 @@ public:
         std::cout << "Provided:\n" << hess << std::endl;
         std::cout << "Finite Difference:\n" << fd_hess << std::endl;
       }
-      std::cout << "Errors (xx, xu, uu): " << err_xx << ", " << err_xu << ", "
-                << err_uu << std::endl;
+      std::cout << "Errors (xx, xu, uu): " << err_xx << ", " << err_xu << ", " << err_uu
+                << std::endl;
     }
 
     return pass;
   }
 };
 
-} // namespace problem
-} // namespace altro
+}  // namespace problem
+}  // namespace altro

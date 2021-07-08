@@ -48,8 +48,8 @@ public:
     return Evaluate(x, u, t);
   }
 
-  virtual void EvaluateInplace(const Eigen::Ref<const VectorXd> &x,
-                               const Eigen::Ref<const VectorXd> &u,
+  virtual void EvaluateInplace(const VectorXdRef &x,
+                               const VectorXdRef &u,
                                const float t,
                                Eigen::Ref<VectorXd> xdot) const = 0;
 
@@ -63,8 +63,8 @@ public:
    * @param[in] t independent variable (e.g. time)
    * @param[out] jac dense (n,m) dynamics Jacobian
   */
-  virtual void Jacobian(const Eigen::Ref<const VectorXd> &x,
-                        const Eigen::Ref<const VectorXd> &u, const float t,
+  virtual void Jacobian(const VectorXdRef &x,
+                        const VectorXdRef &u, const float t,
                         Eigen::Ref<MatrixXd> jac) const = 0;
 
   /**
@@ -81,9 +81,9 @@ public:
    * @param[in] b vector multiplying the Jacobian transpose (dimension n)
    * @param[out] hess nxm derivative of the Jacobian-tranpose vector product
    */
-  virtual void Hessian(const Eigen::Ref<const VectorXd> &x,
-                       const Eigen::Ref<const VectorXd> &u, const float t,
-                       const Eigen::Ref<const VectorXd> &b,
+  virtual void Hessian(const VectorXdRef &x,
+                       const VectorXdRef &u, const float t,
+                       const VectorXdRef &b,
                        Eigen::Ref<MatrixXd> hess) const {
     ALTRO_UNUSED(x);
     ALTRO_UNUSED(u);
@@ -92,17 +92,17 @@ public:
     ALTRO_UNUSED(hess);
   }
 
-  bool CheckJacobian(const double eps = 1e-4) const {
+  bool CheckJacobian(const double eps = 1e-4, const bool verbose = false) const {
     const int n = StateDimension();
     const int m = ControlDimension();
     VectorXd x = VectorXd::Random(n);
     VectorXd u = VectorXd::Random(m);
     float t = static_cast<float>(rand()) / RAND_MAX;
-    return CheckJacobian(x, u, t, eps);
+    return CheckJacobian(x, u, t, eps, verbose);
   }
 
-  bool CheckJacobian(const Eigen::Ref<const VectorXd> &x,
-                     const Eigen::Ref<const VectorXd> &u, const float t,
+  bool CheckJacobian(const VectorXdRef &x,
+                     const VectorXdRef &u, const float t,
                      const double eps = 1e-4, const bool verbose = false) const {
     int n = StateDimension();
     int m = ControlDimension();
@@ -144,9 +144,9 @@ public:
     float t = static_cast<float>(rand()) / RAND_MAX;
     return CheckHessian(x, u, t, b, eps, verbose);
   }
-  bool CheckHessian(const Eigen::Ref<const VectorXd> &x,
-                    const Eigen::Ref<const VectorXd> &u, const float t,
-                    const Eigen::Ref<const VectorXd> &b,
+  bool CheckHessian(const VectorXdRef &x,
+                    const VectorXdRef &u, const float t,
+                    const VectorXdRef &b,
                     const double eps = 1e-4, const bool verbose = false) {
     int n = StateDimension();
     int m = ControlDimension();
@@ -199,8 +199,8 @@ public:
     return Evaluate(x, u, t, h);
   }
 
-  virtual void EvaluateInplace(const Eigen::Ref<const VectorXd> &x,
-                               const Eigen::Ref<const VectorXd> &u,
+  virtual void EvaluateInplace(const VectorXdRef &x,
+                               const VectorXdRef &u,
                                const float t, const float h,
                                Eigen::Ref<VectorXd> xnext) const = 0;
 
@@ -215,8 +215,8 @@ public:
    * @param[in] h segment length (e.g. time step)
    * @param[out] jac dense (n,m) dynamics Jacobian
    */
-  virtual void Jacobian(const Eigen::Ref<const VectorXd> &x,
-                        const Eigen::Ref<const VectorXd> &u, const float t,
+  virtual void Jacobian(const VectorXdRef &x,
+                        const VectorXdRef &u, const float t,
                         const float h, Eigen::Ref<MatrixXd> jac) const = 0;
 
   /**
@@ -233,9 +233,9 @@ public:
    * @param[in] b (n,) vector multiplying the Jacobian transpose (dimension n)
    * @param hvp nxm derivative of the Jacobian-tranpose vector product
    */
-  virtual void Hessian(const Eigen::Ref<const VectorXd> &x,
-                       const Eigen::Ref<const VectorXd> &u, const float t,
-                       const float h, const Eigen::Ref<const VectorXd> &b,
+  virtual void Hessian(const VectorXdRef &x,
+                       const VectorXdRef &u, const float t,
+                       const float h, const VectorXdRef &b,
                        Eigen::Ref<MatrixXd> hess) const {
     ALTRO_UNUSED(x);
     ALTRO_UNUSED(u);
@@ -255,8 +255,8 @@ public:
     return CheckJacobian(x, u, t, h, eps, verbose);
   }
 
-  bool CheckJacobian(const Eigen::Ref<const VectorXd> &x,
-                     const Eigen::Ref<const VectorXd> &u, const float t,
+  bool CheckJacobian(const VectorXdRef &x,
+                     const VectorXdRef &u, const float t,
                      const float h, const double eps = 1e-4, const bool verbose = false) const {
     int n = StateDimension();
     int m = ControlDimension();
@@ -299,9 +299,9 @@ public:
     return CheckHessian(x, u, t, h, b, eps, verbose);
   }
 
-  bool CheckHessian(const Eigen::Ref<const VectorXd> &x,
-                    const Eigen::Ref<const VectorXd> &u, const float t,
-                    const float h, const Eigen::Ref<const VectorXd> &b,
+  bool CheckHessian(const VectorXdRef &x,
+                    const VectorXdRef &u, const float t,
+                    const float h, const VectorXdRef &b,
                     const double eps = 1e-4, const bool verbose = false) {
     int n = StateDimension();
     int m = ControlDimension();

@@ -17,3 +17,12 @@ target_link_libraries(dynamics_examples
   problem
   utils
 )
+
+add_library(constraint_examples
+  basic_constraints.cpp
+  basic_constraints.hpp
+)
+target_link_libraries(constraint_examples
+  constraints
+  utils
+)

@@ -7,6 +7,7 @@
 #include "altro/problem/problem.hpp"
 #include "altro/problem/dynamics.hpp"
 #include "altro/problem/costfunction.hpp"
+#include "altro/constraints/constraint.hpp"
 
 namespace altro {
 namespace problem {
@@ -30,7 +31,7 @@ class Problem {
    * points)
    */
   explicit Problem(const int N)
-      : N_(N), costfuns_(N + 1, nullptr), models_(N, nullptr) {}
+      : N_(N), costfuns_(N + 1, nullptr), models_(N, nullptr), eq_(N+1), ineq_(N+1) {}
 
 
   /**
@@ -38,7 +39,7 @@ class Problem {
    * 
    * @param x0 the initial state
    */
-  void SetInitialState(const Eigen::Ref<const VectorXd>& x0) {
+  void SetInitialState(const VectorXdRef& x0) {
     initial_state_ = x0;
   }
 
@@ -97,8 +98,44 @@ class Problem {
    * @param k_start Starting index (inclusive) (0 <= k_start < k_stop)
    * @param k_stop  Terminal index (exclusive) (k_start < k_stop < N)
    */
-  void SetDynamics(std::shared_ptr<DiscreteDynamics> model, int k_start,
-                   int k_stop);
+  void SetDynamics(std::shared_ptr<DiscreteDynamics> model, int k_start, int k_stop);
+
+  template <class ConType>
+  void SetConstraint(std::shared_ptr<constraints::Constraint<ConType>> con, int k);
+
+  /**
+   * @brief Count the length of the constraint vector at knotpoint k
+   * 
+   * Note that this is the sum of the output dimensions for each constraint
+   * function.
+   * 
+   * @param k Knot point index 0 <= k <= N
+   * @return Length of constraint vector at the knot point
+   */
+  int NumConstraints(const int k) {
+    ALTRO_ASSERT(0 <= k && k <= N_, "k outside valid knot point indices.");
+    int cnt = 0;
+    for (const constraints::ConstraintPtr<constraints::Equality>& con : eq_.at(k)) {
+      cnt += con->OutputDimension();
+    }
+    for (const constraints::ConstraintPtr<constraints::Inequality>& con : ineq_.at(k)) {
+      cnt += con->OutputDimension();
+    }
+    return cnt;
+  }
+
+  /**
+   * @brief Count the length of the constraint vector for the entire problem
+   * 
+   * @return Total number of constraints 
+   */
+  int NumConstraints() {
+    int cnt = 0;
+    for (int k = 0; k <= N_; ++k) {
+      cnt += NumConstraints(k);
+    }
+    return cnt;
+  }
 
   /**
    * @brief Get the initial state 
@@ -155,6 +192,9 @@ class Problem {
   VectorXd initial_state_;  // initial state
   std::vector<std::shared_ptr<CostFunction>> costfuns_;
   std::vector<std::shared_ptr<DiscreteDynamics>> models_;
+
+  std::vector<std::vector<std::shared_ptr<constraints::Constraint<constraints::Equality>>>> eq_;
+  std::vector<std::vector<std::shared_ptr<constraints::Constraint<constraints::NegativeOrthant>>>> ineq_;
 };
 
 }  // namespace problem

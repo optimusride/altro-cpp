@@ -130,6 +130,8 @@ TEST_F(UnicycleiLQRTest, TwoSteps) {
 
   solver.UpdateExpansions();
   solver.BackwardPass();
+
+  // Values from Altro.jl
   Eigen::VectorXd ctg_grad0(n);
   Eigen::VectorXd d0(m);
   ctg_grad0 << -0.0015143873973949232, -0.07854630832127288, -0.017945283678268698;
@@ -138,14 +140,14 @@ TEST_F(UnicycleiLQRTest, TwoSteps) {
   EXPECT_TRUE(solver.GetKnotPointFunction(0).GetFeedforwardGain().isApprox(d0, 1e-5));
 
   solver.ForwardPass();
-  const double J_expected = 62.773696055304384;
+  const double J_expected = 62.773696055304384;   // from Altro.jl
   EXPECT_LT(solver.Cost() - J_expected, 1e-5);
 }
 
 TEST_F(UnicycleiLQRTest, FullSolve) {
   altro::ilqr::iLQR<n_static, m_static> solver = MakeSolver<n_static, m_static>();
   solver.Solve();
-  const double J_expected = 0.0387016567;
+  const double J_expected = 0.0387016567;  // from Altro.jl
   const double iter_expected = 9;
   EXPECT_EQ(solver.GetStats().iterations, iter_expected);
   EXPECT_EQ(solver.GetStatus(), altro::ilqr::SolverStatus::kSolved);
