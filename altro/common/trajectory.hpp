@@ -57,7 +57,7 @@ class Trajectory {
       float h = times[k + 1] - times[k];
       traj_.emplace_back(X[k], U[k], times[k], h);
     }
-    traj_.emplace_back(X[N], 0 * U[N], times[N], 0.0);
+    traj_.emplace_back(X[N], 0 * U[N-1], times[N], 0.0);
   }
 
 
@@ -98,7 +98,7 @@ class Trajectory {
   int StateDimension(int k) const { return traj_[k].StateDimension(); }
   int ControlDimension(int k) const { return traj_[k].ControlDimension(); }
 
-  float GetTime(int k) const { return traj_[k].GetTime(); }
+  T GetTime(int k) const { return traj_[k].GetTime(); }
   float GetStep(int k) const { return traj_[k].GetStep(); }
 
   /*************************** Setters ****************************************/

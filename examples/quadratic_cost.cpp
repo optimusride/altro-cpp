@@ -11,8 +11,8 @@ double QuadraticCost::Evaluate(const VectorXdRef& x,
 void QuadraticCost::Gradient(const VectorXdRef& x,
                              const VectorXdRef& u, Eigen::Ref<VectorXd> dx,
                              Eigen::Ref<VectorXd> du) const {
-  dx = Q_ * x + q_;
-  du = R_ * u + r_;
+  dx = Q_ * x + q_ + H_ * u;
+  du = R_ * u + r_ + H_.transpose() * x;
 }
 
 void QuadraticCost::Hessian(const VectorXdRef& x,
