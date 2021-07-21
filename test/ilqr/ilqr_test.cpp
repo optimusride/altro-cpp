@@ -299,8 +299,8 @@ TEST_F(TripleIntegratoriLQRTest, FullSolve) {
   std::shared_ptr<altro::Trajectory<n_static, m_static>> Z = solver.GetTrajectory();
 
   solver.Solve();
-  EXPECT_EQ(solver.GetStatus(), altro::ilqr::SolverStatus::kSolved);
-  EXPECT_EQ(solver.GetStats().iterations, 2);
+  EXPECT_EQ(solver.GetStatus(), altro::SolverStatus::kSolved);
+  EXPECT_EQ(solver.GetStats().iterations_inner, 2);
 
   // Check Feedback gain at first time step
   // Compare with result from Altro.jl

@@ -62,6 +62,7 @@ target_link_libraries(unicycle_ilqr_test
   gtest_main
   altro
   augmented_lagrangian
+  common
   constraints
   constraint_examples
   cost_function_examples

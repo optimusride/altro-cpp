@@ -1,8 +1,10 @@
 #pragma once
 
+#include <functional>
 #include <iostream>
 #include <map>
 
+#include "altro/common/solver_options.hpp"
 #include "altro/common/state_control_sized.hpp"
 #include "altro/common/trajectory.hpp"
 #include "altro/eigentypes.hpp"
@@ -12,101 +14,6 @@
 namespace altro {
 namespace ilqr {
 
-/**
- * @brief Solver options for iLQR
- *
- */
-struct iLQROptions {
-  // clang-format off
-  int max_iterations = 100;               // Max iterations before exiting
-  double cost_tolerance = 1e-4;           // Threshold for cost decrease 
-  double gradient_tolerance = 1e-2;       // Threshold for infinity-norm of the approximate gradient
-
-  double bp_reg_increase_factor = 1.6;    // Multiplicative factor for increasing the regularization
-  double bp_reg_enable = true;            // Enable regularization in the backward pass
-  double bp_reg_initial = 0.0;            // Initial regularization
-  double bp_reg_max = 1e8;                // Maximum regularization
-  double bp_reg_min = 1e-8;               // Minimum regularization
-  // double bp_reg_forwardpass = 10.0;     
-  int bp_reg_fail_threshold = 100;        // How many time the backward pass can fail before throwing an error
-  bool check_forwardpass_bounds = true;   // Whether to check if the rollouts stay within the specified bounds
-  double state_max = 1e8;                 // Maximum state value (abs)
-  double control_max = 1e8;               // Maximum control value (abs)
-
-  int line_search_max_iterations = 20;    // Maximum number of line search iterations before increasing regularization
-  double line_search_lower_bound = 1e-8;  // Sufficient improvement condition
-  double line_search_upper_bound = 10.0;  // Can't make too much more improvement than expected
-  double line_search_decrease_factor = 2; // How much the line search step size is decreased each iteration
-  int verbose = 0;                        // Control output level
-  // clang-format on
-};
-
-/**
- * @brief Records statistics during a single iLQR solve
- *
- * Captures important information like iterations, and initial cost,
- * and critical per-iteration information like cost, gradient, cost decrease
- * etc.
- */
-struct iLQRStats {
-  double initial_cost = 0.0;
-  int iterations = 0;
-  std::vector<double> cost;
-  std::vector<double> alpha;
-  std::vector<double> improvement_ratio;  // ratio of actual to expected cost decrease
-  std::vector<double> gradient;
-  std::vector<double> cost_decrease;
-  std::vector<double> regularization;
-
-  void SetCapacity(int n) {
-    cost.reserve(n);
-    alpha.reserve(n);
-    improvement_ratio.reserve(n);
-    gradient.reserve(n);
-    cost_decrease.reserve(n);
-    regularization.reserve(n);
-  }
-
-  void Reset() {
-    initial_cost = 0.0;
-    iterations = 0;
-    int cur_capacity = cost.capacity();
-    cost.clear();
-    alpha.clear();
-    improvement_ratio.clear();
-    gradient.clear();
-    cost_decrease.clear();
-    regularization.clear();
-    SetCapacity(cur_capacity);
-  }
-
-  void PrintLast() {
-    // clang-format off
-    std::cout << "Iter " << iterations << ": \tCost = " << cost.back()
-              << "\t dJ = " << cost_decrease.back() 
-              << "\t z = " << improvement_ratio.back() 
-              << "\t alpha = " << alpha.back()
-              << "\tgrad = " << gradient.back() << std::endl;
-    // clang-format on
-  }
-};
-
-/**
- * @brief Describes the current state of the solver
- *
- * Used to describe if the solver successfully solved the problem or to
- * provide a reason why it was unsuccessful.
- */
-enum class SolverStatus {
-  kSolved = 0,
-  kUnsolved = 1,
-  kStateLimit,
-  kControlLimit,
-  kCostIncrease,
-  kMaxIterations,
-  kMaxOuterIterations,
-  kMaxPenalty,
-};
 
 /**
  * @brief Solve an unconstrained trajectory optimization problem using
@@ -188,10 +95,10 @@ class iLQR {
     return *(knotpoints_[k]);
   }
 
-  iLQRStats& GetStats() { return stats_; }
-  const iLQRStats& GetStats() const { return stats_; }
-  iLQROptions& GetOptions() { return opts_; }
-  const iLQROptions& GetOptions() const { return opts_; }
+  SolverStats& GetStats() { return stats_; }
+  const SolverStats& GetStats() const { return stats_; }
+  SolverOptions& GetOptions() { return opts_; }
+  const SolverOptions& GetOptions() const { return opts_; }
   VectorXd& GetCosts() { return costs_; }
   SolverStatus GetStatus() const { return status_; }
   VectorNd<n>& GetInitialState() { return initial_state_; }
@@ -217,6 +124,10 @@ class iLQR {
     initial_state_ = x0;
   }
 
+  void SetConstraintCallback(const std::function<double()>& max_violation) {
+    max_violation_callback_ = max_violation;
+  }
+
   /***************************** Algorithm **************************************/
   /**
    * @brief Solve the trajectory optimization problem using iLQR
@@ -224,7 +135,7 @@ class iLQR {
    * @post The provided trajectory is overwritten with a locally-optimal
    * dynamically-feasible trajectory. The solver status and statistics,
    * obtained via GetStatus() and GetStats() are updated.
-   * The solve is successful if `GetStatus == ilqr::SolverStatus::kSuccess`.
+   * The solve is successful if `GetStatus == SolverStatus::kSuccess`.
    *
    */
   void Solve() {
@@ -237,14 +148,16 @@ class iLQR {
     Rollout();     // simulate the system forward using initial controls
     stats_.initial_cost = Cost();
 
-    for (int iter = 0; iter < opts_.max_iterations; ++iter) {
+    for (int iter = 0; iter < opts_.max_iterations_inner; ++iter) {
       UpdateExpansions();
       BackwardPass();
       ForwardPass();
       UpdateConvergenceStatistics();
-      if (opts_.verbose >= 1) {
+
+      if (stats_.GetVerbosity() >= LogLevel::kInner) {
         stats_.PrintLast();
       }
+
       if (IsDone()) {
         break;
       }
@@ -356,7 +269,7 @@ class iLQR {
       Sxx_prev = &(knotpoints_[k]->GetCostToGoHessian());
       Sx_prev = &(knotpoints_[k]->GetCostToGoGradient());
     }
-    stats_.regularization.push_back(rho_);
+    stats_.Log("reg", rho_);
     DecreaseRegularization();
   }
 
@@ -445,9 +358,10 @@ class iLQR {
 
         if (opts_.line_search_lower_bound <= z && z <= opts_.line_search_upper_bound && J < J0) {
           success = true;
-          stats_.alpha.emplace_back(alpha);
-          stats_.improvement_ratio.emplace_back(z);
-          stats_.cost.emplace_back(J);
+          // stats_.improvement_ratio.emplace_back(z);
+          stats_.Log("cost", J);
+          stats_.Log("alpha", alpha);
+          stats_.Log("z", z);
           break;
         }
       }
@@ -477,14 +391,22 @@ class iLQR {
    */
   void UpdateConvergenceStatistics() {
     double dgrad = NormalizedFeedforwardGain();
-    double dJ = stats_.cost.rbegin()[1] - stats_.cost.rbegin()[0];
-    if (stats_.iterations == 0) {
-      dJ = stats_.cost.back() - stats_.initial_cost;
+    double dJ = 0.0; 
+    if (stats_.iterations_inner == 0) {
+      dJ = stats_.initial_cost - stats_.cost.back();
+    } else {
+      dJ = stats_.cost.rbegin()[1] - stats_.cost.rbegin()[0];
     }
+    
 
-    stats_.gradient.emplace_back(dgrad);
-    stats_.cost_decrease.emplace_back(dJ);
-    stats_.iterations++;
+    // stats_.gradient.emplace_back(dgrad);
+    stats_.iterations_inner++;
+    stats_.iterations_total++;
+    stats_.Log("dJ", dJ);
+    stats_.Log("viol", max_violation_callback_());
+    stats_.Log("iters", stats_.iterations_total);
+    stats_.Log("grad", dgrad);
+    stats_.NewIteration();
   }
 
   /**
@@ -503,7 +425,7 @@ class iLQR {
       return true;
     }
 
-    if (stats_.iterations >= opts_.max_iterations) {
+    if (stats_.iterations_inner >= opts_.max_iterations_inner) {
       status_ = SolverStatus::kMaxIterations;
       return true;
     }
@@ -523,8 +445,9 @@ class iLQR {
    * to each solve, so that the `Solve()` method can be called multiple times.
    *
    */
-  void Initialize() { 
-    stats_.Reset(); 
+  void Initialize() {
+    stats_.iterations_inner = 0;
+    stats_.SetVerbosity(opts_.verbose);
     Init();
   }
 
@@ -558,7 +481,6 @@ class iLQR {
     grad_ = VectorXd::Zero(N_);
     deltaV_[0] = 0.0;
     deltaV_[1] = 0.0;
-    stats_.SetCapacity(opts_.max_iterations);
     rho_ = opts_.bp_reg_initial;
     drho_ = 0.0;
   }
@@ -598,8 +520,8 @@ class iLQR {
 
   int N_;  // number of segments
   VectorNd<n> initial_state_;
-  iLQROptions opts_;
-  iLQRStats stats_;  // solver statistics (iterations, cost at each iteration, etc.)
+  SolverOptions opts_;
+  SolverStats stats_;  // solver statistics (iterations, cost at each iteration, etc.)
   std::vector<std::unique_ptr<KnotPointFunctions<n, m>>>
       knotpoints_;                          // problem description and data
   std::shared_ptr<Trajectory<n, m>> Z_;     // current guess for the trajectory
@@ -614,6 +536,8 @@ class iLQR {
   double deltaV_[2] = {0.0, 0.0};  // terms of the expected cost decrease
 
   bool initial_state_is_set = false;
+
+  std::function<double()> max_violation_callback_ = []() { return 0.0; };
 };
 
 }  // namespace ilqr

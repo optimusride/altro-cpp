@@ -2,6 +2,7 @@
 #include <fmt/ostream.h>
 #include <gtest/gtest.h>
 #include <cmath>
+#include <chrono>
 
 #include "altro/augmented_lagrangian/al_cost.hpp"
 #include "altro/augmented_lagrangian/al_problem.hpp"
@@ -237,7 +238,7 @@ TEST_F(AugLagTest, SolveiLQR) {
   double viol_err = std::abs(max_violation_expected - viol) / max_violation_expected;
   EXPECT_LT(cost_err, 1e-6);
   EXPECT_LT(viol_err, 1e-6);
-  EXPECT_EQ(ilqr_solver.GetStats().iterations, iter_expected);
+  EXPECT_EQ(ilqr_solver.GetStats().iterations_inner, iter_expected);
 }
 
 TEST_F(AugLagTest, TwoSolves) {
@@ -276,7 +277,7 @@ TEST_F(AugLagTest, TwoSolves) {
   const double iterations_expected = 1;
   double viol_err = std::abs(viol_expected - viol) / viol_expected;
   EXPECT_LT(viol_err, 0.1);
-  EXPECT_EQ(ilqr_solver.GetStats().iterations, iterations_expected);
+  EXPECT_EQ(ilqr_solver.GetStats().iterations_inner, iterations_expected);
   alsolver.UpdateDuals();
   alsolver.UpdatePenalties();
 
@@ -285,7 +286,7 @@ TEST_F(AugLagTest, TwoSolves) {
   // Run 3rd solve
   ilqr_solver.Solve();
   viol = alsolver.MaxViolation();
-  fmt::print("Iterations: {}\n", ilqr_solver.GetStats().iterations);
+  fmt::print("Iterations: {}\n", ilqr_solver.GetStats().iterations_inner);
   fmt::print("Cost: {}\n", ilqr_solver.Cost());
   fmt::print("Viol: {}\n", alsolver.GetMaxViolation());
   fmt::print("Penalty: {}\n", alsolver.GetMaxPenalty());
@@ -301,16 +302,20 @@ TEST_F(AugLagTest, FullSolve) {
   alsolver.SetTrajectory(Z);
 
   alsolver.GetOptions().constraint_tolerance = 1e-6;
-  alsolver.GetOptions().verbose = 1;
-  alsolver.GetiLQRSolver().GetOptions().verbose = 0;
+  alsolver.GetOptions().verbose = LogLevel::kSilent;
+  alsolver.GetiLQRSolver().GetOptions().verbose = LogLevel::kInner;
+  auto start = std::chrono::high_resolution_clock::now();
   alsolver.Solve();
+  auto stop = std::chrono::high_resolution_clock::now();
+  auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start);
+  fmt::print("Total time: {} ms\n", duration.count());
   fmt::print("Total / Outer Iterations: {} / {}\n", alsolver.GetStats().iterations_total,
              alsolver.GetStats().iterations_outer);
   double J = alsolver.GetiLQRSolver().Cost();
   double viol = alsolver.GetMaxViolation();
   double pen = alsolver.GetMaxPenalty();
   fmt::print("Final cost / viol / penalty: {} / {} / {}\n", J, viol, pen);
-  EXPECT_EQ(alsolver.GetStatus(), ilqr::SolverStatus::kSolved);
+  EXPECT_EQ(alsolver.GetStatus(), SolverStatus::kSolved);
   EXPECT_LT(viol, alsolver.GetOptions().constraint_tolerance);
 }
 

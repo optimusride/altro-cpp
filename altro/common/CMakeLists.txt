@@ -4,13 +4,20 @@ add_library(common
   state_control_sized.hpp
   trajectory.cpp
   trajectory.hpp
+  solver_options.hpp
+  solver_options.cpp
+  solver_stats.hpp
+  solver_stats.cpp
+  log_entry.hpp
+  log_entry.cpp
+  solver_logger.hpp
+  solver_logger.cpp
 )
 target_link_libraries(common 
-	PUBLIC
+  PUBLIC
   Eigen3::Eigen
-  INTERFACE
-  fmt::fmt-header-only
-	PRIVATE 
-	utils
+  fmt::fmt
+  PRIVATE 
+  utils
 )
 export_library(common altroTargets "knotpoint.hpp;trajectory.hpp" altro/common)

@@ -6,6 +6,7 @@
 
 #include "altro/augmented_lagrangian/al_problem.hpp"
 #include "altro/common/trajectory.hpp"
+#include "altro/common/solver_options.hpp"
 #include "altro/constraints/constraint.hpp"
 #include "altro/ilqr/cost_expansion.hpp"
 #include "altro/ilqr/ilqr.hpp"
@@ -90,11 +91,12 @@ TEST_F(UnicycleiLQRTest, TwoSteps) {
 
 TEST_F(UnicycleiLQRTest, FullSolve) {
   altro::ilqr::iLQR<n_static, m_static> solver = MakeSolver<n_static, m_static>();
+  solver.GetOptions().verbose = altro::LogLevel::kInner;
   solver.Solve();
   const double J_expected = 0.0387016567;  // from Altro.jl
   const double iter_expected = 9;
-  EXPECT_EQ(solver.GetStats().iterations, iter_expected);
-  EXPECT_EQ(solver.GetStatus(), altro::ilqr::SolverStatus::kSolved);
+  EXPECT_EQ(solver.GetStats().iterations_inner, iter_expected);
+  EXPECT_EQ(solver.GetStatus(), altro::SolverStatus::kSolved);
   EXPECT_LT(std::abs(solver.Cost() - J_expected), 1e-5);
   EXPECT_LT(solver.GetStats().gradient.back(), solver.GetOptions().gradient_tolerance);
 }
@@ -140,5 +142,5 @@ TEST_F(UnicycleiLQRTest, AugLagFullSolve) {
   double viol_err = std::abs(max_violation_expected - max_violation) / max_violation_expected;
   EXPECT_LT(cost_err, 1e-6);
   EXPECT_LT(viol_err, 1e-6);
-  EXPECT_EQ(solver.GetStats().iterations, iter_expected);
+  EXPECT_EQ(solver.GetStats().iterations_inner, iter_expected);
 }

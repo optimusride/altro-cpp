@@ -13,23 +13,6 @@
 namespace altro {
 namespace augmented_lagrangian {
 
-struct AugmentedLagrangianOptions {
-  int max_iterations_outer = 30;   // Maximum augmented Lagrangian iterations
-  int max_iterations_total = 300;  // Maximum number of total iterative LQR iterations
-
-  double constraint_tolerance = 1e-4;  // Maximum constraint violation theshold
-  double maximum_penalty = 1e8;        // Maximum penalty parameter allowed
-  int verbose = 0;                     // Output verbosity level
-  // TODO(bjackson): Implement better vebose output and document
-};
-
-struct AugmentedLagrangianStats {
-  int iterations_outer = 0;           // Number of augmented Lagrangian updates / iLQR solves
-  int iterations_total = 0;           // Total number of iLQR iterations
-  std::vector<double> violations;     // The maximum constraint violation for each AL iteration
-  std::vector<double> max_penalty;    // Maximum penalty parameter for each AL iteration
-  std::vector<int> inner_iterations;  // iLQR iterations for each AL iteration
-};
 
 /**
  * @brief Trajectory optimization solver that uses augmented Lagrangian to
@@ -50,11 +33,11 @@ class AugmentedLagrangianiLQR {
 
   /***************************** Getters **************************************/
 
-  AugmentedLagrangianStats& GetStats() { return stats_; }
-  const AugmentedLagrangianStats& GetStats() const { return stats_; }
-  AugmentedLagrangianOptions& GetOptions() { return opts_; }
-  const AugmentedLagrangianOptions& GetOptions() const { return opts_; }
-  ilqr::SolverStatus GetStatus() const { return status_; }
+  SolverStats& GetStats() { return ilqr_solver_.GetStats(); }
+  const SolverStats& GetStats() const { return ilqr_solver_.GetStats(); }
+  SolverOptions& GetOptions() { return opts_; }
+  const SolverOptions& GetOptions() const { return opts_; }
+  SolverStatus GetStatus() const { return status_; }
   std::shared_ptr<ALCost<n, m>> GetALCost(const int k) { return costs_.at(k); }
   ilqr::iLQR<n, m>& GetiLQRSolver() { return ilqr_solver_; }
   int NumSegments() const { return ilqr_solver_.NumSegments(); }
@@ -100,6 +83,8 @@ class AugmentedLagrangianiLQR {
 
   /***************************** Methods **************************************/
 
+  void Init();
+
   /**
    * @brief Solve the trajectory optimization problem using AL-iLQR.
    *
@@ -133,12 +118,6 @@ class AugmentedLagrangianiLQR {
    * @return true if the solver should stop iterating.
    */
   bool IsDone();
-
-  /**
-   * @brief Print a summary of the last iteration.
-   *
-   */
-  void PrintLast() const;
 
   /**
    * @brief Calculate the maximum constraint violation.
@@ -177,10 +156,9 @@ class AugmentedLagrangianiLQR {
 
  private:
   ilqr::iLQR<n, m> ilqr_solver_;
-  AugmentedLagrangianOptions opts_;
-  AugmentedLagrangianStats stats_;
+  SolverOptions opts_;
   std::vector<std::shared_ptr<ALCost<n, m>>> costs_;
-  ilqr::SolverStatus status_ = ilqr::SolverStatus::kUnsolved;
+  SolverStatus status_ = SolverStatus::kUnsolved;
   VectorXd max_violation_;  // (N+1,) vector of constraint violations at each knot point
 };
 
@@ -192,15 +170,16 @@ template <int n, int m>
 AugmentedLagrangianiLQR<n, m>::AugmentedLagrangianiLQR(const problem::Problem& prob)
     : ilqr_solver_(prob.NumSegments()),
       opts_(),
-      stats_(),
       costs_(),
       max_violation_(VectorXd::Zero(prob.NumSegments() + 1)) {
   problem::Problem prob_al = BuildAugLagProblem<n, m>(prob, &costs_);
   ALTRO_ASSERT(static_cast<int>(costs_.size()) == prob.NumSegments() + 1,
                fmt::format("Got an incorrect number of cost functions. Expected {}, got {}",
                            prob.NumSegments(), costs_.size()));
-  ilqr_solver_.SetInitialState(prob_al.GetInitialState());
+  ilqr_solver_.SetInitialState(prob.GetInitialState());
   ilqr_solver_.CopyFromProblem(prob_al, 0, prob.NumSegments() + 1);
+  auto max_violation_callback = [this]() -> double { return this->GetMaxViolation(); };
+  ilqr_solver_.SetConstraintCallback(max_violation_callback);
 }
 
 template <int n, int m>
@@ -237,16 +216,42 @@ void AugmentedLagrangianiLQR<n, m>::SetPenaltyScaling(const double phi) {
 }
 
 template <int n, int m>
+void AugmentedLagrangianiLQR<n, m>::Init() {
+  SolverStats& stats = GetStats();
+  stats.SetCapacity(opts_.max_iterations_total);
+  stats.Reset();
+  stats.SetVerbosity(ilqr_solver_.GetOptions().verbose);
+  stats.Log("iter_al", 0);
+  stats.Log("viol", MaxViolation());
+  stats.Log("pen", GetMaxPenalty());
+  if (stats.GetVerbosity() < LogLevel::kInner) {
+    stats.GetLogger().SetFrequency(10);
+  } else {
+    stats.GetLogger().SetFrequency(std::numeric_limits<int>::max());
+  }
+}
+
+template <int n, int m>
 void AugmentedLagrangianiLQR<n, m>::Solve() {
+
   for (int iteration = 0; iteration < opts_.max_iterations_outer; ++iteration) {
     ilqr_solver_.Solve();
     UpdateDuals();
     UpdateConvergenceStatistics();
-    if (opts_.verbose) {
-      PrintLast();
+
+    // Print the log data here if iLQR isn't printing it
+    bool is_ilqr_logging = GetStats().GetVerbosity() >= LogLevel::kInner;
+    if (!is_ilqr_logging) {
+      GetStats().PrintLast();
     }
+
     if (IsDone()) {
       break;
+    }
+
+    // If iLQR is printing the logs, print the header before every new AL iteration
+    if (is_ilqr_logging) {
+      GetStats().GetLogger().PrintHeader();
     }
     UpdatePenalties();
   }
@@ -271,45 +276,39 @@ void AugmentedLagrangianiLQR<n, m>::UpdatePenalties() {
 
 template <int n, int m>
 void AugmentedLagrangianiLQR<n, m>::UpdateConvergenceStatistics() {
-  const int inner_iters = ilqr_solver_.GetStats().iterations;
-  stats_.iterations_total += inner_iters;
-  stats_.inner_iterations.emplace_back(inner_iters);
-  stats_.iterations_outer++;
-  stats_.violations.emplace_back(GetMaxViolation());
-  stats_.max_penalty.emplace_back(GetMaxPenalty());
+  SolverStats& stats = GetStats();
+  stats.iterations_outer++;
+  stats.Log("viol", GetMaxViolation());
+  stats.Log("pen", GetMaxPenalty());
+  stats.Log("iter_al", stats.iterations_outer);
 }
 
 template <int n, int m>
 bool AugmentedLagrangianiLQR<n, m>::IsDone() {
-  const bool are_constraints_satisfied = stats_.violations.back() < opts_.constraint_tolerance;
-  const bool is_max_penalty_exceeded = stats_.max_penalty.back() > opts_.maximum_penalty;
-  const bool is_max_outer_iterations_exceeded = stats_.iterations_outer >= opts_.max_iterations_outer;
-  const bool is_max_total_iterations_exeeded = stats_.iterations_total >= opts_.max_iterations_total;
+  SolverStats& stats = GetStats();
+  const bool are_constraints_satisfied = stats.violations.back() < opts_.constraint_tolerance;
+  const bool is_max_penalty_exceeded = stats.max_penalty.back() > opts_.maximum_penalty;
+  const bool is_max_outer_iterations_exceeded = stats.iterations_outer >= opts_.max_iterations_outer;
+  const bool is_max_total_iterations_exeeded = stats.iterations_total >= opts_.max_iterations_total;
   if (are_constraints_satisfied) {
-    if (ilqr_solver_.GetStatus() == ilqr::SolverStatus::kSolved) {
-      status_ = ilqr::SolverStatus::kSolved;
+    if (ilqr_solver_.GetStatus() == SolverStatus::kSolved) {
+      status_ = SolverStatus::kSolved;
       return true;
     }
   }
   if (is_max_penalty_exceeded) {
-    status_ = ilqr::SolverStatus::kMaxPenalty;
+    status_ = SolverStatus::kMaxPenalty;
     return true;
   }
   if (is_max_outer_iterations_exceeded) {
-    status_ = ilqr::SolverStatus::kMaxOuterIterations;
+    status_ = SolverStatus::kMaxOuterIterations;
     return true;
   }
   if (is_max_total_iterations_exeeded) {
-    status_ = ilqr::SolverStatus::kMaxIterations;
+    status_ = SolverStatus::kMaxIterations;
     return true;
   }
   return false;
-}
-
-template <int n, int m>
-void AugmentedLagrangianiLQR<n, m>::PrintLast() const {
-  fmt::print("Iter {:3>}: Cost = {:.3}, Viol = {:.4e}\n", stats_.iterations_total,
-             ilqr_solver_.GetStats().cost.back(), stats_.violations.back());
 }
 
 template <int n, int m>
