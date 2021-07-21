@@ -25,7 +25,7 @@ void Problem::SetDynamics(std::shared_ptr<DiscreteDynamics> model, int k_start, 
   }
 }
 
-bool Problem::IsFullyDefined(bool verbose) const {
+bool Problem::IsFullyDefined(const bool verbose) const {
   bool valid = true;
   for (int k = 0; k <= N_; ++k) {
     bool has_costfun = (costfuns_[k] != nullptr);
@@ -55,6 +55,7 @@ bool Problem::IsFullyDefined(bool verbose) const {
   return valid;
 }
 
+// Specialize the method for each constraint type
 template <>
 void Problem::SetConstraint<constraints::Equality>(
     std::shared_ptr<constraints::Constraint<constraints::Equality>> con, int k) {
@@ -62,8 +63,8 @@ void Problem::SetConstraint<constraints::Equality>(
 }
 
 template <>
-void Problem::SetConstraint<constraints::NegativeOrthant>(
-    std::shared_ptr<constraints::Constraint<constraints::NegativeOrthant>> con, int k) {
+void Problem::SetConstraint<constraints::Inequality>(
+    std::shared_ptr<constraints::Constraint<constraints::Inequality>> con, int k) {
   ineq_[k].emplace_back(std::move(con));
 }
 

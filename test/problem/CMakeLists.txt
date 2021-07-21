@@ -37,7 +37,7 @@ add_executable(problem_test
 )
 target_link_libraries(problem_test
   constraints
-	constraint_examples
+  constraint_examples
   gtest_main
   problem
   dynamics_examples

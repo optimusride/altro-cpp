@@ -1,4 +1,5 @@
 #pragma once
+#include <string>
 
 #ifndef NDEBUG
 #define ALTRO_ASSERT(Expr, Msg)                                                \
@@ -10,7 +11,7 @@
 namespace altro {
 namespace utils {
   
-void AssertMsg(bool expr, const char *msg, const char *expr_str, int line,
+void AssertMsg(bool expr, const std::string, const char *expr_str, int line,
 
                const char *file);
 

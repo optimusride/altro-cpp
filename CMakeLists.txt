@@ -16,8 +16,22 @@ if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
     include_directories( "/opt/homebrew/include/" )
 endif()
 
-# Add Eigen
+################################################################################
+############################ ADD EIGEN LIB #####################################
+################################################################################
 find_package(Eigen3 3.3 REQUIRED NO_MODULE)
+
+################################################################################
+############################ ADD FMT LIBRARY ###################################
+################################################################################
+# NOTE(bjackson): Can we use a newer version? Should we bundle it with the 
+# source code?
+find_package(fmt 4.0 REQUIRED)
+
+
+################################################################################
+########################## ENABLE GOOGLE TEST ##################################
+################################################################################
 
 # This flag is set to ensure that gtest and gmock files do not get installed along with rest of the package. 
 set(INSTALL_GTEST off CACHE BOOL "" FORCE)
@@ -38,6 +52,9 @@ endif()
 enable_testing()
 include(GoogleTest)
 
+################################################################################
+############################ CODE COVERAGE #####################################
+################################################################################
 # Code Coverage
 # Build by:
 # cmake -DCMAKE_BUILD_TYPE=Debug -DBUILD_COVERAGE=ON ..
@@ -62,6 +79,10 @@ add_custom_target(coverage ALL
 
 endif(BUILD_COVERAGE)
 
+
+################################################################################
+############################# CLANG-TIDY #######################################
+################################################################################
 # Add clang-tidy static analysis
 # You must build with: cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ..
 # On Mac with Homebrew installed LLVM, this is helpful:
@@ -91,8 +112,12 @@ add_custom_target(tidy
                   COMMAND ${RUN_CLANG_TIDY_BIN} ${RUN_CLANG_TIDY_BIN_ARGS}
                   COMMENT "Running clang-tidy")
 
-# Sources
 
+################################################################################
+############################# BUILD STEPS ######################################
+################################################################################
+
+# Sources
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 include_directories(${PROJECT_SOURCE_DIR})
 
@@ -121,6 +146,9 @@ add_subdirectory(examples)
 add_subdirectory(test)
 
 
+################################################################################
+############################# INSTALLATION #####################################
+################################################################################
 # NOTE: The following steps allow installing this project for external use. These steps should be done from the outer-most cmake file only.
 
 # Ensure that the `CMAKE_INSTALL_PREFIX` is set correctly. This is the place where the package headers and libraries will get installed. This same prefix is also used by `find_package` cmake module. 

@@ -1,10 +1,10 @@
+#pragma once
+
 #include <limits>
 
 #include "altro/constraints/constraint.hpp"
 #include "altro/eigentypes.hpp"
 #include "altro/utils/utils.hpp"
-
-#include <iostream>
 
 namespace altro {
 namespace examples {
@@ -19,8 +19,7 @@ class GoalConstraint : public constraints::Constraint<constraints::Equality> {
 
   int OutputDimension() const override { return xf_.size(); }
 
-  void Evaluate(const VectorXdRef& x, const VectorXdRef& u,
-                Eigen::Ref<VectorXd> c) const override {
+  void Evaluate(const VectorXdRef& x, const VectorXdRef& u, Eigen::Ref<VectorXd> c) const override {
     ALTRO_UNUSED(u);
     c = x - xf_;
   }
@@ -64,7 +63,6 @@ class ControlBound : public constraints::Constraint<constraints::NegativeOrthant
     upper_bound_ = std::move(ub);
     GetFiniteIndices(upper_bound_, &index_upper_bound_);
     ValidateBounds();
-    std::cout << "Moved upper bound" << std::endl;
   }
 
   void SetLowerBound(const std::vector<double>& lb) {
@@ -81,10 +79,11 @@ class ControlBound : public constraints::Constraint<constraints::NegativeOrthant
     lower_bound_ = std::move(lb);
     GetFiniteIndices(lower_bound_, &index_lower_bound_);
     ValidateBounds();
-    std::cout << "Moved lower bound" << std::endl;
   }
 
-  int OutputDimension() const override { return index_lower_bound_.size() + index_upper_bound_.size(); }
+  int OutputDimension() const override {
+    return index_lower_bound_.size() + index_upper_bound_.size();
+  }
 
   void Evaluate(const VectorXdRef& /*x*/, const VectorXdRef& u,
                 Eigen::Ref<VectorXd> c) const override {
@@ -125,7 +124,6 @@ class ControlBound : public constraints::Constraint<constraints::NegativeOrthant
                    "Lower bound isn't less than the upper bound.");
     }
   }
-
   static void GetFiniteIndices(const std::vector<double>& bound, std::vector<size_t>* index) {
     index->clear();
     for (size_t i = 0; i < bound.size(); ++i) {
@@ -134,7 +132,6 @@ class ControlBound : public constraints::Constraint<constraints::NegativeOrthant
       }
     }
   }
-
   int m_;
   std::vector<double> lower_bound_;
   std::vector<double> upper_bound_;

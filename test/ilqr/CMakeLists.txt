@@ -49,6 +49,9 @@ target_link_libraries(ilqr_test
   ilqr
   dynamics_examples
   cost_function_examples
+  constraint_examples
+  constraints
+  augmented_lagrangian
 )
 gtest_discover_tests(ilqr_test)
 
@@ -58,8 +61,11 @@ add_executable(unicycle_ilqr_test
 target_link_libraries(unicycle_ilqr_test
   gtest_main
   altro
-  ilqr
-  dynamics_examples
+  augmented_lagrangian
+  constraints
+  constraint_examples
   cost_function_examples
+  dynamics_examples
+  ilqr
 )
 gtest_discover_tests(unicycle_ilqr_test)

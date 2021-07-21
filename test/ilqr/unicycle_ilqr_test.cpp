@@ -1,84 +1,28 @@
+#include <fmt/format.h>
+#include <fmt/ostream.h>
 #include <gtest/gtest.h>
 #include <eigen3/Eigen/Dense>
 #include <iostream>
 
+#include "altro/augmented_lagrangian/al_problem.hpp"
 #include "altro/common/trajectory.hpp"
+#include "altro/constraints/constraint.hpp"
 #include "altro/ilqr/cost_expansion.hpp"
 #include "altro/ilqr/ilqr.hpp"
 #include "altro/problem/discretized_model.hpp"
 #include "altro/problem/problem.hpp"
+#include "examples/basic_constraints.hpp"
 #include "examples/quadratic_cost.hpp"
 #include "examples/unicycle.hpp"
+#include "test/test_utils.hpp"
 
 constexpr int n_static = 3;
 constexpr int m_static = 2;
 constexpr int HEAP = Eigen::Dynamic;
 
-using ModelType = altro::problem::DiscretizedModel<altro::examples::Unicycle>;
-using CostFunType = altro::examples::QuadraticCost;
-
-class UnicycleiLQRTest : public ::testing::Test {
+class UnicycleiLQRTest : public altro::UnicycleProblem, public ::testing::Test {
  protected:
-  int N = 100;
-  int n = n_static;
-  int m = m_static;
-  float tf = 3.0;
-  float h = 0.03;
-  Eigen::Matrix3d Q = Eigen::Vector3d::Constant(n_static, 1e-2).asDiagonal();
-  Eigen::Matrix2d R = Eigen::Vector2d::Constant(m_static, 1e-2).asDiagonal();
-  Eigen::Matrix3d Qf = Eigen::Vector3d::Constant(n_static, 100).asDiagonal();
-  Eigen::Vector3d xf = Eigen::Vector3d(1.5, 1.5, M_PI / 2);
-  Eigen::Vector3d x0 = Eigen::Vector3d(0, 0, 0);
-  Eigen::Vector2d u0 = Eigen::Vector2d::Constant(m_static, 0.1);
-
-  void SetUp() override {
-    Q *= h;
-    R *= h;
-  }
-
-  altro::problem::Problem MakeProblem() {
-    altro::problem::Problem prob(N);
-
-    // Cost Function
-    Eigen::Vector2d uref = Eigen::Vector2d::Zero();
-    CostFunType qcost = CostFunType::LQRCost(Q, R, xf, uref);
-    CostFunType qcost_term = CostFunType::LQRCost(Qf, R * 0, xf, uref, true);
-    std::shared_ptr<CostFunType> costfun_ptr = std::make_shared<CostFunType>(qcost);
-    std::shared_ptr<CostFunType> costfun_term_ptr = std::make_shared<CostFunType>(qcost_term);
-    prob.SetCostFunction(costfun_ptr, 0, N);
-    prob.SetCostFunction(costfun_term_ptr, N, N + 1);
-
-    // Dynamics
-    std::shared_ptr<ModelType> model = std::make_shared<ModelType>(altro::examples::Unicycle());
-    prob.SetDynamics(model, 0, N);
-
-    // Initial State
-    prob.SetInitialState(x0);
-
-    return prob;
-  }
-
-  template <int n_size, int m_size>
-  altro::Trajectory<n_size, m_size> InitialTrajectory() {
-    altro::Trajectory<n_size, m_size> Z(n, m, N);
-    for (int k = 0; k < N; ++k) {
-      Z.Control(k) = u0;
-    }
-    Z.SetUniformStep(h);
-    return Z;
-  }
-
-  template <int n_size, int m_size>
-  altro::ilqr::iLQR<n_size, m_size> MakeSolver() {
-    altro::problem::Problem prob = MakeProblem();
-    altro::ilqr::iLQR<n_size, m_size> solver(prob);
-
-    std::shared_ptr<altro::Trajectory<n_size, m_size>> traj_ptr =
-        std::make_shared<altro::Trajectory<n_size, m_size>>(InitialTrajectory<n_size, m_size>());
-
-    solver.SetTrajectory(traj_ptr);
-    return solver;
-  }
+  void SetUp() override {}
 };
 
 TEST_F(UnicycleiLQRTest, BuildProblem) {
@@ -140,7 +84,7 @@ TEST_F(UnicycleiLQRTest, TwoSteps) {
   EXPECT_TRUE(solver.GetKnotPointFunction(0).GetFeedforwardGain().isApprox(d0, 1e-5));
 
   solver.ForwardPass();
-  const double J_expected = 62.773696055304384;   // from Altro.jl
+  const double J_expected = 62.773696055304384;  // from Altro.jl
   EXPECT_LT(solver.Cost() - J_expected, 1e-5);
 }
 
@@ -153,4 +97,48 @@ TEST_F(UnicycleiLQRTest, FullSolve) {
   EXPECT_EQ(solver.GetStatus(), altro::ilqr::SolverStatus::kSolved);
   EXPECT_LT(std::abs(solver.Cost() - J_expected), 1e-5);
   EXPECT_LT(solver.GetStats().gradient.back(), solver.GetOptions().gradient_tolerance);
+}
+
+TEST_F(UnicycleiLQRTest, AugLagForwardPass) {
+  bool alprob = true;
+  altro::ilqr::iLQR<n_static, m_static> solver = MakeSolver<n_static, m_static>(alprob);
+  solver.Rollout();
+  solver.UpdateExpansions();
+  solver.BackwardPass();
+  const double J0 = solver.Cost();
+  solver.ForwardPass();
+  const double J = solver.Cost();
+  EXPECT_LT(J, J0);
+  EXPECT_DOUBLE_EQ(solver.GetStats().alpha[0], 0.0625);
+}
+
+TEST_F(UnicycleiLQRTest, AugLagFullSolve) {
+  bool alprob = true;
+  altro::ilqr::iLQR<n_static, m_static> solver = MakeSolver<n_static, m_static>(alprob);
+  solver.Solve();
+  double J = solver.Cost();
+
+  // Calculate the maximum violation
+  std::shared_ptr<altro::Trajectory<n_static, m_static>> Z = solver.GetTrajectory();
+  double v_max = 0;
+  double w_max = 0;
+  for (int k = 0; k < N; ++k) {
+    double v = Z->Control(k)(0);
+    double w = Z->Control(k)(1);
+    v_max = std::max(std::abs(v), v_max);
+    w_max = std::max(std::abs(w), w_max);
+  }
+  double max_violation = std::max(v_max - v_bnd, w_max - w_bnd);
+
+  // from Altro.jl
+  const double J_expected = 0.03893427133384412;  
+  const double iter_expected = 10;
+  const double max_violation_expected = 0.00017691645708972636; 
+
+  // Compare to Altro.jl
+  double cost_err = std::abs(J_expected - J) / J_expected;
+  double viol_err = std::abs(max_violation_expected - max_violation) / max_violation_expected;
+  EXPECT_LT(cost_err, 1e-6);
+  EXPECT_LT(viol_err, 1e-6);
+  EXPECT_EQ(solver.GetStats().iterations, iter_expected);
 }

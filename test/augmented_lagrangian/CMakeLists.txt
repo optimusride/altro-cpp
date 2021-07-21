@@ -1,0 +1,14 @@
+add_executable(auglag_test
+  auglag_test.cpp
+)
+target_link_libraries(auglag_test
+  common
+  constraints
+  constraint_examples
+  cost_function_examples
+  dynamics_examples
+  ilqr
+  gtest_main
+  problem
+)
+gtest_discover_tests(auglag_test)

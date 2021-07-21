@@ -64,15 +64,19 @@ struct iLQRStats {
     improvement_ratio.reserve(n);
     gradient.reserve(n);
     cost_decrease.reserve(n);
+    regularization.reserve(n);
   }
 
   void Reset() {
+    initial_cost = 0.0;
+    iterations = 0;
     int cur_capacity = cost.capacity();
     cost.clear();
     alpha.clear();
     improvement_ratio.clear();
     gradient.clear();
     cost_decrease.clear();
+    regularization.clear();
     SetCapacity(cur_capacity);
   }
 
@@ -100,6 +104,8 @@ enum class SolverStatus {
   kControlLimit,
   kCostIncrease,
   kMaxIterations,
+  kMaxOuterIterations,
+  kMaxPenalty,
 };
 
 /**
@@ -126,6 +132,7 @@ class iLQR {
   explicit iLQR(const problem::Problem& prob)
       : N_(prob.NumSegments()), initial_state_(prob.GetInitialState()) {
     CopyFromProblem(prob, 0, N_ + 1);
+    initial_state_is_set = true;
     Init();
   }
 
@@ -144,35 +151,16 @@ class iLQR {
    * @tparam n2 Compile-time state dimension. Can be Eigen::Dynamic (-1)
    * @tparam m2 Compile-time control dimension. Can be Eigen::Dynamic (-1)
    * @param prob Trajectory optimization problem
-   * @param k_start Starting index (inclusive) for data to copy
-   * @param k_stop Terminal index (exclusive) for data to copy
+   * @param k_start Starting index (inclusive) for data to copy. 0 <= k_start < N+1
+   * @param k_stop Terminal index (exclusive) for data to copy. 0 < k_stop <= N+1
    */
   template <int n2 = n, int m2 = m>
   void CopyFromProblem(const problem::Problem& prob, int k_start, int k_stop) {
     ALTRO_ASSERT(prob.IsFullyDefined(), "Expected problem to be fully defined.");
-    int state_dim = 0;
-    int control_dim = 0;
     for (int k = k_start; k < k_stop; ++k) {
       std::shared_ptr<problem::DiscreteDynamics> model = prob.GetDynamics(k);
       std::shared_ptr<problem::CostFunction> costfun = prob.GetCostFunction(k);
-
-      // Model will be nullptr at the last knot point
-      if (model) {
-        state_dim = model->StateDimension();
-        control_dim = model->ControlDimension();
-        knotpoints_.emplace_back(std::make_unique<ilqr::KnotPointFunctions<n2, m2>>(model, costfun));
-      } else {
-        // To construct the KPF at the terminal knot point we need to tell
-        // it the state and control dimensions since we don't have a dynamics
-        // function
-        ALTRO_ASSERT(k == N_, "Expected model to only be a nullptr at last time step");
-        ALTRO_ASSERT(state_dim != 0 && control_dim != 0,
-                     "The last time step cannot be copied in isolation. "
-                     "Include the previous time step, e.g. "
-                     "CopyFromProblem(prob,N-1,N+1)");
-        knotpoints_.emplace_back(
-            std::make_unique<ilqr::KnotPointFunctions<n, m>>(state_dim, control_dim, costfun));
-      }
+      knotpoints_.emplace_back(std::make_unique<ilqr::KnotPointFunctions<n2, m2>>(model, costfun));
     }
   }
 
@@ -201,7 +189,9 @@ class iLQR {
   }
 
   iLQRStats& GetStats() { return stats_; }
+  const iLQRStats& GetStats() const { return stats_; }
   iLQROptions& GetOptions() { return opts_; }
+  const iLQROptions& GetOptions() const { return opts_; }
   VectorXd& GetCosts() { return costs_; }
   SolverStatus GetStatus() const { return status_; }
   VectorNd<n>& GetInitialState() { return initial_state_; }
@@ -222,6 +212,11 @@ class iLQR {
     Zbar_->SetZero();
   }
 
+  void SetInitialState(const VectorXdRef& x0) {
+    initial_state_is_set = true;
+    initial_state_ = x0;
+  }
+
   /***************************** Algorithm **************************************/
   /**
    * @brief Solve the trajectory optimization problem using iLQR
@@ -233,6 +228,11 @@ class iLQR {
    *
    */
   void Solve() {
+    ALTRO_ASSERT(initial_state_is_set,
+                 "Initial state must be set before solving. HINT: Calling CopyFromProblem does NOT "
+                 "set the initial state.");
+    ALTRO_ASSERT(Z_ != nullptr, "Invalid trajectory pointer. May be uninitialized.");
+
     Initialize();  // reset any internal variables
     Rollout();     // simulate the system forward using initial controls
     stats_.initial_cost = Cost();
@@ -261,7 +261,10 @@ class iLQR {
    *
    * @return double The current cost
    */
-  double Cost() { return Cost(*Z_); }
+  double Cost() {
+    ALTRO_ASSERT(Z_ != nullptr, "Invalid trajectory pointer. May be uninitialized.");
+    return Cost(*Z_);
+  }
   double Cost(const Trajectory<n, m>& Z) {
     CalcIndividualCosts(Z);
     return costs_.sum();
@@ -475,6 +478,9 @@ class iLQR {
   void UpdateConvergenceStatistics() {
     double dgrad = NormalizedFeedforwardGain();
     double dJ = stats_.cost.rbegin()[1] - stats_.cost.rbegin()[0];
+    if (stats_.iterations == 0) {
+      dJ = stats_.cost.back() - stats_.initial_cost;
+    }
 
     stats_.gradient.emplace_back(dgrad);
     stats_.cost_decrease.emplace_back(dJ);
@@ -517,8 +523,11 @@ class iLQR {
    * to each solve, so that the `Solve()` method can be called multiple times.
    *
    */
-  void Initialize() { stats_.Reset(); }
-  
+  void Initialize() { 
+    stats_.Reset(); 
+    Init();
+  }
+
   /**
    * @brief Perform any operations needed to return the solver to a desireable
    * state after the iterations have stopped.
@@ -603,6 +612,8 @@ class iLQR {
   double rho_ = 0.0;               // regularization
   double drho_ = 0.0;              // regularization derivative (damping)
   double deltaV_[2] = {0.0, 0.0};  // terms of the expected cost decrease
+
+  bool initial_state_is_set = false;
 };
 
 }  // namespace ilqr

@@ -81,7 +81,7 @@ class CostFunction {
 
     bool pass = (err_x < eps) && (err_u < eps);
     if (verbose) {
-      if (pass) {
+      if (!pass) {
         VectorXd grad(n + m);
         grad << dx, du;
         std::cout << "Provided:\n" << grad << std::endl;
@@ -126,7 +126,7 @@ class CostFunction {
 
     bool pass = (err_xx < eps) && (err_xu < eps) && (err_uu < eps);
     if (verbose) {
-      if (pass) {
+      if (!pass) {
         MatrixXd hess(n + m, n + m);
         hess << dxdx, dxdu, dxdu.transpose(), dudu;
         std::cout << "Provided:\n" << hess << std::endl;

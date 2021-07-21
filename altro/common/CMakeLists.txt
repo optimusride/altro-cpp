@@ -8,6 +8,8 @@ add_library(common
 target_link_libraries(common 
 	PUBLIC
   Eigen3::Eigen
+  INTERFACE
+  fmt::fmt-header-only
 	PRIVATE 
 	utils
 )

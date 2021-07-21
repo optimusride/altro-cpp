@@ -55,7 +55,7 @@ TEST(iLQRClassTest, ReferenceCounts) {
 
   model = prob.GetDynamics(N);
   costfun = prob.GetCostFunction(N);
-  EXPECT_EQ(model, nullptr);
+  EXPECT_EQ(model->StateDimension(), prob.GetDynamics(N-1)->StateDimension());
 }
 
 TEST(iLQRClassTest, CopyFromProblem) {
@@ -74,8 +74,12 @@ TEST(iLQRClassTest, DeathTests) {
   EXPECT_DEATH(ilqr.CopyFromProblem(prob_undefined, 0, N + 1),
                "Assert.*fully defined");
 
-	// ilqr.CopyFromProblem(prob, N, N+1);
-	EXPECT_DEATH(ilqr.CopyFromProblem(prob, N, N+1), "Assert.*copied in isolation");
+	// Must set the initial state and trajectory before solving
+	iLQR<HEAP, HEAP> ilqr2(N);
+	ilqr2.CopyFromProblem(prob, 0, N + 1);
+	EXPECT_DEATH(ilqr2.Solve(), "Assert.*Initial state must be set");
+	ilqr2.SetInitialState(VectorXd::Zero(prob.GetDynamics(0)->StateDimension()));
+	EXPECT_DEATH(ilqr2.Solve(), "Assert.*Invalid trajectory pointer");
 }
 
 }  // namespace ilqr
