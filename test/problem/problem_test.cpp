@@ -126,5 +126,23 @@ TEST(ProblemTests, AddConstraints) {
   EXPECT_EQ(prob.NumConstraints(N - 1), 4);
 }
 
+TEST(ProblemTests, AddConstraintsDeath) {
+  int N = 10;
+  int m = 2;
+  problem::Problem prob(N);
+
+  // Goal Constraint
+  constraints::ConstraintPtr<constraints::Equality> goal;
+  EXPECT_DEATH(prob.SetConstraint(goal, N), "Assert.*provide a valid constraint pointer");
+
+  // Control Bound Constraint
+  constraints::ConstraintPtr<constraints::Inequality> ubnd =
+      std::make_shared<examples::ControlBound>(m);
+  EXPECT_DEATH(prob.SetConstraint(ubnd, 0), "Assert.*length greater than zero");
+
+  constraints::ConstraintPtr<constraints::Inequality> ubnd2;
+  EXPECT_DEATH(prob.SetConstraint(ubnd2, 0), "Assert.*provide a valid constraint pointer");
+}
+
 }  // namespace problem
 }  // namespace altro

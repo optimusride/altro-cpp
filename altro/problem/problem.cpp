@@ -59,12 +59,16 @@ bool Problem::IsFullyDefined(const bool verbose) const {
 template <>
 void Problem::SetConstraint<constraints::Equality>(
     std::shared_ptr<constraints::Constraint<constraints::Equality>> con, int k) {
+  ALTRO_ASSERT(con != nullptr, "Must provide a valid constraint pointer.");
+  ALTRO_ASSERT(con->OutputDimension() > 0, "Constraint must have a length greater than zero.");
   eq_[k].emplace_back(std::move(con));
 }
 
 template <>
 void Problem::SetConstraint<constraints::Inequality>(
     std::shared_ptr<constraints::Constraint<constraints::Inequality>> con, int k) {
+  ALTRO_ASSERT(con != nullptr, "Must provide a valid constraint pointer.");
+  ALTRO_ASSERT(con->OutputDimension() > 0, "Constraint must have a length greater than zero.");
   ineq_[k].emplace_back(std::move(con));
 }
 

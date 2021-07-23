@@ -1,0 +1,14 @@
+add_library(example_problems
+  triple_integrator.hpp
+  triple_integrator.cpp
+)
+target_link_libraries(example_problems
+  constraints
+  constraint_examples
+  common
+  cost_function_examples
+  dynamics_examples
+  ilqr
+  problem
+  utils
+)

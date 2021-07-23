@@ -26,3 +26,5 @@ target_link_libraries(constraint_examples
   constraints
   utils
 )
+
+add_subdirectory(problems)
