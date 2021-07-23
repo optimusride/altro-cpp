@@ -1,4 +1,5 @@
 #include <fmt/format.h>
+#include <fmt/color.h>
 #include <gtest/gtest.h>
 
 #include "altro/common/solver_options.hpp"
@@ -6,7 +7,7 @@
 namespace altro {
 
 void SomethingOdd() {
-  fmt::print_colored(fmt::RED, "Something red\n");
+  fmt::print(fg(fmt::color::red), "Something red\n");
 }
 
 TEST(SolverStatsTest, LogCounts) {

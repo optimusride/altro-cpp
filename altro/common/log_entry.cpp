@@ -4,7 +4,7 @@
 
 namespace altro {
 
-LogEntry& LogEntry::SetLowerBound(double lb, fmt::Color color) {
+LogEntry& LogEntry::SetLowerBound(double lb, fmt::color color) {
   ALTRO_ASSERT(lb <= upper_, "Lower bound must be less than or equal to the upper bound.");
   bounded_ = true;
   lower_ = lb;
@@ -12,7 +12,7 @@ LogEntry& LogEntry::SetLowerBound(double lb, fmt::Color color) {
   return *this;
 }
 
-LogEntry& LogEntry::SetUpperBound(double ub, fmt::Color color) {
+LogEntry& LogEntry::SetUpperBound(double ub, fmt::color color) {
   ALTRO_ASSERT(ub >= lower_, "Upper bound must be greater than or equal to the lower bound.");
   bounded_ = true;
   upper_ = ub;

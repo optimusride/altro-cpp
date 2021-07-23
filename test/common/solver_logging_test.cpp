@@ -1,4 +1,5 @@
 #include <fmt/format.h>
+#include <fmt/color.h>
 #include <gtest/gtest.h>
 
 #include "altro/common/solver_options.hpp"
@@ -12,7 +13,7 @@ TEST(SolverLoggerTest, MWE) {
   logger.AddEntry(1, "cost", "{:.4g}").SetLevel(LogLevel::kOuter);
 
   // Set options
-  logger.SetHeaderColor(fmt::CYAN);
+  logger.SetHeaderColor(fmt::color::cyan);
   logger.SetFrequency(5);
   logger.SetLevel(LogLevel::kInner);
 
@@ -36,7 +37,7 @@ TEST(SolverLoggerTest, Example) {
   // Add another float entry with exponential format. Place it in the penultimate column.
   // Adds a lower bound to print green if the value is below 1e-4.
   // Uses default level of kInner
-  logger.AddEntry(-2, "viol", "{:>.3e}").SetLowerBound(1e-4, fmt::GREEN);
+  logger.AddEntry(-2, "viol", "{:>.3e}").SetLowerBound(1e-4, fmt::color::green);
 
   // Add some data
   // NOTE: Must set the level before logging the data, otherwise it will be discarded
@@ -61,7 +62,7 @@ TEST(SolverLoggerTest, Example) {
 
   // Set to new level
   logger.SetLevel(LogLevel::kInner);
-  logger.SetHeaderColor(fmt::CYAN);  // Change header color
+  logger.SetHeaderColor(fmt::color::cyan);  // Change header color
   logger.Print(); // prints a new header and a blank line after clearing
   logger.Log("iter", 2);
   logger.Log("viol", 1e-3);

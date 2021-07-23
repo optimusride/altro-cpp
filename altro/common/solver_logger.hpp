@@ -1,5 +1,6 @@
 #pragma once
 
+#include <fmt/color.h>
 #include <fmt/format.h>
 #include <fmt/ostream.h>
 #include <limits>
@@ -33,7 +34,7 @@ namespace altro {
    logger.AddEntry(1, "cost", "{:.4g}").SetLevel(LogLevel::kOuter);
 
    // Set options
-   logger.SetHeaderColor(fmt::CYAN);
+   logger.SetHeaderColor(fmt::color::cyan);
    logger.SetFrequency(5);
    logger.SetLevel(LogLevel::kInner);
 
@@ -153,9 +154,9 @@ class SolverLogger {
    * @brief Set the color of the header and it's horizontal rule
    * 
    * @param color One of the colors provided by the fmt library 
-   * (e.g. fmt::GREEN, fmt::YELLOW, fmt::RED, fmt::WHITE, etc.)
+   * (e.g. fmt::color::green, fmt::color::yellow, fmt::color::red, fmt::color::white, etc.)
    */
-  void SetHeaderColor(const fmt::Color color) { header_color_ = color; }
+  void SetHeaderColor(const fmt::color color) { header_color_ = color; }
 
  private:
   LogLevel cur_level_ = LogLevel::kSilent;   // Current verbosity level
@@ -163,7 +164,7 @@ class SolverLogger {
   int count_ = 0;       // number of prints since header
   std::unordered_map<std::string, LogEntry> entries_;
   std::vector<const std::string*> order_;
-  fmt::Color header_color_ = fmt::Color::WHITE;
+  fmt::color header_color_ = fmt::color::white;
 };
 
 template <class... Args>

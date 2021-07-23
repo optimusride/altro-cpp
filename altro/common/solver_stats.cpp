@@ -1,5 +1,7 @@
 #include "altro/common/solver_stats.hpp"
 
+#include <fmt/color.h>
+
 namespace altro {
 
 template <>
@@ -84,7 +86,7 @@ void SolverStats::DefaultLogger() {
              .SetLevel(LogLevel::kDebug)
              .SetWidth(7),
          max_penalty);
-  logger_.SetHeaderColor(fmt::YELLOW);
+  logger_.SetHeaderColor(fmt::color::yellow);
 }
 
 }  // namespace altro

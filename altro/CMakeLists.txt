@@ -9,4 +9,14 @@ add_library(altro
   main.cpp
   eigentypes.hpp
 )
+
+target_link_libraries(altro 
+  augmented_lagrangian
+  common
+  constraints
+  ilqr
+  problem
+  utils
+)
+
 export_library(altro altroTargets "eigentypes.hpp" altro)

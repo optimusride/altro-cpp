@@ -1,6 +1,8 @@
+#pragma once
+
+#include <fmt/color.h>
 #include <fmt/format.h>
 #include <fmt/ostream.h>
-
 
 namespace altro {
 
@@ -71,7 +73,7 @@ class LogEntry {
    * @param lb Lower bound
    * @param color Color of data to be printed if the data is lower than lb.
    */
-  LogEntry& SetLowerBound(double lb, fmt::Color color = fmt::GREEN);
+  LogEntry& SetLowerBound(double lb, fmt::color color = fmt::color::green);
 
   /**
    * @brief Set the Upper Bound for numeric data, along with the color if the
@@ -80,7 +82,7 @@ class LogEntry {
    * @param ub Lower bound
    * @param color Color of data to be printed if the data is greater than ub.
    */
-  LogEntry& SetUpperBound(double ub, fmt::Color color = fmt::RED);
+  LogEntry& SetUpperBound(double ub, fmt::color color = fmt::color::red);
 
   /**
    * @brief Set the width of the data column
@@ -149,7 +151,7 @@ class LogEntry {
    */
   void Print(const LogLevel level = LogLevel::kSilent) {
     if (IsActive(level)) {
-      fmt::print_colored(color_, "{:>{}}", data_, width_);
+      fmt::print(fg(color_), "{:>{}}", data_, width_);
     }
   }
 
@@ -160,9 +162,9 @@ class LogEntry {
    * @param level Current verbosity level.
    * @param color Color of the header (default is white).
    */
-  void PrintHeader(const LogLevel level = LogLevel::kSilent, const fmt::Color color = fmt::WHITE) {
+  void PrintHeader(const LogLevel level = LogLevel::kSilent, const fmt::color color = fmt::color::white) {
     if (IsActive(level)) {
-      fmt::print_colored(color, "{:>{}}", title_, width_);
+      fmt::print(fg(color), "{:>{}}", title_, width_);
     }
   }
 
@@ -191,10 +193,10 @@ class LogEntry {
    *
    * @tparam T
    * @param value
-   * @return fmt::Color
+   * @return fmt::color
    */
   template <class T>
-  fmt::Color GetColor(T value) {
+  fmt::color GetColor(T value) {
     if (bounded_) {
       if (value < lower_) {
         return color_lower_;
@@ -215,10 +217,10 @@ class LogEntry {
   bool bounded_ = false;  // does the field have conditional formatting
   double lower_ = -std::numeric_limits<double>::infinity();  // lower bound
   double upper_ = +std::numeric_limits<double>::infinity();  // upper bound
-  fmt::Color color_ = fmt::WHITE;                            // current color to be printed
-  fmt::Color color_default_ = fmt::WHITE;                     // default color (bounds are satisfied)
-  fmt::Color color_lower_ = fmt::GREEN;                      // color if below lower bound
-  fmt::Color color_upper_ = fmt::RED;                        // color if above upper bound
+  fmt::color color_ = fmt::color::white;                            // current color to be printed
+  fmt::color color_default_ = fmt::color::white;                     // default color (bounds are satisfied)
+  fmt::color color_lower_ = fmt::color::green;                      // color if below lower bound
+  fmt::color color_upper_ = fmt::color::red;                        // color if above upper bound
 };
 
 }  // namespace altro

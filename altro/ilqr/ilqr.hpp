@@ -10,6 +10,7 @@
 #include "altro/eigentypes.hpp"
 #include "altro/ilqr/knot_point_function_type.hpp"
 #include "altro/problem/problem.hpp"
+#include "altro/utils/assert.hpp"
 
 namespace altro {
 namespace ilqr {

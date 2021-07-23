@@ -20,7 +20,7 @@ void SolverLogger::PrintHeader() {
   }
   if (any_active) {
     fmt::print("\n");
-    fmt::print_colored(header_color_, "{0:-^{1}s}\n", "", total_width);
+    fmt::print(fg(header_color_), "{0:-^{1}s}\n", "", total_width);
   }
 }
 
