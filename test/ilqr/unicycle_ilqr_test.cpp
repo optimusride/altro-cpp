@@ -21,7 +21,7 @@ constexpr int n_static = 3;
 constexpr int m_static = 2;
 constexpr int HEAP = Eigen::Dynamic;
 
-class UnicycleiLQRTest : public altro::UnicycleProblem, public ::testing::Test {
+class UnicycleiLQRTest : public altro::problems::UnicycleProblem, public ::testing::Test {
  protected:
   void SetUp() override {}
 };

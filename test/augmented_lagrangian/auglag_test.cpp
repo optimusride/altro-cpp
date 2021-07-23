@@ -22,7 +22,7 @@
 namespace altro {
 namespace augmented_lagrangian {
 
-class AugLagTest : public UnicycleProblem, public ::testing::Test {
+class AugLagTest : public problems::UnicycleProblem, public ::testing::Test {
  protected:
   const double v_violation = 0.5;
   const double rho = 1.1;
@@ -94,8 +94,8 @@ class AugLagTest : public UnicycleProblem, public ::testing::Test {
     problem::Problem prob = MakeProblem();
     AugmentedLagrangianiLQR<n2, m2> alsolver(prob);
     std::shared_ptr<altro::Trajectory<n2, m2>> Z =
-        std::make_shared<altro::Trajectory<n_static, m_static>>(
-            InitialTrajectory<n_static, m_static>());
+        std::make_shared<altro::Trajectory<NStates, NControls>>(
+            InitialTrajectory<NStates, NControls>());
     alsolver.SetTrajectory(Z);
     return alsolver;
   }
@@ -104,46 +104,46 @@ class AugLagTest : public UnicycleProblem, public ::testing::Test {
 TEST_F(AugLagTest, ALCostConstructor) {
   problem::Problem prob = MakeProblem();
   EXPECT_EQ(prob.NumSegments(), N);
-  ALCost<n_static, m_static> alcost(n, m);
+  ALCost<NStates, NControls> alcost(n, m);
   EXPECT_EQ(alcost.StateDimension(), n);
   EXPECT_EQ(alcost.ControlDimension(), m);
 
   const int k = 0;  // knot point index
-  ALCost<n_static, m_static> alcost0(prob, k);
+  ALCost<NStates, NControls> alcost0(prob, k);
   EXPECT_EQ(alcost0.NumConstraints(), prob.NumConstraints(k));
   EXPECT_EQ(alcost.NumConstraints(), 0);
 }
 
 TEST_F(AugLagTest, ALCostDeath) {
   problem::Problem prob(N);
-  ALCost<n_static, m_static> alcost(n, m);
+  ALCost<NStates, NControls> alcost(n, m);
   const int k = 0;  // knot point index
   EXPECT_DEATH(alcost.SetCostFunction(prob.GetCostFunction(k)), "Assert.*cannot be a nullptr");
 }
 
 TEST_F(AugLagTest, ALCostEval) {
-  TestALCostEval<n_static, m_static>();
+  TestALCostEval<NStates, NControls>();
   TestALCostEval<HEAP, HEAP>();
-  TestALCostEval<n_static, HEAP>();
-  TestALCostEval<HEAP, m_static>();
+  TestALCostEval<NStates, HEAP>();
+  TestALCostEval<HEAP, NControls>();
 }
 
 TEST_F(AugLagTest, ALCostGradient) {
-  TestALCostGradient<n_static, m_static>();
+  TestALCostGradient<NStates, NControls>();
   TestALCostGradient<HEAP, HEAP>();
-  TestALCostGradient<n_static, HEAP>();
-  TestALCostGradient<HEAP, m_static>();
+  TestALCostGradient<NStates, HEAP>();
+  TestALCostGradient<HEAP, NControls>();
 }
 
 TEST_F(AugLagTest, ALCostHessian) {
-  TestALCostHessian<n_static, m_static>();
+  TestALCostHessian<NStates, NControls>();
   TestALCostHessian<HEAP, HEAP>();
-  TestALCostHessian<n_static, HEAP>();
-  TestALCostHessian<HEAP, m_static>();
+  TestALCostHessian<NStates, HEAP>();
+  TestALCostHessian<HEAP, NControls>();
 }
 
 TEST_F(AugLagTest, SetALCostPenalty) {
-  ALCost<n_static, m_static> alcost0 = MakeALCost<n_static, m_static>();
+  ALCost<NStates, NControls> alcost0 = MakeALCost<NStates, NControls>();
   std::vector<constraints::ConstraintPtr<constraints::Equality>> eq;
   eq.emplace_back(goal);
   alcost0.SetEqualityConstraints(eq.begin(), eq.end());
@@ -158,9 +158,9 @@ TEST_F(AugLagTest, SetALCostPenalty) {
 
   // Get the constraint values
   const int con_idx = 0;  // constraint index
-  std::shared_ptr<constraints::ConstraintValues<n_static, m_static, constraints::Equality>>
+  std::shared_ptr<constraints::ConstraintValues<NStates, NControls, constraints::Equality>>
       goal_vals = alcost0.GetEqualityConstraints()[con_idx];
-  std::shared_ptr<constraints::ConstraintValues<n_static, m_static, constraints::Inequality>>
+  std::shared_ptr<constraints::ConstraintValues<NStates, NControls, constraints::Inequality>>
       ubnd_vals = alcost0.GetInequalityConstraints()[con_idx];
 
   // Make sure the penalties update 
@@ -192,7 +192,7 @@ TEST_F(AugLagTest, SetALCostPenalty) {
 
 TEST_F(AugLagTest, CreateALProblem) {
   problem::Problem prob = MakeProblem();
-  problem::Problem prob_al = BuildAugLagProblem<n_static, m_static>(prob);
+  problem::Problem prob_al = BuildAugLagProblem<NStates, NControls>(prob);
   EXPECT_EQ(prob_al.NumSegments(), N);
 
   // Make sure the constraints are moved to the cost function
@@ -204,28 +204,28 @@ TEST_F(AugLagTest, CreateALProblem) {
 
 TEST_F(AugLagTest, CreateiLQR) {
   problem::Problem prob = MakeProblem();
-  problem::Problem prob_al = BuildAugLagProblem<n_static, m_static>(prob);
-  ilqr::iLQR<n_static, m_static> solver(prob_al);
+  problem::Problem prob_al = BuildAugLagProblem<NStates, NControls>(prob);
+  ilqr::iLQR<NStates, NControls> solver(prob_al);
   EXPECT_EQ(solver.NumSegments(), N);
 }
 
 TEST_F(AugLagTest, ConstructSolver) {
   problem::Problem prob = MakeProblem();
-  AugmentedLagrangianiLQR<n_static, m_static> alsolver(prob);
+  AugmentedLagrangianiLQR<NStates, NControls> alsolver(prob);
   EXPECT_EQ(alsolver.NumSegments(), N);
   EXPECT_EQ(alsolver.NumConstraints(), prob.NumConstraints());
 }
 
 TEST_F(AugLagTest, SolveiLQR) {
   problem::Problem prob = MakeProblem();
-  AugmentedLagrangianiLQR<n_static, m_static> alsolver(prob);
-  std::shared_ptr<altro::Trajectory<n_static, m_static>> Z =
-      std::make_shared<altro::Trajectory<n_static, m_static>>(
-          InitialTrajectory<n_static, m_static>());
+  AugmentedLagrangianiLQR<NStates, NControls> alsolver(prob);
+  std::shared_ptr<altro::Trajectory<NStates, NControls>> Z =
+      std::make_shared<altro::Trajectory<NStates, NControls>>(
+          InitialTrajectory<NStates, NControls>());
   alsolver.SetTrajectory(Z);
 
   // Solve first iLQR problem
-  ilqr::iLQR<n_static, m_static>& ilqr_solver = alsolver.GetiLQRSolver();
+  ilqr::iLQR<NStates, NControls>& ilqr_solver = alsolver.GetiLQRSolver();
   ilqr_solver.Solve();
   double J = ilqr_solver.Cost();
   double viol = alsolver.GetMaxViolation();
@@ -243,17 +243,17 @@ TEST_F(AugLagTest, SolveiLQR) {
 
 TEST_F(AugLagTest, TwoSolves) {
   problem::Problem prob = MakeProblem();
-  AugmentedLagrangianiLQR<n_static, m_static> alsolver(prob);
-  std::shared_ptr<altro::Trajectory<n_static, m_static>> Z =
-      std::make_shared<altro::Trajectory<n_static, m_static>>(
-          InitialTrajectory<n_static, m_static>());
+  AugmentedLagrangianiLQR<NStates, NControls> alsolver(prob);
+  std::shared_ptr<altro::Trajectory<NStates, NControls>> Z =
+      std::make_shared<altro::Trajectory<NStates, NControls>>(
+          InitialTrajectory<NStates, NControls>());
   alsolver.SetTrajectory(Z);
-  std::shared_ptr<ALCost<n_static, m_static>> alcost_term = alsolver.GetALCost(N);
-  std::shared_ptr<constraints::ConstraintValues<n_static, m_static, constraints::Equality>>
+  std::shared_ptr<ALCost<NStates, NControls>> alcost_term = alsolver.GetALCost(N);
+  std::shared_ptr<constraints::ConstraintValues<NStates, NControls, constraints::Equality>>
       goal_vals = alcost_term->GetEqualityConstraints()[0];
 
   // Solve first iLQR problem
-  ilqr::iLQR<n_static, m_static>& ilqr_solver = alsolver.GetiLQRSolver();
+  ilqr::iLQR<NStates, NControls>& ilqr_solver = alsolver.GetiLQRSolver();
   double J0 = ilqr_solver.Cost();
   double viol0 = alsolver.GetMaxViolation();
   ilqr_solver.Solve();
@@ -295,10 +295,10 @@ TEST_F(AugLagTest, TwoSolves) {
 
 TEST_F(AugLagTest, FullSolve) {
   problem::Problem prob = MakeProblem();
-  AugmentedLagrangianiLQR<n_static, m_static> alsolver(prob);
-  std::shared_ptr<altro::Trajectory<n_static, m_static>> Z =
-      std::make_shared<altro::Trajectory<n_static, m_static>>(
-          InitialTrajectory<n_static, m_static>());
+  AugmentedLagrangianiLQR<NStates, NControls> alsolver(prob);
+  std::shared_ptr<altro::Trajectory<NStates, NControls>> Z =
+      std::make_shared<altro::Trajectory<NStates, NControls>>(
+          InitialTrajectory<NStates, NControls>());
   alsolver.SetTrajectory(Z);
 
   alsolver.GetOptions().constraint_tolerance = 1e-6;

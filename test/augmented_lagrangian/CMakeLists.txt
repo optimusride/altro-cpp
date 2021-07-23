@@ -7,6 +7,7 @@ target_link_libraries(auglag_test
   constraint_examples
   cost_function_examples
   dynamics_examples
+  example_problems
   ilqr
   gtest_main
   problem

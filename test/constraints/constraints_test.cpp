@@ -1,13 +1,18 @@
 #include <gtest/gtest.h>
 #include <fmt/format.h>
+#include <fmt/ostream.h>
 
 #include "altro/constraints/constraint.hpp"
 #include "altro/constraints/constraint_values.hpp"
 #include "altro/eigentypes.hpp"
 #include "altro/problem/problem.hpp"
+#include "altro/utils/derivative_checker.hpp"
 #include "examples/basic_constraints.hpp"
+#include "examples/obstacle_constraints.hpp"
 
 namespace altro {
+
+constexpr int HEAP = Eigen::Dynamic;
 
 TEST(BasicConstraints, ControlBoundConstructor) {
   int m = 3;
@@ -59,6 +64,59 @@ TEST(BasicConstraints, GoalConstraint) {
   EXPECT_TRUE(c.isApprox(x));
   VectorXd x_bad = VectorXd::Constant(5, 2.0);
   EXPECT_DEATH(goal.Evaluate(x_bad, u, c), "Assertion.*rows().*failed");
+}
+
+TEST(CircleConstraint, Constructor) {
+  examples::CircleConstraint obs;
+  obs.AddObstacle(1.0, 2.0, 0.25);
+  EXPECT_EQ(obs.OutputDimension(), 1);
+  obs.AddObstacle(2.0, 4.0, 0.5);
+  EXPECT_EQ(obs.OutputDimension(), 2);
+}
+
+TEST(CircleConstraint, Evaluate) {
+  examples::CircleConstraint obs;
+  Eigen::Vector2d p1(1.0, 2.0);
+  Eigen::Vector2d p2(2.0, 4.0);
+  obs.AddObstacle(p1(0), p1(1), 0.25);
+  obs.AddObstacle(p2(0), p2(1), 0.5);
+
+  const Eigen::Vector2d x(0.5, 1.5);
+  const Eigen::Vector2d u(-0.25, 0.25);
+  Eigen::Vector2d c = Eigen::Vector2d::Zero();
+  obs.Evaluate(x, u, c);
+  Eigen::Vector2d d1 = x - p1; 
+  Eigen::Vector2d d2 = x - p2; 
+  Eigen::Vector2d c_expected(0.25 * 0.25 - d1.squaredNorm(), 0.5 * 0.5 - d2.squaredNorm());
+  EXPECT_TRUE(c.isApprox(c_expected));
+}
+
+TEST(CircleConstraint, Jacobian) {
+  examples::CircleConstraint obs;
+  Eigen::Vector2d p1(1.0, 2.0);
+  Eigen::Vector2d p2(2.0, 4.0);
+  obs.AddObstacle(p1(0), p1(1), 0.25);
+  obs.AddObstacle(p2(0), p2(1), 0.5);
+
+  const Eigen::Vector2d x(0.5, 1.5);
+  const Eigen::Vector2d u(-0.25, 0.25);
+  Eigen::Matrix2d jac = Eigen::Matrix2d::Zero();
+  obs.Jacobian(x, u, jac);
+  Eigen::Vector2d d1 = x - p1; 
+  Eigen::Vector2d d2 = x - p2; 
+  MatrixXd jac_expected(2,2);
+  jac_expected << -2 * d1(0), -2 * d1(1), -2 * d2(0), -2 * d2(1);
+
+  auto eval = [&](auto x_) {
+    VectorXd c_(2);
+    obs.Evaluate(x_, u, c_);
+    return c_;
+  };
+  VectorXd x2 = x;
+  MatrixXd jac_fd = utils::FiniteDiffJacobian<HEAP, HEAP>(eval, x2);
+
+  EXPECT_TRUE(jac.isApprox(jac_expected));
+  EXPECT_TRUE(jac.isApprox(jac_fd, 1e-4));
 }
 
 class ConstraintValueTest : public ::testing::Test {

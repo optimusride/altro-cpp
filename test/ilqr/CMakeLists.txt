@@ -67,6 +67,7 @@ target_link_libraries(unicycle_ilqr_test
   constraint_examples
   cost_function_examples
   dynamics_examples
+  example_problems
   ilqr
 )
 gtest_discover_tests(unicycle_ilqr_test)

@@ -7,6 +7,20 @@ target_link_libraries(example_triple_integrator_test
   ilqr
   augmented_lagrangian
   example_problems
-  fmt::fmt
+  INTERFACE
+  fmt::fmt-header-only
 )
 gtest_discover_tests(example_triple_integrator_test)
+
+add_executable(example_unicycle_test
+  example_unicycle_test.cpp
+)
+target_link_libraries(example_unicycle_test
+  PRIVATE
+  gtest_main
+  ilqr
+  augmented_lagrangian
+  example_problems
+  fmt::fmt
+)
+gtest_discover_tests(example_unicycle_test)

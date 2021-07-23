@@ -13,6 +13,7 @@
 #include "examples/quadratic_cost.hpp"
 #include "examples/unicycle.hpp"
 #include "examples/triple_integrator.hpp"
+#include "examples/problems/unicycle.hpp"
 
 namespace altro {
 
@@ -47,111 +48,5 @@ problem::Problem MakeProblem(int dof = 2, int N = 10) {
 
   return prob;
 }
-
-class UnicycleProblem {
- public:
-  UnicycleProblem() {
-
-    // Dynamics
-    model = std::make_shared<problem::DiscretizedModel<examples::Unicycle>>(examples::Unicycle());
-
-    // Cost functions
-    Q *= h;  // scale by time step to match Altro.jl
-    R *= h;
-    qcost = std::make_shared<examples::QuadraticCost>(
-        examples::QuadraticCost::LQRCost(Q, R, xf, uref));
-    qterm = std::make_shared<examples::QuadraticCost>(
-        examples::QuadraticCost::LQRCost(Qf, R * 0, xf, uref, true));
-
-    // Constraints
-    goal = std::make_shared<examples::GoalConstraint>(xf);
-    std::vector<double> lb = {-v_bnd, -w_bnd};
-    std::vector<double> ub = {v_bnd, w_bnd};
-    ubnd = std::make_shared<examples::ControlBound>(lb, ub);
-  }
-  virtual ~UnicycleProblem() = default;
-
- protected:
-  using ModelType = altro::problem::DiscretizedModel<altro::examples::Unicycle>;
-  using CostFunType = altro::examples::QuadraticCost;
-
-  static constexpr int n_static = 3;
-  static constexpr int m_static = 2;
-  static constexpr int HEAP = Eigen::Dynamic;
-
-  int N = 100;
-  int n = n_static;
-  int m = m_static;
-  float tf = 3.0;
-  float h = 0.03;
-  std::shared_ptr<problem::DiscretizedModel<examples::Unicycle>> model;
-
-  Eigen::Matrix3d Q = Eigen::Vector3d::Constant(n_static, 1e-2).asDiagonal();
-  Eigen::Matrix2d R = Eigen::Vector2d::Constant(m_static, 1e-2).asDiagonal();
-  Eigen::Matrix3d Qf = Eigen::Vector3d::Constant(n_static, 100).asDiagonal();
-  Eigen::Vector3d xf = Eigen::Vector3d(1.5, 1.5, M_PI / 2);
-  Eigen::Vector3d x0 = Eigen::Vector3d(0, 0, 0);
-  Eigen::Vector2d u0 = Eigen::Vector2d::Constant(m_static, 0.1);
-  Eigen::Vector2d uref = Eigen::Vector2d::Zero();
-  std::shared_ptr<examples::QuadraticCost> qcost;
-  std::shared_ptr<examples::QuadraticCost> qterm;
-
-  double v_bnd = 1.5;
-  double w_bnd = 1.5;
-  altro::constraints::ConstraintPtr<altro::constraints::Inequality> ubnd;
-  altro::constraints::ConstraintPtr<altro::constraints::Equality> goal;
-
-
-  altro::problem::Problem MakeProblem() {
-    altro::problem::Problem prob(N);
-
-    // Cost Function
-    prob.SetCostFunction(qcost, 0, N);
-    prob.SetCostFunction(qterm, N);
-
-    // Dynamics
-    prob.SetDynamics(model, 0, N);
-
-    // Constraints
-    std::vector<double> lb = {-v_bnd, -w_bnd};
-    std::vector<double> ub = {+v_bnd, +w_bnd};
-    ubnd = std::make_shared<altro::examples::ControlBound>(lb, ub);
-    for (int k = 0; k < N; ++k) {
-      prob.SetConstraint(ubnd, k);
-    }
-    goal = std::make_shared<altro::examples::GoalConstraint>(xf);
-    prob.SetConstraint(goal, N);
-
-    // Initial State
-    prob.SetInitialState(x0);
-
-    return prob;
-  }
-
-  template <int n_size, int m_size>
-  altro::Trajectory<n_size, m_size> InitialTrajectory() {
-    altro::Trajectory<n_size, m_size> Z(n, m, N);
-    for (int k = 0; k < N; ++k) {
-      Z.Control(k) = u0;
-    }
-    Z.SetUniformStep(h);
-    return Z;
-  }
-
-  template <int n_size, int m_size>
-  altro::ilqr::iLQR<n_size, m_size> MakeSolver(const bool alcost = false) {
-    altro::problem::Problem prob = MakeProblem();
-    if (alcost) {
-      prob = altro::augmented_lagrangian::BuildAugLagProblem<n_size, m_size>(prob);
-    }
-    altro::ilqr::iLQR<n_size, m_size> solver(prob);
-
-    std::shared_ptr<altro::Trajectory<n_size, m_size>> traj_ptr =
-        std::make_shared<altro::Trajectory<n_size, m_size>>(InitialTrajectory<n_size, m_size>());
-
-    solver.SetTrajectory(traj_ptr);
-    return solver;
-  }
-};
 
 }

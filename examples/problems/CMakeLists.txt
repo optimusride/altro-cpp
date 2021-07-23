@@ -1,8 +1,11 @@
 add_library(example_problems
   triple_integrator.hpp
   triple_integrator.cpp
+  unicycle.hpp
+  unicycle.cpp
 )
 target_link_libraries(example_problems
+  augmented_lagrangian
   constraints
   constraint_examples
   common

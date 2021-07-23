@@ -84,6 +84,8 @@ class ALCost : public problem::CostFunction, public StateControlSized<n, m> {
     return p;
   }
 
+  std::shared_ptr<problem::CostFunction> GetCostFunction() { return costfun_; }
+
   /***************************** Setters **************************************/
 
   /**

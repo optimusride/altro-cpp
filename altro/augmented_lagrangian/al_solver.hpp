@@ -35,8 +35,8 @@ class AugmentedLagrangianiLQR {
 
   SolverStats& GetStats() { return ilqr_solver_.GetStats(); }
   const SolverStats& GetStats() const { return ilqr_solver_.GetStats(); }
-  SolverOptions& GetOptions() { return opts_; }
-  const SolverOptions& GetOptions() const { return opts_; }
+  SolverOptions& GetOptions() { return ilqr_solver_.GetOptions(); }
+  const SolverOptions& GetOptions() const { return ilqr_solver_.GetOptions(); }
   SolverStatus GetStatus() const { return status_; }
   std::shared_ptr<ALCost<n, m>> GetALCost(const int k) { return costs_.at(k); }
   ilqr::iLQR<n, m>& GetiLQRSolver() { return ilqr_solver_; }
@@ -156,7 +156,6 @@ class AugmentedLagrangianiLQR {
 
  private:
   ilqr::iLQR<n, m> ilqr_solver_;
-  SolverOptions opts_;
   std::vector<std::shared_ptr<ALCost<n, m>>> costs_;
   SolverStatus status_ = SolverStatus::kUnsolved;
   VectorXd max_violation_;  // (N+1,) vector of constraint violations at each knot point
@@ -169,7 +168,6 @@ class AugmentedLagrangianiLQR {
 template <int n, int m>
 AugmentedLagrangianiLQR<n, m>::AugmentedLagrangianiLQR(const problem::Problem& prob)
     : ilqr_solver_(prob.NumSegments()),
-      opts_(),
       costs_(),
       max_violation_(VectorXd::Zero(prob.NumSegments() + 1)) {
   problem::Problem prob_al = BuildAugLagProblem<n, m>(prob, &costs_);
@@ -218,7 +216,7 @@ void AugmentedLagrangianiLQR<n, m>::SetPenaltyScaling(const double phi) {
 template <int n, int m>
 void AugmentedLagrangianiLQR<n, m>::Init() {
   SolverStats& stats = GetStats();
-  stats.SetCapacity(opts_.max_iterations_total);
+  stats.SetCapacity(GetOptions().max_iterations_total);
   stats.Reset();
   stats.SetVerbosity(ilqr_solver_.GetOptions().verbose);
   stats.Log("iter_al", 0);
@@ -233,8 +231,9 @@ void AugmentedLagrangianiLQR<n, m>::Init() {
 
 template <int n, int m>
 void AugmentedLagrangianiLQR<n, m>::Solve() {
+  Init();
 
-  for (int iteration = 0; iteration < opts_.max_iterations_outer; ++iteration) {
+  for (int iteration = 0; iteration < GetOptions().max_iterations_outer; ++iteration) {
     ilqr_solver_.Solve();
     UpdateDuals();
     UpdateConvergenceStatistics();
@@ -286,10 +285,11 @@ void AugmentedLagrangianiLQR<n, m>::UpdateConvergenceStatistics() {
 template <int n, int m>
 bool AugmentedLagrangianiLQR<n, m>::IsDone() {
   SolverStats& stats = GetStats();
-  const bool are_constraints_satisfied = stats.violations.back() < opts_.constraint_tolerance;
-  const bool is_max_penalty_exceeded = stats.max_penalty.back() > opts_.maximum_penalty;
-  const bool is_max_outer_iterations_exceeded = stats.iterations_outer >= opts_.max_iterations_outer;
-  const bool is_max_total_iterations_exeeded = stats.iterations_total >= opts_.max_iterations_total;
+  SolverOptions& opts = GetOptions();
+  const bool are_constraints_satisfied = stats.violations.back() < opts.constraint_tolerance;
+  const bool is_max_penalty_exceeded = stats.max_penalty.back() > opts.maximum_penalty;
+  const bool is_max_outer_iterations_exceeded = stats.iterations_outer >= opts.max_iterations_outer;
+  const bool is_max_total_iterations_exeeded = stats.iterations_total >= opts.max_iterations_total;
   if (are_constraints_satisfied) {
     if (ilqr_solver_.GetStatus() == SolverStatus::kSolved) {
       status_ = SolverStatus::kSolved;

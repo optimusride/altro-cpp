@@ -51,6 +51,7 @@ class ConstraintValues : public StateControlSized<n, m>, Constraint<ConType> {
 
   VectorNd<p>& GetDuals() { return lambda_; }
   VectorNd<p>& GetPenalty() { return penalty_; }
+  VectorNd<p>& GetConstraintValue() { return c_; }
 	double GetPenaltyScaling() const { return penalty_scaling_; }
 
   /***************************** Setters **************************************/
@@ -185,6 +186,8 @@ class ConstraintValues : public StateControlSized<n, m>, Constraint<ConType> {
   void UpdatePenalties() {
     // TODO(bjackson): Look into more advanced methods for updating the penalty parameter
     penalty_ *= penalty_scaling_;
+    const double rho = penalty_(0);
+    (void) rho;
   }
 
   /**
