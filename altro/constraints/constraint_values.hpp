@@ -25,6 +25,7 @@ class ConstraintValues : public StateControlSized<n, m>, Constraint<ConType> {
   static constexpr int n_m = AddSizes(n, m);
 
  public:
+  static constexpr double kDefaultPenaltyScaling = 10.0;
   /**
    * @brief Construct a new Constraint Values object
    *
@@ -200,7 +201,7 @@ class ConstraintValues : public StateControlSized<n, m>, Constraint<ConType> {
   double MaxViolation() {
     ConType::Projection(c_, c_proj_);
     c_proj_ = c_ - c_proj_;
-    return c_proj_.lpNorm<p>();
+    return c_proj_.template lpNorm<p>();
   }
 
   /**
@@ -246,7 +247,7 @@ class ConstraintValues : public StateControlSized<n, m>, Constraint<ConType> {
   MatrixNxMd<p, p> proj_jac_;   // Jacobian of projection operation
   MatrixNxMd<p, n_m> jac_proj_;  // Jacobian through projection operation (jac_ * proj_jac_)
 
-  double penalty_scaling_ = 10.0;
+  double penalty_scaling_ = kDefaultPenaltyScaling;
 };
 
 }  // namespace constraints

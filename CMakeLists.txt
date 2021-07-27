@@ -7,6 +7,7 @@ add_compile_options(-Wall -Wextra -pedantic -Werror)
 
 # Defines GNU standard installation directories
 include(GNUInstallDirs)
+include(CMakePrintHelpers)
 
 # Check if MacOS
 if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
@@ -14,6 +15,19 @@ if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 
     # Add the Homebrew headers for Big Sur
     include_directories( "/opt/homebrew/include/" )
+endif()
+
+################################################################################
+############################### OPTIONS ########################################
+################################################################################
+option(RUN_CLANG_TIDY "Enable static analysis w/ clang tidy" OFF)
+option(BUILD_TESTS "Build the tests" ON)
+option(BUILD_EXAMPLES "Build the examples" ON)
+option(BUILD_COVERAGE "Build test coverage" OFF)
+
+# Examples are required to build the tests
+if (BUILD_TESTS)
+  set(BUILD_EXAMPLES ON)
 endif()
 
 ################################################################################
@@ -64,7 +78,6 @@ include(GoogleTest)
 # Currently all .html and .css are littered in /build
 # TODO(jw) : move all report files to a dedicated sub-directory
 
-option(BUILD_COVERAGE "Build test coverage" OFF)
 
 if(BUILD_COVERAGE)
     if (MACOSX)
@@ -80,39 +93,6 @@ add_custom_target(coverage ALL
 )
 
 endif(BUILD_COVERAGE)
-
-
-################################################################################
-############################# CLANG-TIDY #######################################
-################################################################################
-# Add clang-tidy static analysis
-# You must build with: cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ..
-# On Mac with Homebrew installed LLVM, this is helpful:
-# export PATH="/opt/homebrew/opt/llvm/bin:$PATH"
-
-# Find the binary
-find_program(CLANG_TIDY_BIN clang-tidy)
-find_program(RUN_CLANG_TIDY_BIN run-clang-tidy.py)
-if (MACOSX)
-    find_program(CLANG_TIDY_BIN /opt/homebrew/opt/llvm/bin/clang-tidy)
-    find_program(RUN_CLANG_TIDY_BIN /opt/homebrew/opt/llvm/share/clang/run-clang-tidy.py)
-endif()
-
-# Options - this list of checks matches the version from vehicle repo
-# Currently checks only src - could expand by adding header-filter
-# to "src|examples|test". Currently have way too many warnings, not worth fixing
-# Also can't figure out how to exclude certain GTest headers
-# TODO(jw) : eliminate checks such as trailing return & magic number for tests
-list(APPEND RUN_CLANG_TIDY_BIN_ARGS
-     -clang-tidy-binary ${CLANG_TIDY_BIN}
-     -quiet
-     -header-filter="\".*\\b(src)\""
-     -checks=clang-diagnostic-*,clang-analyzer-*,-clang-analyzer-alpha*,google-*,readability-*,modernize-*,clang-analyzer-*,misc-*,-modernize-pass-by-value,-readability-else-after-return,-clang-analyzer-alpha.core.CastToStruct,-readability-implicit-bool-cast)
-
-# Run with "make tidy"
-add_custom_target(tidy
-                  COMMAND ${RUN_CLANG_TIDY_BIN} ${RUN_CLANG_TIDY_BIN_ARGS}
-                  COMMENT "Running clang-tidy")
 
 
 ################################################################################
@@ -144,8 +124,12 @@ endmacro()
 
 
 add_subdirectory(altro)
-add_subdirectory(examples)
-add_subdirectory(test)
+if (BUILD_EXAMPLES)
+  add_subdirectory(examples)
+endif()
+if (BUILD_TESTS)
+  add_subdirectory(test)
+endif()
 
 
 ################################################################################

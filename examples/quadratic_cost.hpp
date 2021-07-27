@@ -80,6 +80,7 @@ class QuadraticCost : public problem::CostFunction {
                  "Must be positive semi-definite");
     Eigen::Diagonal<const MatrixXd> D = Qfact_.vectorD();
     bool ispossemidef = true;
+    (void) ispossemidef; // surpress erroneous unused variable error
     for (int i = 0; i < n_; ++i) {
       if (D(i) < 0) {
         ispossemidef = false;

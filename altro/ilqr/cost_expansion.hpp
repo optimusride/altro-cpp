@@ -58,14 +58,14 @@ class CostExpansion : public StateControlSized<n, m> {
   }
 
   // Move operators
-  CostExpansion(CostExpansion&& exp)
+  CostExpansion(CostExpansion&& exp) noexcept
       : StateControlSized<n, m>(exp.StateDimension(), exp.ControlDimension()),
         dxdx_(std::move(exp.dxdx_)),
         dxdu_(std::move(exp.dxdu_)),
         dudu_(std::move(exp.dudu_)),
         dx_(std::move(exp.dx_)),
         du_(std::move(exp.du_)) {}
-  CostExpansion& operator=(CostExpansion&& exp) {
+  CostExpansion& operator=(CostExpansion&& exp) noexcept {
     if (n > 0) {
       ALTRO_ASSERT(n == exp.StateDimension(),
                    "Invalid copy. State dimension must be consistent.");

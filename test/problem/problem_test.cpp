@@ -5,6 +5,7 @@
 #include "altro/problem/discretized_model.hpp"
 #include "altro/problem/dynamics.hpp"
 #include "altro/problem/problem.hpp"
+#include "altro/utils/assert.hpp"
 #include "examples/basic_constraints.hpp"
 #include "examples/quadratic_cost.hpp"
 #include "examples/triple_integrator.hpp"
@@ -27,7 +28,9 @@ TEST(ProblemTests, AddDynamics) {
   prob.SetDynamics(model_ptr, 0);
   EXPECT_FALSE(prob.IsFullyDefined());
   EXPECT_NE(prob.GetDynamics(0), nullptr);
-  EXPECT_DEATH(prob.GetDynamics(1), "Assert.*Dynamics have not been defined.");
+  if (utils::AssertionsActive()) {
+    EXPECT_DEATH(prob.GetDynamics(1), "Assert.*Dynamics have not been defined.");
+  }
   prob.SetDynamics(model_ptr, 0, N);
   for (int k = 0; k < N; ++k) {
     EXPECT_NE(prob.GetDynamics(k), nullptr);
@@ -127,21 +130,23 @@ TEST(ProblemTests, AddConstraints) {
 }
 
 TEST(ProblemTests, AddConstraintsDeath) {
-  int N = 10;
-  int m = 2;
-  problem::Problem prob(N);
+  if (utils::AssertionsActive()) {
+    int N = 10;
+    int m = 2;
+    problem::Problem prob(N);
 
-  // Goal Constraint
-  constraints::ConstraintPtr<constraints::Equality> goal;
-  EXPECT_DEATH(prob.SetConstraint(goal, N), "Assert.*provide a valid constraint pointer");
+    // Goal Constraint
+    constraints::ConstraintPtr<constraints::Equality> goal;
+    EXPECT_DEATH(prob.SetConstraint(goal, N), "Assert.*provide a valid constraint pointer");
 
-  // Control Bound Constraint
-  constraints::ConstraintPtr<constraints::Inequality> ubnd =
-      std::make_shared<examples::ControlBound>(m);
-  EXPECT_DEATH(prob.SetConstraint(ubnd, 0), "Assert.*length greater than zero");
+    // Control Bound Constraint
+    constraints::ConstraintPtr<constraints::Inequality> ubnd =
+        std::make_shared<examples::ControlBound>(m);
+    EXPECT_DEATH(prob.SetConstraint(ubnd, 0), "Assert.*length greater than zero");
 
-  constraints::ConstraintPtr<constraints::Inequality> ubnd2;
-  EXPECT_DEATH(prob.SetConstraint(ubnd2, 0), "Assert.*provide a valid constraint pointer");
+    constraints::ConstraintPtr<constraints::Inequality> ubnd2;
+    EXPECT_DEATH(prob.SetConstraint(ubnd2, 0), "Assert.*provide a valid constraint pointer");
+  }
 }
 
 }  // namespace problem

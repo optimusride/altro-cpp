@@ -14,6 +14,7 @@
 #include "altro/problem/discretized_model.hpp"
 #include "altro/problem/problem.hpp"
 #include "altro/utils/derivative_checker.hpp"
+#include "altro/utils/assert.hpp"
 #include "examples/basic_constraints.hpp"
 #include "examples/quadratic_cost.hpp"
 #include "examples/unicycle.hpp"
@@ -118,7 +119,9 @@ TEST_F(AugLagTest, ALCostDeath) {
   problem::Problem prob(N);
   ALCost<NStates, NControls> alcost(n, m);
   const int k = 0;  // knot point index
-  EXPECT_DEATH(alcost.SetCostFunction(prob.GetCostFunction(k)), "Assert.*cannot be a nullptr");
+  if (utils::AssertionsActive()) {
+    EXPECT_DEATH(alcost.SetCostFunction(prob.GetCostFunction(k)), "Assert.*cannot be a nullptr");
+  }
 }
 
 TEST_F(AugLagTest, ALCostEval) {
@@ -271,7 +274,6 @@ TEST_F(AugLagTest, TwoSolves) {
 
   // Run 2nd solve
   ilqr_solver.Solve();
-  J = ilqr_solver.Cost();
   viol = alsolver.MaxViolation();
   const double viol_expected = 0.0000626;  // from Altro.jl
   const double iterations_expected = 1;
@@ -285,7 +287,6 @@ TEST_F(AugLagTest, TwoSolves) {
 
   // Run 3rd solve
   ilqr_solver.Solve();
-  viol = alsolver.MaxViolation();
   fmt::print("Iterations: {}\n", ilqr_solver.GetStats().iterations_inner);
   fmt::print("Cost: {}\n", ilqr_solver.Cost());
   fmt::print("Viol: {}\n", alsolver.GetMaxViolation());

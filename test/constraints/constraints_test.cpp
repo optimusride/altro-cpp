@@ -6,13 +6,12 @@
 #include "altro/constraints/constraint_values.hpp"
 #include "altro/eigentypes.hpp"
 #include "altro/problem/problem.hpp"
+#include "altro/utils/assert.hpp"
 #include "altro/utils/derivative_checker.hpp"
 #include "examples/basic_constraints.hpp"
 #include "examples/obstacle_constraints.hpp"
 
 namespace altro {
-
-constexpr int HEAP = Eigen::Dynamic;
 
 TEST(BasicConstraints, ControlBoundConstructor) {
   int m = 3;
@@ -38,8 +37,8 @@ TEST(BasicConstraints, ControlBoundConstructor) {
   // Test moving bounds
   bnd.SetUpperBound(std::move(ub));
   bnd.SetLowerBound(std::move(lb));
-  EXPECT_EQ(ub.size(), 0);
-  EXPECT_EQ(lb.size(), 0);
+  EXPECT_EQ(ub.size(), 0);  // NOLINT
+  EXPECT_EQ(lb.size(), 0);  // NOLINT
 }
 
 TEST(BasicConstraints, GoalConstructor) {
@@ -63,7 +62,9 @@ TEST(BasicConstraints, GoalConstraint) {
   goal.Evaluate(2 * x, u, c);
   EXPECT_TRUE(c.isApprox(x));
   VectorXd x_bad = VectorXd::Constant(5, 2.0);
-  EXPECT_DEATH(goal.Evaluate(x_bad, u, c), "Assertion.*rows().*failed");
+  if (utils::AssertionsActive()) {
+    EXPECT_DEATH(goal.Evaluate(x_bad, u, c), "Assertion.*rows().*failed");
+  }
 }
 
 TEST(CircleConstraint, Constructor) {
@@ -113,7 +114,7 @@ TEST(CircleConstraint, Jacobian) {
     return c_;
   };
   VectorXd x2 = x;
-  MatrixXd jac_fd = utils::FiniteDiffJacobian<HEAP, HEAP>(eval, x2);
+  MatrixXd jac_fd = utils::FiniteDiffJacobian<-1, -1>(eval, x2);
 
   EXPECT_TRUE(jac.isApprox(jac_expected));
   EXPECT_TRUE(jac.isApprox(jac_fd, 1e-4));

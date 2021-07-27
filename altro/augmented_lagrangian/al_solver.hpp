@@ -3,6 +3,7 @@
 #include <fmt/format.h>
 #include <fmt/ostream.h>
 #include <type_traits>
+#include <limits>
 
 #include "altro/augmented_lagrangian/al_problem.hpp"
 #include "altro/constraints/constraint.hpp"
@@ -42,7 +43,7 @@ class AugmentedLagrangianiLQR {
   ilqr::iLQR<n, m>& GetiLQRSolver() { return ilqr_solver_; }
   int NumSegments() const { return ilqr_solver_.NumSegments(); }
 
-  int NumConstraints(const int k) const;
+  int NumConstraints(const int& k) const;
   int NumConstraints() const;
 
   /***************************** Setters **************************************/
@@ -56,7 +57,7 @@ class AugmentedLagrangianiLQR {
    *
    * @param rho
    */
-  void SetPenalty(const double rho);
+  void SetPenalty(const double& rho);
 
   /**
    * @brief Set the Penalty scaling parameter to be the same for all constraints
@@ -67,7 +68,7 @@ class AugmentedLagrangianiLQR {
    *
    * @param phi Penalty parameter (phi > 1).
    */
-  void SetPenaltyScaling(const double phi);
+  void SetPenaltyScaling(const double& phi);
 
   /**
    * @brief Specify the initial guess for the state and control trajectory.
@@ -155,10 +156,13 @@ class AugmentedLagrangianiLQR {
   double GetMaxPenalty() const;
 
  private:
+  static constexpr int kDefaultHeaderFrequency = 10;
+
   ilqr::iLQR<n, m> ilqr_solver_;
   std::vector<std::shared_ptr<ALCost<n, m>>> costs_;
   SolverStatus status_ = SolverStatus::kUnsolved;
   VectorXd max_violation_;  // (N+1,) vector of constraint violations at each knot point
+  int header_frequency_ = kDefaultHeaderFrequency;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -181,7 +185,7 @@ AugmentedLagrangianiLQR<n, m>::AugmentedLagrangianiLQR(const problem::Problem& p
 }
 
 template <int n, int m>
-int AugmentedLagrangianiLQR<n, m>::NumConstraints(const int k) const {
+int AugmentedLagrangianiLQR<n, m>::NumConstraints(const int& k) const {
   ALTRO_ASSERT(0 <= k && k <= NumSegments(),
                fmt::format("Invalid knot point index. Got {}, expected to be in range [{},{}]", k,
                            0, NumSegments()));
@@ -198,7 +202,7 @@ int AugmentedLagrangianiLQR<n, m>::NumConstraints() const {
 }
 
 template <int n, int m>
-void AugmentedLagrangianiLQR<n, m>::SetPenalty(const double rho) {
+void AugmentedLagrangianiLQR<n, m>::SetPenalty(const double& rho) {
   for (int k = 0; k <= NumSegments(); ++k) {
     costs_[k]->template SetPenalty<constraints::Equality>(rho);
     costs_[k]->template SetPenalty<constraints::Inequality>(rho);
@@ -206,7 +210,7 @@ void AugmentedLagrangianiLQR<n, m>::SetPenalty(const double rho) {
 }
 
 template <int n, int m>
-void AugmentedLagrangianiLQR<n, m>::SetPenaltyScaling(const double phi) {
+void AugmentedLagrangianiLQR<n, m>::SetPenaltyScaling(const double& phi) {
   for (int k = 0; k <= NumSegments(); ++k) {
     costs_[k]->template SetPenaltyScaling<constraints::Equality>(phi);
     costs_[k]->template SetPenaltyScaling<constraints::Inequality>(phi);
@@ -223,7 +227,7 @@ void AugmentedLagrangianiLQR<n, m>::Init() {
   stats.Log("viol", MaxViolation());
   stats.Log("pen", GetMaxPenalty());
   if (stats.GetVerbosity() < LogLevel::kInner) {
-    stats.GetLogger().SetFrequency(10);
+    stats.GetLogger().SetFrequency(header_frequency_);
   } else {
     stats.GetLogger().SetFrequency(std::numeric_limits<int>::max());
   }
@@ -329,14 +333,15 @@ template <int n, int m>
 template <int p>
 double AugmentedLagrangianiLQR<n, m>::GetMaxViolation() {
   for (int k = 0; k <= NumSegments(); ++k) {
-    max_violation_(k) = costs_[k]->MaxViolation<p>();
+    max_violation_(k) = costs_[k]->template MaxViolation<p>();
   }
-  return max_violation_.lpNorm<p>();
+  return max_violation_.template lpNorm<p>();
 }
 
 template <int n, int m>
 double AugmentedLagrangianiLQR<n, m>::GetMaxPenalty() const {
-  double max_penalty = 0.0;
+  double max_penalty= 0.0; 
+
   for (int k = 0; k <= NumSegments(); ++k) {
     max_penalty = std::max(max_penalty, costs_[k]->MaxPenalty());
   }

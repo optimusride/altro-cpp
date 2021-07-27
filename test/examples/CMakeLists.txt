@@ -7,8 +7,7 @@ target_link_libraries(example_triple_integrator_test
   ilqr
   augmented_lagrangian
   example_problems
-  INTERFACE
-  fmt::fmt-header-only
+  fmt::fmt
 )
 gtest_discover_tests(example_triple_integrator_test)
 

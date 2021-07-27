@@ -31,9 +31,7 @@ class KnotPoint : public StateControlSized<n, m> {
   KnotPoint()
       : StateControlSized<n, m>(n, m),
         x_(StateVector::Zero()),
-        u_(ControlVector::Zero()),
-        t_(0.0f),
-        h_(0.0) {}
+        u_(ControlVector::Zero()) {}
   KnotPoint(const StateVector& x, const ControlVector& u, const float t = 0.0,
             const float h = 0.0)
       : StateControlSized<n, m>(x.size(), u.size()),
@@ -44,13 +42,11 @@ class KnotPoint : public StateControlSized<n, m> {
   KnotPoint(int _n, int _m)
       : StateControlSized<n, m>(_n, _m),
         x_(StateVector::Zero(_n)),
-        u_(ControlVector::Zero(_m)),
-        t_(0.0f),
-        h_(0.0) {}
+        u_(ControlVector::Zero(_m)) {}
 
   // Copy from a knot point of different memory location but same size
   template <int n2, int m2>
-  KnotPoint(const KnotPoint<n2, m2>& z2)
+  KnotPoint(const KnotPoint<n2, m2>& z2)  // NOLINT(google-explicit-constructor)
       : StateControlSized<n, m>(z2.StateDimension(), z2.ControlDimension()),
         x_(z2.State()),
         u_(z2.Control()),
@@ -75,13 +71,13 @@ class KnotPoint : public StateControlSized<n, m> {
   }
 
   // Move operations
-  KnotPoint(KnotPoint&& z)
+  KnotPoint(KnotPoint&& z) noexcept
       : StateControlSized<n, m>(z.n_, z.m_),
         x_(std::move(z.x_)),
         u_(std::move(z.u_)),
         t_(z.t_),
         h_(z.h_) {}
-  KnotPoint& operator=(KnotPoint&& z) {
+  KnotPoint& operator=(KnotPoint&& z) noexcept {
     x_ = std::move(z.x_);
     u_ = std::move(z.u_);
     t_ = z.t_;
@@ -95,18 +91,17 @@ class KnotPoint : public StateControlSized<n, m> {
     ALTRO_ASSERT(n > 0 && m > 0,
                  "Must pass in size if state or control dimension is unknown "
                  "at compile time.");
-    VectorN<n> x = VectorN<n>::Random();
-    VectorN<m> u = VectorN<m>::Random();
-    double t = static_cast<double>(rand() % 100) / 10.0;   // 0 to 10
-    double h = static_cast<double>(rand() % 100) / 100.0;  // 0 to 1
-    return KnotPoint(x, u, t, h);
+    return Random(n, m);
   }
 
   static KnotPoint Random(int state_dim, int control_dim) {
-    VectorXd x = VectorXd::Random(state_dim);
-    VectorXd u = VectorXd::Random(control_dim);
-    double t = static_cast<double>(rand() % 100) / 10.0;   // 0 to 10
-    double h = static_cast<double>(rand() % 100) / 100.0;  // 0 to 1
+    VectorN<n> x = VectorN<n>::Random(state_dim);
+    VectorN<m> u = VectorN<m>::Random(control_dim);
+    const double max_time = 10.0;
+    const double max_h = 1.0;
+    const int resolution = 100;
+    double t = UniformRandom(max_time, resolution);
+    double h = UniformRandom(max_h, resolution);
     return KnotPoint(x, u, t, h);
   }
 
@@ -150,10 +145,14 @@ class KnotPoint : public StateControlSized<n, m> {
   }
 
  private:
+  static double UniformRandom(double upper, int resolution) { 
+    return upper * static_cast<double>(rand() % resolution) / static_cast<double>(resolution); 
+  }
+
   StateVector x_;
   ControlVector u_;
-  float t_;  // time
-  float h_;  // time step
+  float t_ = 0.0;  // time
+  float h_ = 0.0;  // time step
 };
 
 }  // namespace altro

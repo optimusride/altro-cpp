@@ -6,10 +6,6 @@
 
 namespace altro {
 
-void SomethingOdd() {
-  fmt::print(fg(fmt::color::red), "Something red\n");
-}
-
 TEST(SolverStatsTest, LogCounts) {
   fmt::print("Hello there!\n");
   SolverStats stats;

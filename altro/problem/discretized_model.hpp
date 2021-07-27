@@ -8,7 +8,7 @@ namespace problem {
 template <class Model, class Integrator = RungeKutta4>
 class DiscretizedModel : public DiscreteDynamics {
  public:
-  DiscretizedModel(const Model& model) : model_(model) {}
+  explicit DiscretizedModel(const Model& model) : model_(model) {}
 
   void EvaluateInplace(const VectorXdRef& x,
                        const VectorXdRef& u, const float t,

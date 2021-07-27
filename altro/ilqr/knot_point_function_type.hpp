@@ -40,41 +40,31 @@ class KnotPointFunctions : public StateControlSized<n, m> {
 public:
   KnotPointFunctions(DynamicsPtr dynamics, CostFunPtr costfun)
       : StateControlSized<n, m>(
-            // Use comma operator to check the dynamics pointer before using it
-            // Must apply to both arguments since argument evaluation order is
-            // undefined
-            (ALTRO_ASSERT(dynamics != nullptr,
-                          "Cannot provide a null dynamics pointer. For "
-                          "terminal knot point, use KnotPointFunctions(n, m, "
-                          "N)."),
-             dynamics->StateDimension()),
-            (ALTRO_ASSERT(dynamics != nullptr,
-                          "Cannot provide a null dynamics pointer. For "
-                          "terminal knot point, use KnotPointFunctions(n, m, "
-                          "N)."),
-             dynamics->ControlDimension())),
-        model_ptr_(dynamics),
-        costfun_ptr_(
-            (ALTRO_ASSERT(costfun != nullptr,
-                          "Cannot provide a null cost function pointer"),
-             costfun)),
-        cost_expansion_(dynamics->StateDimension(),
-                        dynamics->ControlDimension()),
-        dynamics_expansion_(dynamics->StateDimension(),
-                            dynamics->ControlDimension()),
-        action_value_expansion_(dynamics->StateDimension(),
-                                dynamics->ControlDimension()),
-        action_value_expansion_regularized_(dynamics->StateDimension(),
-                                            dynamics->ControlDimension()) {
+            // Use comma operator to check the dynamics pointer before using it.
+            // Must apply to both arguments since argument evaluation order is undefined.
+            (CheckDynamicsPtr(dynamics), dynamics->StateDimension()),
+            (CheckDynamicsPtr(dynamics), dynamics->ControlDimension())),
+        model_ptr_(std::move(dynamics)),
+        costfun_ptr_(std::move(costfun)),
+        cost_expansion_(model_ptr_->StateDimension(),
+                        model_ptr_->ControlDimension()),
+        dynamics_expansion_(model_ptr_->StateDimension(),
+                            model_ptr_->ControlDimension()),
+        action_value_expansion_(model_ptr_->StateDimension(),
+                                model_ptr_->ControlDimension()),
+        action_value_expansion_regularized_(model_ptr_->StateDimension(),
+                                            model_ptr_->ControlDimension()) {
+    ALTRO_ASSERT(costfun_ptr_ != nullptr, "Cannot provide a null cost function pointer.");
     Init();
   }
   // Create the kpf for the last knot point
   KnotPointFunctions(int state_dim, int control_dim, CostFunPtr costfun)
       : StateControlSized<n, m>(state_dim, control_dim), model_ptr_(nullptr),
-        costfun_ptr_(costfun), cost_expansion_(state_dim, control_dim),
+        costfun_ptr_(std::move(costfun)), cost_expansion_(state_dim, control_dim),
         dynamics_expansion_(state_dim, control_dim),
         action_value_expansion_(state_dim, control_dim),
         action_value_expansion_regularized_(state_dim, control_dim) {
+    ALTRO_ASSERT(costfun_ptr_ != nullptr, "Cannot provide a null cost function pointer.");
     Init();
   }
 
@@ -101,7 +91,7 @@ public:
    */
   void Dynamics(const VectorXdRef &x,
                 const VectorXdRef &u, float t, float h,
-                Eigen::Ref<VectorXd> xnext) const {
+                Eigen::Ref<VectorXd> xnext) const { // NOLINT(performance-unnecessary-value-param)
     model_ptr_->EvaluateInplace(x, u, t, h, xnext);
   }
 
@@ -233,10 +223,15 @@ public:
     ctg_hessian_ = Q.dxdx() + K.transpose() * Q.dudu() * K +
                    K.transpose() * Q.dxdu().transpose() + Q.dxdu() * K;
     ctg_delta_[0] = d.dot(Q.du());
-    ctg_delta_[1] = 0.5 * d.dot(Q.dudu() * d);
+    ctg_delta_[1] = 0.5 * d.dot(Q.dudu() * d); // NOLINT(readability-magic-numbers)
   }
 
-  void AddCostToGo(double deltaV[2]) const {
+  void AddCostToGo(std::array<double, 2>* const deltaV) const {
+    (*deltaV)[0] += ctg_delta_[0];
+    (*deltaV)[1] += ctg_delta_[1];
+  }
+
+  void AddCostToGo(double* const deltaV) const {
     deltaV[0] += ctg_delta_[0];
     deltaV[1] += ctg_delta_[1];
   }
@@ -278,6 +273,12 @@ private:
     ctg_delta_[0] = 0;
     ctg_delta_[1] = 0;
   }
+
+  void CheckDynamicsPtr(const DynamicsPtr& dynamics) {
+    (void) dynamics;  // needed to surpress erroneous unused variable warning
+    ALTRO_ASSERT(dynamics != nullptr, "Cannot provide a null dynamics pointer.");
+  }
+
   std::shared_ptr<problem::DiscreteDynamics> model_ptr_;
   std::shared_ptr<problem::CostFunction> costfun_ptr_;
 
@@ -291,7 +292,7 @@ private:
 
   Eigen::Matrix<double, n, n> ctg_hessian_;
   Eigen::Matrix<double, n, 1> ctg_gradient_;
-  double ctg_delta_[2];
+  std::array<double, 2> ctg_delta_;
 };
 
 } // namespace ilqr

@@ -93,7 +93,7 @@ class ALCost : public problem::CostFunction, public StateControlSized<n, m> {
    *
    * @param costfun Pointer to an instantiation of the CostFunction interface.
    */
-  void SetCostFunction(std::shared_ptr<problem::CostFunction> costfun) {
+  void SetCostFunction(const std::shared_ptr<problem::CostFunction>& costfun) {
     ALTRO_ASSERT(costfun != nullptr, "Cost function cannot be a nullptr.");
     costfun_ = costfun;
   }
@@ -223,11 +223,13 @@ class ALCost : public problem::CostFunction, public StateControlSized<n, m> {
    */
   template <class ConType>
   int NumConstraintFunctions() {
+    int size = 0.0;
     if (std::is_same<ConType, constraints::Equality>::value) {
-      return eq_.size();
+      size = eq_.size();
     } else if (std::is_same<ConType, constraints::Inequality>::value) {
-      return ineq_.size();
+      size = ineq_.size();
     }
+    return size;
   }
 
   /***************************** Methods **************************************/
@@ -268,7 +270,7 @@ class ALCost : public problem::CostFunction, public StateControlSized<n, m> {
     }
   }
 
-  virtual void Hessian(const VectorXdRef& x, const VectorXdRef& u, Eigen::Ref<MatrixXd> dxdx,
+  void Hessian(const VectorXdRef& x, const VectorXdRef& u, Eigen::Ref<MatrixXd> dxdx,
                        Eigen::Ref<MatrixXd> dxdu, Eigen::Ref<MatrixXd> dudu) const override {
     ALTRO_ASSERT(costfun_ != nullptr, "Cost function must be set before evaluating.");
     costfun_->Hessian(x, u, dxdx, dxdu, dudu);
@@ -322,13 +324,13 @@ class ALCost : public problem::CostFunction, public StateControlSized<n, m> {
   template <int p = Eigen::Infinity>
   double MaxViolation() {
     for (size_t i = 0; i < eq_.size(); ++i) {
-      eq_tmp_(i) = eq_[i]->MaxViolation<p>();
+      eq_tmp_(i) = eq_[i]->template MaxViolation<p>();
     }
     for (size_t i = 0; i < ineq_.size(); ++i) {
-      ineq_tmp_(i) = ineq_[i]->MaxViolation<p>();
+      ineq_tmp_(i) = ineq_[i]->template MaxViolation<p>();
     }
-    Eigen::Vector2d tmp(eq_tmp_.lpNorm<p>(), ineq_tmp_.lpNorm<p>());
-    return tmp.lpNorm<p>();
+    Eigen::Vector2d tmp(eq_tmp_.template lpNorm<p>(), ineq_tmp_.template lpNorm<p>());
+    return tmp.template lpNorm<p>();
   }
 
   /**
@@ -338,7 +340,7 @@ class ALCost : public problem::CostFunction, public StateControlSized<n, m> {
    * @return Maximum penalty parameter across all constraints.
    */
   double MaxPenalty() {
-    double max_penalty;
+    double max_penalty = 0.0;
     for (size_t i = 0; i < eq_.size(); ++i) {
       max_penalty = std::max(max_penalty, eq_[i]->MaxPenalty());
     }
@@ -406,4 +408,4 @@ class ALCost : public problem::CostFunction, public StateControlSized<n, m> {
 };
 
 }  // namespace augmented_lagrangian
-}  // namespace
+}  // namespace altro

@@ -5,6 +5,7 @@
 #include "altro/ilqr/ilqr.hpp"
 #include "altro/problem/discretized_model.hpp"
 #include "examples/quadratic_cost.hpp"
+#include "altro/utils/assert.hpp"
 #include "examples/triple_integrator.hpp"
 
 namespace altro {
@@ -13,18 +14,19 @@ namespace ilqr {
 constexpr int dof = 2;
 constexpr int n_static = 3 * dof;
 constexpr int m_static = dof;
+constexpr double tol = 1e-3;
 
 constexpr int HEAP = Eigen::Dynamic;
 
 class KnotPointFunctionsTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    Q = VectorXd::LinSpaced(3 * dof, 1, 3 * dof - 1).asDiagonal();
-    R = VectorXd::LinSpaced(dof, 1, dof - 1).asDiagonal();
-    H = MatrixXd::Zero(3 * dof, dof);
-    q = VectorXd::LinSpaced(3 * dof, 1, 3 * dof - 1);
-    r = VectorXd::LinSpaced(dof, 1, dof - 1);
-    c = 11;
+    Q = VectorXd::LinSpaced(3 * dof, 1, 3 * dof - 1).asDiagonal();  // NOLINT(readability-magic-numbers)
+    R = VectorXd::LinSpaced(dof, 1, dof - 1).asDiagonal();          // NOLINT(readability-magic-numbers)
+    H = MatrixXd::Zero(3 * dof, dof);                               // NOLINT(readability-magic-numbers)
+    q = VectorXd::LinSpaced(3 * dof, 1, 3 * dof - 1);               // NOLINT(readability-magic-numbers)
+    r = VectorXd::LinSpaced(dof, 1, dof - 1);                       // NOLINT(readability-magic-numbers)
+    c = 11;                                                         // NOLINT(readability-magic-numbers)
   }
 
   template <int n_size, int m_size>
@@ -124,7 +126,7 @@ class KnotPointFunctionsTest : public ::testing::Test {
     MatrixXd Sxx =
         Qxx + K.transpose() * Quu * K + K.transpose() * Qux + Qxu * K;
     MatrixXd Sx = Qx + K.transpose() * Quu * d + K.transpose() * Qu + Qxu * d;
-    double deltaV = d.dot(Qu) + 0.5 * d.dot(Quu * d);
+    double deltaV = d.dot(Qu) + 0.5 * d.dot(Quu * d);  // NOLINT(readability-magic-numbers)
 
     KnotPointFunctions<n_size, m_size> kpf = this->MakeKPF<n_size, m_size>();
     kpf.GetActionValueExpansion().dxdx() = Qxx;
@@ -172,15 +174,17 @@ TEST_F(KnotPointFunctionsTest, ConstructionDeath) {
   std::shared_ptr<examples::QuadraticCost> costfun_ptr =
       std::make_shared<examples::QuadraticCost>(costfun);
 
-  auto null_dynamics = [&]() {
-    KnotPointFunctions<n_static, m_static> kpf(nullptr, costfun_ptr);
-  };
-  EXPECT_DEATH(null_dynamics(), "Assert.*null dynamics pointer");
-
-  auto null_costfun = [&]() {
-    KnotPointFunctions<n_static, m_static> kpf(model_ptr, nullptr);
-  };
-  EXPECT_DEATH(null_costfun(), "Assert.*null cost function pointer");
+  if (utils::AssertionsActive()) {
+    auto null_dynamics = [&]() {
+      KnotPointFunctions<n_static, m_static> kpf(nullptr, costfun_ptr);
+    };
+    EXPECT_DEATH(null_dynamics(), "Assert.*null dynamics pointer");
+  
+    auto null_costfun = [&]() {
+      KnotPointFunctions<n_static, m_static> kpf(model_ptr, nullptr);
+    };
+    EXPECT_DEATH(null_costfun(), "Assert.*null cost function pointer");
+  }
 }
 
 TEST_F(KnotPointFunctionsTest, Cost) {
@@ -352,12 +356,12 @@ TEST_F(KnotPointFunctionsTest, ActionValueExpansionDynamic) {
 
 TEST_F(KnotPointFunctionsTest, CalcGainsStatic) {
   TestGains<n_static, m_static>();
-  TestGains<n_static, m_static>(1e-3);
+  TestGains<n_static, m_static>(tol);
 }
 
 TEST_F(KnotPointFunctionsTest, CalcGainsDynamic) { 
   TestGains<HEAP, HEAP>(); 
-  TestGains<HEAP, HEAP>(1e-3);
+  TestGains<HEAP, HEAP>(tol);
 }
 
 TEST_F(KnotPointFunctionsTest, CalcCostToGoStatic) {

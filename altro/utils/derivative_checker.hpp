@@ -4,30 +4,6 @@
 
 namespace altro {
 namespace utils {
-/**
- * @brief Calculate the approximate Jacobian of the function @param f using
- * finite-differences
- *
- * @tparam ncols static size of input. Can be -1 for heap-allocated vectors.
- * @tparam Func generic function type (just needs () operator)
- * @tparam nrows static size of the output. Can be -1 (default) for
- * heap-allocated arrays
- * @tparam T floating point type. Should be double-precision for best results.
- * @param f function-like object that implements () operator taking in the
- * vector x and returning a vector y.
- * @param x vector input to the function `func`
- * @param eps perturbation size for finite difference step
- * @param central if `true` will use the more accurate but more computationally
- * expensive central-difference method
- * @return Eigen::Matrix<T, nrows, ncols>
- */
-template <class Func>
-Eigen::MatrixXd FiniteDiffJacobian(const Func &f,
-                                   const VectorXdRef &x,
-                                   const double eps = 1e-6,
-                                   const bool central = false) {
-  return FiniteDiffJacobian<-1, -1, Func>(f, x, eps, central);
-}
 
 template <int nrows, int ncols, class Func>
 Eigen::Matrix<double, nrows, ncols> FiniteDiffJacobian(
@@ -59,6 +35,31 @@ Eigen::Matrix<double, nrows, ncols> FiniteDiffJacobian(
     }
   }
   return jac;
+}
+
+/**
+ * @brief Calculate the approximate Jacobian of the function @param f using
+ * finite-differences
+ *
+ * @tparam ncols static size of input. Can be -1 for heap-allocated vectors.
+ * @tparam Func generic function type (just needs () operator)
+ * @tparam nrows static size of the output. Can be -1 (default) for
+ * heap-allocated arrays
+ * @tparam T floating point type. Should be double-precision for best results.
+ * @param f function-like object that implements () operator taking in the
+ * vector x and returning a vector y.
+ * @param x vector input to the function `func`
+ * @param eps perturbation size for finite difference step
+ * @param central if `true` will use the more accurate but more computationally
+ * expensive central-difference method
+ * @return Eigen::Matrix<T, nrows, ncols>
+ */
+template <class Func>
+Eigen::MatrixXd FiniteDiffJacobian(const Func &f,
+                                   const VectorXdRef &x,
+                                   const double eps = 1e-6,
+                                   const bool central = false) {
+  return FiniteDiffJacobian<-1, -1, Func>(f, x, eps, central);
 }
 
 /**

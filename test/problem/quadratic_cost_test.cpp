@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 
 #include "altro/eigentypes.hpp"
+#include "altro/utils/assert.hpp"
 #include "examples/quadratic_cost.hpp"
 
 namespace altro {
@@ -50,32 +51,34 @@ TEST_F(QuadraticCostTest, ConstructionPSD) {
 }
 
 TEST_F(QuadraticCostTest, ConstructionDeath) {
-  // Make R PSD
-  R(0, 0) = 0;
-  EXPECT_DEATH(QuadraticCost(Q, R, H, q, r, c), "Assert.*R.*positive definite");
-
-  // Revert back and check again
-  R(0, 0) = 1;
-  QuadraticCost qcost = QuadraticCost(Q, R, H, q, r, c);
-
-  // Make Q not semi-definite
-  Q(0, 0) = -1;
-  EXPECT_DEATH(QuadraticCost(Q, R, H, q, r, c),
-               "Assert.*Q.*positive semi-definite");
-
-  // Check sizes
-  VectorXd q2 = Eigen::Vector2d(10, 12);                          // wrong size
-  VectorXd r2 = Eigen::Vector3d(10, 12, 13);                      // wrong size
-  MatrixXd Q2 = (MatrixXd(2, 2) << 1, 2, 3, 4).finished();        // wrong size
-  MatrixXd Q3 = (MatrixXd(2, 3) << 1, 2, 3, 4, 5, 6).finished();  // not square
-  EXPECT_DEATH(QuadraticCost(Q, R, H, q2, r, c), "Assert.*wrong number of");
-  EXPECT_DEATH(QuadraticCost(Q, R, H, q, r2, c), "Assert.*wrong number of");
-  EXPECT_DEATH(QuadraticCost(Q2, R, H, q, r, c), "Assert.*wrong number of");
-  EXPECT_DEATH(QuadraticCost(Q3, R, H, q, r, c), "Assert.*wrong number of");
-
-  // Check symmetry
-  MatrixXd R2 = (MatrixXd(2, 2) << 1, 1, 0, 2).finished();  // asymmetric
-  EXPECT_DEATH(QuadraticCost(Q, R2, H, q, r, c), "Assert.*not symmetric");
+  if (utils::AssertionsActive()) {
+    // Make R PSD
+    R(0, 0) = 0;
+    EXPECT_DEATH(QuadraticCost(Q, R, H, q, r, c), "Assert.*R.*positive definite");
+  
+    // Revert back and check again
+    R(0, 0) = 1;
+    QuadraticCost qcost = QuadraticCost(Q, R, H, q, r, c);
+  
+    // Make Q not semi-definite
+    Q(0, 0) = -1;
+    EXPECT_DEATH(QuadraticCost(Q, R, H, q, r, c),
+                 "Assert.*Q.*positive semi-definite");
+  
+    // Check sizes
+    VectorXd q2 = Eigen::Vector2d(10, 12);                          // wrong size
+    VectorXd r2 = Eigen::Vector3d(10, 12, 13);                      // wrong size
+    MatrixXd Q2 = (MatrixXd(2, 2) << 1, 2, 3, 4).finished();        // wrong size
+    MatrixXd Q3 = (MatrixXd(2, 3) << 1, 2, 3, 4, 5, 6).finished();  // not square
+    EXPECT_DEATH(QuadraticCost(Q, R, H, q2, r, c), "Assert.*wrong number of");
+    EXPECT_DEATH(QuadraticCost(Q, R, H, q, r2, c), "Assert.*wrong number of");
+    EXPECT_DEATH(QuadraticCost(Q2, R, H, q, r, c), "Assert.*wrong number of");
+    EXPECT_DEATH(QuadraticCost(Q3, R, H, q, r, c), "Assert.*wrong number of");
+  
+    // Check symmetry
+    MatrixXd R2 = (MatrixXd(2, 2) << 1, 1, 0, 2).finished();  // asymmetric
+    EXPECT_DEATH(QuadraticCost(Q, R2, H, q, r, c), "Assert.*not symmetric");
+  }
 }
 
 TEST_F(QuadraticCostTest, Evaluation) {

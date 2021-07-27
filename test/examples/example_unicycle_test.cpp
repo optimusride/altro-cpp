@@ -8,10 +8,6 @@
 #include "altro/ilqr/ilqr.hpp"
 #include "examples/problems/unicycle.hpp"
 
-void Greet() {
-  fmt::print_colored(fmt::WHITE, "hi\n");
-}
-
 class UnicycleExampleTest : public altro::problems::UnicycleProblem, public ::testing::Test {
  protected:
   void SetUp() override { SetScenario(kThreeObstacles); }
@@ -72,13 +68,11 @@ TEST_F(UnicycleExampleTest, SolveOneStep) {
 
 TEST_F(UnicycleExampleTest, SolveConstrained) {
   altro::augmented_lagrangian::AugmentedLagrangianiLQR<NStates, NControls> solver_al = MakeALSolver();
-
   solver_al.SetPenalty(10.0);
   solver_al.GetOptions().verbose = altro::LogLevel::kDebug;
   solver_al.Solve();
 
-  // Make sure the obstacles are avoided
-  const int num_obstacles = cx.size();
+  int num_obstacles = cx.size();
   for (int k = 0; k <= N; ++k) {
     double px = solver_al.GetiLQRSolver().GetTrajectory()->State(k)[0];
     double py = solver_al.GetiLQRSolver().GetTrajectory()->State(k)[1];

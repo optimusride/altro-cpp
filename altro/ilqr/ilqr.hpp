@@ -36,7 +36,7 @@ namespace ilqr {
 template <int n = Eigen::Dynamic, int m = Eigen::Dynamic>
 class iLQR {
  public:
-  explicit iLQR(int N) : N_(N), opts_(), knotpoints_() { Init(); }
+  explicit iLQR(int N) : N_(N), knotpoints_() { Init(); }
   explicit iLQR(const problem::Problem& prob)
       : N_(prob.NumSegments()), initial_state_(prob.GetInitialState()) {
     CopyFromProblem(prob, 0, N_ + 1);
@@ -265,7 +265,7 @@ class iLQR {
 
       // Update Cost-To-Go
       knotpoints_[k]->CalcCostToGo();
-      knotpoints_[k]->AddCostToGo(deltaV_);
+      knotpoints_[k]->AddCostToGo(&deltaV_);
 
       Sxx_prev = &(knotpoints_[k]->GetCostToGoHessian());
       Sx_prev = &(knotpoints_[k]->GetCostToGoGradient());
@@ -421,21 +421,19 @@ class iLQR {
   bool IsDone() {
     bool cost_decrease = stats_.cost_decrease.back() < opts_.cost_tolerance;
     bool gradient = stats_.gradient.back() < opts_.gradient_tolerance;
+    bool is_done = false;
+
     if (cost_decrease && gradient) {
       status_ = SolverStatus::kSolved;
-      return true;
-    }
-
-    if (stats_.iterations_inner >= opts_.max_iterations_inner) {
+      is_done = true;
+    } else if (stats_.iterations_inner >= opts_.max_iterations_inner) {
       status_ = SolverStatus::kMaxIterations;
-      return true;
+      is_done = true;
+    } else if (status_ != SolverStatus::kUnsolved) {
+      is_done = true;
     }
 
-    if (status_ != SolverStatus::kUnsolved) {
-      return true;
-    }
-
-    return false;
+    return is_done;
   }
 
   /**
@@ -534,7 +532,7 @@ class iLQR {
   VectorXd grad_;                  // gradient at each knot point
   double rho_ = 0.0;               // regularization
   double drho_ = 0.0;              // regularization derivative (damping)
-  double deltaV_[2] = {0.0, 0.0};  // terms of the expected cost decrease
+  std::array<double, 2> deltaV_;
 
   bool initial_state_is_set = false;
 

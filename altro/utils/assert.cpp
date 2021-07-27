@@ -13,7 +13,7 @@ namespace utils {
  * Inspired by this StackOverflow post:
  * https://stackoverflow.com/questions/3692954/add-custom-messages-in-assert/3692961
  */
-void AssertMsg(bool expr, std::string msg, const char *expr_str, int line,
+void AssertMsg(bool expr, const std::string& msg, const char *expr_str, int line,
                const char *file) {
   if (!expr) {
     std::cerr << "Assert failed:\t" << msg << "\n"

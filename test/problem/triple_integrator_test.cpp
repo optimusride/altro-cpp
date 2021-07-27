@@ -1,8 +1,9 @@
 #include <gtest/gtest.h>
 
 #include "altro/utils/derivative_checker.hpp"
-#include "examples/triple_integrator.hpp" 
+#include "altro/utils/assert.hpp"
 #include "altro/problem/discretized_model.hpp"
+#include "examples/triple_integrator.hpp" 
 
 namespace altro {
 namespace examples {
@@ -20,8 +21,10 @@ TEST(TripleIntegratorTest, Constructor) {
 }
 
 TEST(TripleIntegratorTest, ConstructorDeath) {
-  EXPECT_DEATH(TripleIntegrator model_fail = TripleIntegrator(0),
-               "Assert.*greater than 0");
+  if (utils::AssertionsActive()) {
+    EXPECT_DEATH(TripleIntegrator model_fail = TripleIntegrator(0),
+                "Assert.*greater than 0");
+  }
 }
 
 TEST(TripleIntegratorTest, Evaluate) {

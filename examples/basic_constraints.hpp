@@ -1,6 +1,7 @@
 #pragma once
 
 #include <limits>
+#include <vector>
 
 #include "altro/constraints/constraint.hpp"
 #include "altro/eigentypes.hpp"
@@ -102,6 +103,7 @@ class ControlBound : public constraints::Constraint<constraints::NegativeOrthant
 
   void Jacobian(const VectorXdRef& x, const VectorXdRef& u,
                 Eigen::Ref<MatrixXd> jac) const override {
+    (void) u; // surpress erroneous unused variable error
     ALTRO_ASSERT(u.size() == m_, "Inconsistent control dimension when evaluating control bound.");
     jac.setZero();
 

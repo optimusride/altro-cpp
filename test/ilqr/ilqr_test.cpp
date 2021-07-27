@@ -16,15 +16,16 @@
 #include "examples/quadratic_cost.hpp"
 #include "examples/triple_integrator.hpp"
 
-constexpr int dof = 2;
-constexpr int n_static = 3 * dof;
-constexpr int m_static = dof;
-constexpr int HEAP = Eigen::Dynamic;
-using ModelType = altro::problem::DiscretizedModel<altro::examples::TripleIntegrator>;
-using CostFunType = altro::examples::QuadraticCost;
 
 class TripleIntegratoriLQRTest : public ::testing::Test {
  protected:
+  static constexpr int dof = 2;
+  static constexpr int n_static = 3 * dof;
+  static constexpr int m_static = dof;
+  static constexpr int HEAP = Eigen::Dynamic;
+  using ModelType = altro::problem::DiscretizedModel<altro::examples::TripleIntegrator>;
+  using CostFunType = altro::examples::QuadraticCost;
+
   void SetUp() override {
     xf(0) = 1;
     xf(1) = 2;
@@ -280,7 +281,7 @@ TEST_F(TripleIntegratoriLQRTest, TwoSteps) {
 
   // Check Feedback gain at first time step
   // Compare with result from Altro.jl
-  Eigen::MatrixXd K0(m_static, n_static);
+  Eigen::MatrixXd K0(m, n);
   // clang-format off
   K0 << -63.9657,   0.0,    -42.7673,   0.0,    -11.5189,   0.0,
           0.0,    -63.9657,   0.0,    -42.7673,   0.0,    -11.5189;
@@ -304,7 +305,7 @@ TEST_F(TripleIntegratoriLQRTest, FullSolve) {
 
   // Check Feedback gain at first time step
   // Compare with result from Altro.jl
-  Eigen::MatrixXd K0(m_static, n_static);
+  Eigen::MatrixXd K0(m, n);
   // clang-format off
   K0 << -63.9657,   0.0,    -42.7673,   0.0,    -11.5189,   0.0,
           0.0,    -63.9657,   0.0,    -42.7673,   0.0,    -11.5189;
@@ -419,7 +420,7 @@ TEST_F(TripleIntegratoriLQRTest, AugLagTwoSteps) {
 
   // Check Feedback gain at first time step
   // Compare with result from Altro.jl
-  Eigen::MatrixXd K0(m_static, n_static);
+  Eigen::MatrixXd K0(m, n);
   // clang-format off
   K0 << -63.9657,   0.0,    -42.7673,   0.0,    -11.5189,   0.0,
           0.0,    -63.9657,   0.0,    -42.7673,   0.0,    -11.5189;

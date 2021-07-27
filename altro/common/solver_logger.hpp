@@ -61,8 +61,8 @@ class SolverLogger {
   int NumEntries() { return entries_.size(); }
 
   /*************************** Iteration **************************************/
-  typedef typename std::unordered_map<std::string, LogEntry>::iterator iterator;
-  typedef typename std::unordered_map<std::string, LogEntry>::const_iterator const_iterator;
+  using iterator = std::unordered_map<std::string, LogEntry>::iterator;
+  using const_iterator = std::unordered_map<std::string, LogEntry>::const_iterator;
   iterator begin() { return entries_.begin(); }
   const_iterator begin() const { return entries_.cbegin(); }
   iterator end() { return entries_.end(); }
@@ -78,7 +78,7 @@ class SolverLogger {
    * @param args Arguments to be passed to the LogEntry constructor.
    */
   template <class... Args>
-  LogEntry& AddEntry(const int col, Args... args);
+  LogEntry& AddEntry(const int& col, Args... args);
 
   /**
    * @brief Set the verbosity level of the logger.
@@ -159,16 +159,18 @@ class SolverLogger {
   void SetHeaderColor(const fmt::color color) { header_color_ = color; }
 
  private:
+  static constexpr int kDefaultFrequency = 10;
+
   LogLevel cur_level_ = LogLevel::kSilent;   // Current verbosity level
-  int frequency_ = 10;  // frequency of the header print
-  int count_ = 0;       // number of prints since header
+  int frequency_ = kDefaultFrequency;        // frequency of the header print
+  int count_ = 0;                            // number of prints since header
   std::unordered_map<std::string, LogEntry> entries_;
   std::vector<const std::string*> order_;
   fmt::color header_color_ = fmt::color::white;
 };
 
 template <class... Args>
-LogEntry& SolverLogger::AddEntry(const int col, Args... args) {
+LogEntry& SolverLogger::AddEntry(const int& col, Args... args) {
   ALTRO_ASSERT(
       col <= static_cast<int>(entries_.size()),
       fmt::format("Column ({}) must be less than or equal to the current number of entries ({}).",

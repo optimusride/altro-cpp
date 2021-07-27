@@ -56,14 +56,14 @@ class LogEntry {
    * @pre The width specified by @param width should be greater than the width specified by
    *      @param fmt. This is not checked and is the responsibility of the user to verify.
    */
-  explicit LogEntry(const std::string& title, const std::string& fmt, const EntryType type = kFloat)
-      : title_(title), name_(title), format_(fmt), type_(type) {}
+  explicit LogEntry(std::string title, std::string fmt, const EntryType& type = kFloat)
+      : title_(title), name_(std::move(title)), format_(std::move(fmt)), type_(type) {}
 
   const std::string& GetFormat() const { return format_; }
   const std::string& GetTitle() const { return title_; }
   int GetWidth() const { return width_; }
   LogLevel GetLevel() const { return level_; }
-  int IsActive(const LogLevel level) { return level >= level_; }
+  bool IsActive(const LogLevel level) { return level >= level_; }
   EntryType GetType() const { return type_; }
 
   /**
@@ -73,7 +73,7 @@ class LogEntry {
    * @param lb Lower bound
    * @param color Color of data to be printed if the data is lower than lb.
    */
-  LogEntry& SetLowerBound(double lb, fmt::color color = fmt::color::green);
+  LogEntry& SetLowerBound(const double& lb, fmt::color color = fmt::color::green);
 
   /**
    * @brief Set the Upper Bound for numeric data, along with the color if the
@@ -82,7 +82,7 @@ class LogEntry {
    * @param ub Lower bound
    * @param color Color of data to be printed if the data is greater than ub.
    */
-  LogEntry& SetUpperBound(double ub, fmt::color color = fmt::color::red);
+  LogEntry& SetUpperBound(const double& ub, fmt::color color = fmt::color::red);
 
   /**
    * @brief Set the width of the data column
@@ -92,7 +92,7 @@ class LogEntry {
    *
    * @param width Width of the data field, in characters.
    */
-  LogEntry& SetWidth(const int width);
+  LogEntry& SetWidth(const int& width);
 
   /**
    * @brief Set the verbosity level
@@ -102,7 +102,7 @@ class LogEntry {
    *
    * @param level Verbosity level. level > 0
    */
-  LogEntry& SetLevel(const LogLevel level);
+  LogEntry& SetLevel(const LogLevel& level);
 
   /**
    * @brief Set the type of the entry.
@@ -112,7 +112,7 @@ class LogEntry {
    * @param type entry type
    * @return Reference to the log entry.
    */
-  LogEntry& SetType(const EntryType type);
+  LogEntry& SetType(const EntryType& type);
 
   /**
    * @brief Set the name of the entry
@@ -197,15 +197,18 @@ class LogEntry {
    */
   template <class T>
   fmt::color GetColor(T value) {
+    fmt::color color = color_default_;
     if (bounded_) {
       if (value < lower_) {
-        return color_lower_;
+        color = color_lower_;
       } else if (value > upper_) {
-        return color_upper_;
+        color = color_upper_;
       }
     }
-    return color_default_;
+    return color;
   }
+
+  static constexpr int kDefaultWidth = 10;
 
   std::string title_;     // title of the entry to appear in the header
   std::string name_;      // descriptive name (e.g. "penalty parameter" vs. "pen")
@@ -213,7 +216,7 @@ class LogEntry {
   std::string data_;      // storage for the logged data
   EntryType type_;
   LogLevel level_ = LogLevel::kInner;         // verbosity level
-  int width_ = 10;        // column width
+  int width_ = kDefaultWidth;        // column width
   bool bounded_ = false;  // does the field have conditional formatting
   double lower_ = -std::numeric_limits<double>::infinity();  // lower bound
   double upper_ = +std::numeric_limits<double>::infinity();  // upper bound

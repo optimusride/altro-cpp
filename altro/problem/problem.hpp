@@ -107,7 +107,7 @@ class Problem {
    * @param k_start Starting index (inclusive) (0 <= k_start < k_stop)
    * @param k_stop  Terminal index (exclusive) (k_start < k_stop <= N)
    */
-  void SetCostFunction(std::shared_ptr<CostFunction> costfun, int k_start, int k_stop);
+  void SetCostFunction(const std::shared_ptr<CostFunction>& costfun, int k_start, int k_stop);
 
   /**
    * @brief Set the dynamics model at time step k
@@ -143,7 +143,7 @@ class Problem {
    * @param k_start Starting index (inclusive) (0 <= k_start < k_stop)
    * @param k_stop  Terminal index (exclusive) (k_start < k_stop < N)
    */
-  void SetDynamics(std::shared_ptr<DiscreteDynamics> model, int k_start, int k_stop);
+  void SetDynamics(const std::shared_ptr<DiscreteDynamics>& model, int k_start, int k_stop);
 
   template <class ConType>
   void SetConstraint(std::shared_ptr<constraints::Constraint<ConType>> con, int k);

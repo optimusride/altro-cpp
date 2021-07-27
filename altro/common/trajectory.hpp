@@ -69,15 +69,15 @@ class Trajectory {
   }
 
   /***************************** Moving ***************************************/
-  Trajectory(Trajectory&& Z) : traj_(std::move(Z.traj_)) {}
-  Trajectory& operator=(Trajectory&& Z) {
+  Trajectory(Trajectory&& Z) noexcept : traj_(std::move(Z.traj_)) {}
+  Trajectory& operator=(Trajectory&& Z) noexcept {
     traj_ = std::move(Z.traj_);
     return *this;
   }
 
   /*************************** Iteration **************************************/
-  typedef typename std::vector<KnotPoint<n,m>>::iterator iterator;
-  typedef typename std::vector<KnotPoint<n,m>>::const_iterator const_iterator;
+  using iterator = typename std::vector<KnotPoint<n,m>>::iterator ;
+  using const_iterator = typename std::vector<KnotPoint<n,m>>::const_iterator;
   iterator begin() { return traj_.begin(); }
   const_iterator begin() const { return traj_.begin(); }
   iterator end() { return traj_.end(); }
@@ -121,10 +121,10 @@ class Trajectory {
     int N = NumSegments();
     for (int k = 0; k < N; ++k) {
       traj_[k].SetStep(h);
-      traj_[k].SetTime(k * h);
+      traj_[k].SetTime(static_cast<float>(k) * h);
     }
     traj_[N].SetStep(0.0);
-    traj_[N].SetTime(h * N);
+    traj_[N].SetTime(static_cast<float>(h) * N);
   }
 
   /**

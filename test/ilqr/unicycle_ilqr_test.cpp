@@ -17,10 +17,6 @@
 #include "examples/unicycle.hpp"
 #include "test/test_utils.hpp"
 
-constexpr int n_static = 3;
-constexpr int m_static = 2;
-constexpr int HEAP = Eigen::Dynamic;
-
 class UnicycleiLQRTest : public altro::problems::UnicycleProblem, public ::testing::Test {
  protected:
   void SetUp() override {}
@@ -32,14 +28,14 @@ TEST_F(UnicycleiLQRTest, BuildProblem) {
 }
 
 TEST_F(UnicycleiLQRTest, Initialization) {
-  altro::ilqr::iLQR<n_static, m_static> solver = MakeSolver<n_static, m_static>();
+  altro::ilqr::iLQR<NStates, NControls> solver = MakeSolver<NStates, NControls>();
   solver.Rollout();
   const double J_expected = 259.27636137767087;  // from Altro.jl
   EXPECT_LT(std::abs(solver.Cost() - J_expected), 1e-5);
 }
 
 TEST_F(UnicycleiLQRTest, BackwardPass) {
-  altro::ilqr::iLQR<n_static, m_static> solver = MakeSolver<n_static, m_static>();
+  altro::ilqr::iLQR<NStates, NControls> solver = MakeSolver<NStates, NControls>();
   solver.Rollout();
   solver.UpdateExpansions();
   solver.BackwardPass();
@@ -56,7 +52,7 @@ TEST_F(UnicycleiLQRTest, BackwardPass) {
 }
 
 TEST_F(UnicycleiLQRTest, ForwardPass) {
-  altro::ilqr::iLQR<n_static, m_static> solver = MakeSolver<n_static, m_static>();
+  altro::ilqr::iLQR<NStates, NControls> solver = MakeSolver<NStates, NControls>();
   solver.Rollout();
   solver.UpdateExpansions();
   solver.BackwardPass();
@@ -67,7 +63,7 @@ TEST_F(UnicycleiLQRTest, ForwardPass) {
 }
 
 TEST_F(UnicycleiLQRTest, TwoSteps) {
-  altro::ilqr::iLQR<n_static, m_static> solver = MakeSolver<n_static, m_static>();
+  altro::ilqr::iLQR<NStates, NControls> solver = MakeSolver<NStates, NControls>();
   solver.Rollout();
   solver.UpdateExpansions();
   solver.BackwardPass();
@@ -90,7 +86,7 @@ TEST_F(UnicycleiLQRTest, TwoSteps) {
 }
 
 TEST_F(UnicycleiLQRTest, FullSolve) {
-  altro::ilqr::iLQR<n_static, m_static> solver = MakeSolver<n_static, m_static>();
+  altro::ilqr::iLQR<NStates, NControls> solver = MakeSolver<NStates, NControls>();
   solver.GetOptions().verbose = altro::LogLevel::kInner;
   solver.Solve();
   const double J_expected = 0.0387016567;  // from Altro.jl
@@ -103,7 +99,7 @@ TEST_F(UnicycleiLQRTest, FullSolve) {
 
 TEST_F(UnicycleiLQRTest, AugLagForwardPass) {
   bool alprob = true;
-  altro::ilqr::iLQR<n_static, m_static> solver = MakeSolver<n_static, m_static>(alprob);
+  altro::ilqr::iLQR<NStates, NControls> solver = MakeSolver<NStates, NControls>(alprob);
   solver.Rollout();
   solver.UpdateExpansions();
   solver.BackwardPass();
@@ -116,12 +112,12 @@ TEST_F(UnicycleiLQRTest, AugLagForwardPass) {
 
 TEST_F(UnicycleiLQRTest, AugLagFullSolve) {
   bool alprob = true;
-  altro::ilqr::iLQR<n_static, m_static> solver = MakeSolver<n_static, m_static>(alprob);
+  altro::ilqr::iLQR<NStates, NControls> solver = MakeSolver<NStates, NControls>(alprob);
   solver.Solve();
   double J = solver.Cost();
 
   // Calculate the maximum violation
-  std::shared_ptr<altro::Trajectory<n_static, m_static>> Z = solver.GetTrajectory();
+  std::shared_ptr<altro::Trajectory<NStates, NControls>> Z = solver.GetTrajectory();
   double v_max = 0;
   double w_max = 0;
   for (int k = 0; k < N; ++k) {

@@ -3,6 +3,7 @@
 
 #include "altro/ilqr/dynamics_expansion.hpp"
 #include "altro/problem/discretized_model.hpp"
+#include "altro/utils/assert.hpp"
 #include "examples/triple_integrator.hpp"
 
 namespace altro {
@@ -45,15 +46,17 @@ TEST_F(DynamicsExpansionTest, ConstructionStatic) {
 }
 
 TEST_F(DynamicsExpansionTest, ConstructionDeath) {
-  auto bad_state = [&]() { 
-    DynamicsExpansion<STATE_DIM, CONTROL_DIM> expansion(n+1, m);
-  };
-  EXPECT_DEATH(bad_state(), "Assert.*State sizes must be consistent");
-
-  auto bad_control= [&]() { 
-    DynamicsExpansion<-1, CONTROL_DIM> expansion(n+1, m-1);
-  };
-  EXPECT_DEATH(bad_control(), "Assert.*Control sizes must be consistent");
+  if (utils::AssertionsActive()) {
+    auto bad_state = [&]() { 
+      DynamicsExpansion<STATE_DIM, CONTROL_DIM> expansion(n+1, m);
+    };
+    EXPECT_DEATH(bad_state(), "Assert.*State sizes must be consistent");
+  
+    auto bad_control= [&]() { 
+      DynamicsExpansion<-1, CONTROL_DIM> expansion(n+1, m-1);
+    };
+    EXPECT_DEATH(bad_control(), "Assert.*Control sizes must be consistent");
+  }
 }
 
 TEST_F(DynamicsExpansionTest, SetJac) {

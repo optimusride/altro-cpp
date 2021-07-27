@@ -45,7 +45,6 @@ add_executable(ilqr_test
 )
 target_link_libraries(ilqr_test
   gtest_main
-  altro
   ilqr
   dynamics_examples
   cost_function_examples
@@ -60,7 +59,6 @@ add_executable(unicycle_ilqr_test
 )
 target_link_libraries(unicycle_ilqr_test
   gtest_main
-  altro
   augmented_lagrangian
   common
   constraints

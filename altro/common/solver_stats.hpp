@@ -4,6 +4,7 @@
 #include <fmt/ostream.h>
 
 #include "altro/common/solver_logger.hpp"
+#include "altro/utils/utils.hpp"
 
 namespace altro {
 
@@ -61,7 +62,7 @@ class SolverStats {
    * @param viol Maximum constraint violation.
    * @param grad Max norm of the gradient.
    */
-  void SetTolerances(const double cost, const double viol, const double grad);
+  void SetTolerances(const double& cost, const double& viol, const double& grad);
 
   /**
    * @brief Set the capacity of the internally-stored vectors
@@ -152,7 +153,10 @@ class SolverStats {
    * @param data One of the publically-accessible vectors stored in this class.
    */
   template <class T>
-  void SetPtr(const LogEntry& entry, std::vector<T>& data) {}
+  void SetPtr(const LogEntry& entry, std::vector<T>& data) {
+    ALTRO_UNUSED(entry);
+    ALTRO_UNUSED(data);
+  }
 
   /**
    * @brief Create the default logging fields

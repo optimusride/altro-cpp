@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 
 #include "altro/ilqr/cost_expansion.hpp"
+#include "altro/utils/assert.hpp"
 #include "examples/quadratic_cost.hpp"
 
 namespace altro {
@@ -35,11 +36,13 @@ TEST_F(CostExpansionTest, Construction) {
 }
 
 TEST_F(CostExpansionTest, ConstructionDeath) {
-  auto bad_state = [&]() { CostExpansion<4, 3> expansion(n - 1, m); };
-  EXPECT_DEATH(bad_state(), "Assert.*State sizes must be consistent");
-
-  auto bad_control = [&]() { CostExpansion<4, 3> expansion(n, m + 1); };
-  EXPECT_DEATH(bad_control(), "Assert.*Control sizes must be consistent");
+  if (utils::AssertionsActive()) {
+    auto bad_state = [&]() { CostExpansion<4, 3> expansion(n - 1, m); };
+    EXPECT_DEATH(bad_state(), "Assert.*State sizes must be consistent");
+  
+    auto bad_control = [&]() { CostExpansion<4, 3> expansion(n, m + 1); };
+    EXPECT_DEATH(bad_control(), "Assert.*Control sizes must be consistent");
+  }
 }
 
 TEST_F(CostExpansionTest, Copy) {

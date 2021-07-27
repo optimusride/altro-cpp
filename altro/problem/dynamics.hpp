@@ -11,7 +11,7 @@ namespace problem {
 
 class Dynamics {
 public:
-  virtual ~Dynamics(){};
+  virtual ~Dynamics() = default;
 
   virtual int StateDimension() const = 0;
   virtual int ControlDimension() const = 0;
@@ -27,7 +27,7 @@ public:
 
 class ContinuousDynamics : public Dynamics {
 public:
-  virtual ~ContinuousDynamics(){};
+  ~ContinuousDynamics() override = default;
 
   /**
    * @brief Evaluate the continuous-time dynamics
@@ -50,7 +50,7 @@ public:
 
   virtual void EvaluateInplace(const VectorXdRef &x,
                                const VectorXdRef &u,
-                               const float t,
+                               float t,
                                Eigen::Ref<VectorXd> xdot) const = 0;
 
   /**
@@ -64,7 +64,7 @@ public:
    * @param[out] jac dense (n,m) dynamics Jacobian
   */
   virtual void Jacobian(const VectorXdRef &x,
-                        const VectorXdRef &u, const float t,
+                        const VectorXdRef &u, float t,
                         Eigen::Ref<MatrixXd> jac) const = 0;
 
   /**
@@ -84,7 +84,7 @@ public:
   virtual void Hessian(const VectorXdRef &x,
                        const VectorXdRef &u, const float t,
                        const VectorXdRef &b,
-                       Eigen::Ref<MatrixXd> hess) const {
+                       Eigen::Ref<MatrixXd> hess) const { // NOLINT(performance-unnecessary-value-param)
     ALTRO_UNUSED(x);
     ALTRO_UNUSED(u);
     ALTRO_UNUSED(t);
@@ -177,7 +177,7 @@ public:
 
 class DiscreteDynamics : public Dynamics {
 public:
-  virtual ~DiscreteDynamics(){};
+  ~DiscreteDynamics() override = default;
 
   /**
    * @brief Evaluate the discrete-time dynamics
@@ -201,7 +201,7 @@ public:
 
   virtual void EvaluateInplace(const VectorXdRef &x,
                                const VectorXdRef &u,
-                               const float t, const float h,
+                               float t, float h,
                                Eigen::Ref<VectorXd> xnext) const = 0;
 
   /**
@@ -216,8 +216,8 @@ public:
    * @param[out] jac dense (n,m) dynamics Jacobian
    */
   virtual void Jacobian(const VectorXdRef &x,
-                        const VectorXdRef &u, const float t,
-                        const float h, Eigen::Ref<MatrixXd> jac) const = 0;
+                        const VectorXdRef &u, float t,
+                        float h, Eigen::Ref<MatrixXd> jac) const = 0;
 
   /**
    * @brief Evaluate the derivative of the Jacobian-transpose vector product:
@@ -234,9 +234,9 @@ public:
    * @param hvp nxm derivative of the Jacobian-tranpose vector product
    */
   virtual void Hessian(const VectorXdRef &x,
-                       const VectorXdRef &u, const float t,
-                       const float h, const VectorXdRef &b,
-                       Eigen::Ref<MatrixXd> hess) const {
+                       const VectorXdRef &u, float t,
+                       float h, const VectorXdRef &b,
+                       Eigen::Ref<MatrixXd> hess) const {  // NOLINT(performance-unnecessary-value-param)
     ALTRO_UNUSED(x);
     ALTRO_UNUSED(u);
     ALTRO_UNUSED(t);
@@ -250,8 +250,8 @@ public:
     int m = ControlDimension();
     VectorXd x = VectorXd::Random(n);
     VectorXd u = VectorXd::Random(m);
-    float t = static_cast<float>(rand()) / RAND_MAX;
-    float h = 0.1;
+    const float t = static_cast<float>(rand()) / RAND_MAX;
+    const float h = 0.1;
     return CheckJacobian(x, u, t, h, eps, verbose);
   }
 
@@ -294,8 +294,8 @@ public:
     VectorXd x = VectorXd::Random(n);
     VectorXd u = VectorXd::Random(m);
     VectorXd b = VectorXd::Random(n);
-    float t = static_cast<float>(rand()) / RAND_MAX;
-    float h = 0.1;
+    const float t = static_cast<float>(rand()) / RAND_MAX;
+    const float h = 0.1;
     return CheckHessian(x, u, t, h, b, eps, verbose);
   }
 

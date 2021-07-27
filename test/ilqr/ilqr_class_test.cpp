@@ -4,6 +4,7 @@
 #include "altro/ilqr/ilqr.hpp"
 #include "altro/ilqr/knot_point_function_type.hpp"
 #include "altro/problem/problem.hpp"
+#include "altro/utils/assert.hpp"
 #include "test/test_utils.hpp"
 
 namespace altro {
@@ -71,15 +72,19 @@ TEST(iLQRClassTest, DeathTests) {
   iLQR<HEAP,HEAP> ilqr(N);
 
   problem::Problem prob_undefined(N);
-  EXPECT_DEATH(ilqr.CopyFromProblem(prob_undefined, 0, N + 1),
-               "Assert.*fully defined");
+  if (utils::AssertionsActive()) {
+    EXPECT_DEATH(ilqr.CopyFromProblem(prob_undefined, 0, N + 1),
+                 "Assert.*fully defined");
+  }
 
 	// Must set the initial state and trajectory before solving
 	iLQR<HEAP, HEAP> ilqr2(N);
 	ilqr2.CopyFromProblem(prob, 0, N + 1);
-	EXPECT_DEATH(ilqr2.Solve(), "Assert.*Initial state must be set");
-	ilqr2.SetInitialState(VectorXd::Zero(prob.GetDynamics(0)->StateDimension()));
-	EXPECT_DEATH(ilqr2.Solve(), "Assert.*Invalid trajectory pointer");
+  if (utils::AssertionsActive()) {
+    EXPECT_DEATH(ilqr2.Solve(), "Assert.*Initial state must be set");
+    ilqr2.SetInitialState(VectorXd::Zero(prob.GetDynamics(0)->StateDimension()));
+    EXPECT_DEATH(ilqr2.Solve(), "Assert.*Invalid trajectory pointer");
+  }
 }
 
 }  // namespace ilqr

@@ -9,7 +9,7 @@ namespace altro {
 namespace problem {
 class CostFunction {
  public:
-  virtual ~CostFunction(){};
+  virtual ~CostFunction() = default;
 
   /**
    * @brief Evaluate the cost at a single knot point

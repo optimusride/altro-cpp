@@ -11,12 +11,6 @@
 template <int dof>
 using ProbType = altro::problems::TripleIntegratorProblem<dof>;
 
-// Why am I getting undefined references if I don't have something like this???
-void Greet() {
-  fmt::print("Hello, there!\n");
-  fmt::print_colored(fmt::RED, "Hello, there!\n");
-}
-
 TEST(TripleIntegratorExample, Unconstrained) {
   // Create the problem
   ProbType<2> def;

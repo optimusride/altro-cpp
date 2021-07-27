@@ -7,7 +7,7 @@
 namespace altro {
 namespace problem {
 
-void Problem::SetCostFunction(std::shared_ptr<CostFunction> costfun, int k_start, int k_stop) {
+void Problem::SetCostFunction(const std::shared_ptr<CostFunction>& costfun, int k_start, int k_stop) {
   ALTRO_ASSERT(k_start >= 0, "Invalid starting knot point index.");
   ALTRO_ASSERT(k_start < k_stop, "Starting index must be less than terminal index.");
   ALTRO_ASSERT(k_stop <= N_ + 1, "Invalid terminal knot point index.");
@@ -16,7 +16,7 @@ void Problem::SetCostFunction(std::shared_ptr<CostFunction> costfun, int k_start
   }
 }
 
-void Problem::SetDynamics(std::shared_ptr<DiscreteDynamics> model, int k_start, int k_stop) {
+void Problem::SetDynamics(const std::shared_ptr<DiscreteDynamics>& model, int k_start, int k_stop) {
   ALTRO_ASSERT(k_start >= 0, "Invalid starting knot point index.");
   ALTRO_ASSERT(k_start < k_stop, "Starting index must be less than terminal index.");
   ALTRO_ASSERT(k_stop <= N_, "Invalid terminal knot point index.");
@@ -45,10 +45,10 @@ bool Problem::IsFullyDefined(const bool verbose) const {
       std::cout << "Index " << k << ": ";
       std::cout << (valid_k ? "PASS " : "FAIL ");
 
-      if (!has_costfun) std::cout << "(NO COSTFUN) ";
-      if (!has_dynamics) std::cout << "(NO DYNAMICS) ";
-      if (!has_initial_state) std::cout << "(NO INITIAL STATE) ";
-      if (!good_state_dim) std::cout << "(INCONSISTENT INITIAL STATE)";
+      if (!has_costfun) { std::cout << "(NO COSTFUN) "; }
+      if (!has_dynamics) { std::cout << "(NO DYNAMICS) "; }
+      if (!has_initial_state) { std::cout << "(NO INITIAL STATE) "; }
+      if (!good_state_dim) { std::cout << "(INCONSISTENT INITIAL STATE)"; }
       std::cout << std::endl;
     }
   }

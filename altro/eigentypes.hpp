@@ -13,7 +13,7 @@ using VectorNd = Eigen::Matrix<double, n, 1>;
 template <int n, int m>
 using MatrixNxMd = Eigen::Matrix<double, n, m>;
 
-typedef Eigen::Ref<const Eigen::VectorXd> VectorXdRef; 
+using VectorXdRef = Eigen::Ref<const Eigen::VectorXd>; 
 
 using VectorXd = Eigen::VectorXd;
 using VectorXf = Eigen::VectorXf;
