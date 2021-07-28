@@ -36,3 +36,14 @@ target_link_libraries(solver_logging_test
   common
 )
 gtest_discover_tests(solver_logging_test)
+
+# Timer
+add_executable(timer_test
+  timer_test.cpp
+)
+target_link_libraries(timer_test
+  gtest_main
+  common
+)
+gtest_discover_tests(timer_test)
+target_compile_definitions(timer_test PRIVATE LOGDIR="${CMAKE_CURRENT_BINARY_DIR}")

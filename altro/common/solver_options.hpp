@@ -4,7 +4,7 @@
 #include <fmt/ostream.h>
 
 #include "altro/utils/utils.hpp"
-#include "altro/common/solver_stats.hpp"
+#include "altro/common/solver_logger.hpp"
 
 namespace altro {
 
@@ -13,6 +13,7 @@ namespace altro {
  * 
  */
 struct SolverOptions {
+  SolverOptions();
   // clang-format off
   // NOLINT comments added to supress clang-tidy [readibility-magic-numbers] check
   int max_iterations_total = 300;         // NOLINT Maximum number of total iterative LQR iterations
@@ -39,7 +40,12 @@ struct SolverOptions {
 
   double constraint_tolerance = 1e-4;     // NOLINT Maximum constraint violation theshold
   double maximum_penalty = 1e8;           // NOLINT Maximum penalty parameter allowed
+  int header_frequency = 10;              // NOLINT Frequency at which the header is printed for AL iterations (for levels < kInner)
   LogLevel verbose = LogLevel::kSilent;   // Output verbosity level
+  bool profiler_enable = false;                  // Enable internal profiler
+  bool profiler_output_to_file = false;    // Output to file (true) or stdout (false)
+  std::string log_directory;
+  std::string profile_filename = "profiler.out";
   // clang-format on
 };
 

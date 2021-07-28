@@ -28,9 +28,8 @@ class UnicycleProblem {
 
   enum Scenario { kTurn90, kThreeObstacles };
 
- protected:
-  using ModelType = altro::problem::DiscretizedModel<altro::examples::Unicycle>;
-  using CostFunType = altro::examples::QuadraticCost;
+	using ModelType = altro::problem::DiscretizedModel<altro::examples::Unicycle>;
+	using CostFunType = altro::examples::QuadraticCost;
 
   // Problem Data
   static constexpr int HEAP = Eigen::Dynamic;

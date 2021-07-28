@@ -24,6 +24,11 @@ option(RUN_CLANG_TIDY "Enable static analysis w/ clang tidy" OFF)
 option(BUILD_TESTS "Build the tests" ON)
 option(BUILD_EXAMPLES "Build the examples" ON)
 option(BUILD_COVERAGE "Build test coverage" OFF)
+option(BUILD_BENCHMARKS "Build the benchmark problems" ON)
+
+# Set (and create) log file directory
+set(LOGDIR "${PROJECT_BINARY_DIR}/logs" CACHE FILESTRING "Location of log files")
+file(MAKE_DIRECTORY ${LOGDIR})
 
 # Examples are required to build the tests
 if (BUILD_TESTS)
@@ -129,6 +134,9 @@ if (BUILD_EXAMPLES)
 endif()
 if (BUILD_TESTS)
   add_subdirectory(test)
+endif()
+if (BUILD_BENCHMARKS)
+  add_subdirectory(perf)
 endif()
 
 

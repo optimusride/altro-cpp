@@ -4,9 +4,10 @@
 #include <iostream>
 #include <map>
 
-#include "altro/common/solver_options.hpp"
+#include "altro/common/solver_stats.hpp"
 #include "altro/common/state_control_sized.hpp"
 #include "altro/common/trajectory.hpp"
+#include "altro/common/timer.hpp"
 #include "altro/eigentypes.hpp"
 #include "altro/ilqr/knot_point_function_type.hpp"
 #include "altro/problem/problem.hpp"
@@ -98,8 +99,8 @@ class iLQR {
 
   SolverStats& GetStats() { return stats_; }
   const SolverStats& GetStats() const { return stats_; }
-  SolverOptions& GetOptions() { return opts_; }
-  const SolverOptions& GetOptions() const { return opts_; }
+  SolverOptions& GetOptions() { return stats_.GetOptions(); }
+  const SolverOptions& GetOptions() const { return stats_.GetOptions(); }
   VectorXd& GetCosts() { return costs_; }
   SolverStatus GetStatus() const { return status_; }
   VectorNd<n>& GetInitialState() { return initial_state_; }
@@ -144,12 +145,14 @@ class iLQR {
                  "Initial state must be set before solving. HINT: Calling CopyFromProblem does NOT "
                  "set the initial state.");
     ALTRO_ASSERT(Z_ != nullptr, "Invalid trajectory pointer. May be uninitialized.");
+    GetOptions().profiler_enable ? stats_.GetTimer()->Activate() : stats_.GetTimer()->Deactivate();
+    Stopwatch sw = stats_.GetTimer()->Start("ilqr");
 
     Initialize();  // reset any internal variables
     Rollout();     // simulate the system forward using initial controls
     stats_.initial_cost = Cost();
 
-    for (int iter = 0; iter < opts_.max_iterations_inner; ++iter) {
+    for (int iter = 0; iter < GetOptions().max_iterations_inner; ++iter) {
       UpdateExpansions();
       BackwardPass();
       ForwardPass();
@@ -180,6 +183,7 @@ class iLQR {
     return Cost(*Z_);
   }
   double Cost(const Trajectory<n, m>& Z) {
+    Stopwatch sw = stats_.GetTimer()->Start("cost");
     CalcIndividualCosts(Z);
     return costs_.sum();
   }
@@ -199,6 +203,7 @@ class iLQR {
    *
    */
   void UpdateExpansions() {
+    Stopwatch sw = stats_.GetTimer()->Start("expansions");
     ALTRO_ASSERT(Z_ != nullptr, "Trajectory pointer must be set before updating the expansions.");
 
     // TODO(bjackson): do this in parallel
@@ -228,6 +233,8 @@ class iLQR {
    *
    */
   void BackwardPass() {
+    Stopwatch sw = stats_.GetTimer()->Start("backward_pass");
+
     // Regularization
     Eigen::ComputationInfo info;
 
@@ -251,13 +258,13 @@ class iLQR {
         k = N_ - 1;  // Start at the beginning of the trajectory again
 
         // Check if we're at max regularization
-        if (rho_ >= opts_.bp_reg_max) {
+        if (rho_ >= GetOptions().bp_reg_max) {
           max_reg_count++;
         }
 
         // Throw an error if we keep failing, even at max regularization
         // TODO(bjackson): Look at better ways of doing this
-        if (max_reg_count >= opts_.bp_reg_fail_threshold) {
+        if (max_reg_count >= GetOptions().bp_reg_fail_threshold) {
           throw std::runtime_error("Backward pass regularization increased too many times.");
         }
         continue;
@@ -296,6 +303,8 @@ class iLQR {
    * @return true If the the state and control bounds are not violated.
    */
   bool RolloutClosedLoop(const double alpha) {
+    Stopwatch sw = stats_.GetTimer()->Start("rollout");
+
     Zbar_->State(0) = initial_state_;
     for (int k = 0; k < N_; ++k) {
       MatrixNxMd<m, n>& K = GetKnotPointFunction(k).GetFeedbackGain();
@@ -309,13 +318,13 @@ class iLQR {
       GetKnotPointFunction(k).Dynamics(Zbar_->State(k), Zbar_->Control(k), Zbar_->GetTime(k),
                                        Zbar_->GetStep(k), Zbar_->State(k + 1));
 
-      if (opts_.check_forwardpass_bounds) {
-        if (Zbar_->State(k + 1).norm() > opts_.state_max) {
+      if (GetOptions().check_forwardpass_bounds) {
+        if (Zbar_->State(k + 1).norm() > GetOptions().state_max) {
           // TODO(bjackson): Emit warning (need logging mechanism)
           status_ = SolverStatus::kStateLimit;
           return false;
         }
-        if (Zbar_->Control(k).norm() > opts_.control_max) {
+        if (Zbar_->Control(k).norm() > GetOptions().control_max) {
           // TODO(bjackson): Emit warning (need logging mechanism)
           status_ = SolverStatus::kControlLimit;
           return false;
@@ -338,6 +347,9 @@ class iLQR {
    *
    */
   void ForwardPass() {
+    Stopwatch sw = stats_.GetTimer()->Start("forward_pass");
+    SolverOptions& opts = GetOptions();
+
     double J0 = costs_.sum();  // Calculated during UpdateExpansions
 
     double alpha = 1.0;
@@ -347,7 +359,7 @@ class iLQR {
 
     double J = J0;
 
-    for (; iter_fp < opts_.line_search_max_iterations; ++iter_fp) {
+    for (; iter_fp < opts.line_search_max_iterations; ++iter_fp) {
       if (RolloutClosedLoop(alpha)) {
         J = Cost(*Zbar_);
         double expected = -alpha * (deltaV_[0] + alpha * deltaV_[1]);
@@ -357,7 +369,7 @@ class iLQR {
           z = -1.0;
         }
 
-        if (opts_.line_search_lower_bound <= z && z <= opts_.line_search_upper_bound && J < J0) {
+        if (opts.line_search_lower_bound <= z && z <= opts.line_search_upper_bound && J < J0) {
           success = true;
           // stats_.improvement_ratio.emplace_back(z);
           stats_.Log("cost", J);
@@ -366,7 +378,7 @@ class iLQR {
           break;
         }
       }
-      alpha /= opts_.line_search_decrease_factor;
+      alpha /= opts.line_search_decrease_factor;
     }
 
     if (success) {
@@ -391,6 +403,8 @@ class iLQR {
    * @post Increments the number of solver iterations
    */
   void UpdateConvergenceStatistics() {
+    Stopwatch sw = stats_.GetTimer()->Start("stats");
+
     double dgrad = NormalizedFeedforwardGain();
     double dJ = 0.0; 
     if (stats_.iterations_inner == 0) {
@@ -419,14 +433,17 @@ class iLQR {
    * @return true If the solver should stop iterating
    */
   bool IsDone() {
-    bool cost_decrease = stats_.cost_decrease.back() < opts_.cost_tolerance;
-    bool gradient = stats_.gradient.back() < opts_.gradient_tolerance;
+    Stopwatch sw = stats_.GetTimer()->Start("convergence_check");
+    SolverOptions& opts = GetOptions();
+
+    bool cost_decrease = stats_.cost_decrease.back() < opts.cost_tolerance;
+    bool gradient = stats_.gradient.back() < opts.gradient_tolerance;
     bool is_done = false;
 
     if (cost_decrease && gradient) {
       status_ = SolverStatus::kSolved;
       is_done = true;
-    } else if (stats_.iterations_inner >= opts_.max_iterations_inner) {
+    } else if (stats_.iterations_inner >= opts.max_iterations_inner) {
       status_ = SolverStatus::kMaxIterations;
       is_done = true;
     } else if (status_ != SolverStatus::kUnsolved) {
@@ -445,8 +462,9 @@ class iLQR {
    *
    */
   void Initialize() {
+    Stopwatch sw = stats_.GetTimer()->Start("init");
     stats_.iterations_inner = 0;
-    stats_.SetVerbosity(opts_.verbose);
+    stats_.SetVerbosity(GetOptions().verbose);
     Init();
   }
 
@@ -480,7 +498,7 @@ class iLQR {
     grad_ = VectorXd::Zero(N_);
     deltaV_[0] = 0.0;
     deltaV_[1] = 0.0;
-    rho_ = opts_.bp_reg_initial;
+    rho_ = GetOptions().bp_reg_initial;
     drho_ = 0.0;
   }
 
@@ -502,9 +520,10 @@ class iLQR {
    *
    */
   void IncreaseRegularization() {
-    drho_ = std::max(drho_ * opts_.bp_reg_increase_factor, opts_.bp_reg_increase_factor);
-    rho_ = std::max(rho_ * drho_, opts_.bp_reg_min);
-    rho_ = std::min(rho_, opts_.bp_reg_max);
+    const SolverOptions& opts = GetOptions();
+    drho_ = std::max(drho_ * opts.bp_reg_increase_factor, opts.bp_reg_increase_factor);
+    rho_ = std::max(rho_ * drho_, opts.bp_reg_min);
+    rho_ = std::min(rho_, opts.bp_reg_max);
   }
 
   /**
@@ -512,14 +531,14 @@ class iLQR {
    *
    */
   void DecreaseRegularization() {
-    drho_ = std::min(drho_ / opts_.bp_reg_increase_factor, 1 / opts_.bp_reg_increase_factor);
-    rho_ = std::max(rho_ * drho_, opts_.bp_reg_min);
-    rho_ = std::min(rho_, opts_.bp_reg_max);
+    const SolverOptions& opts = GetOptions();
+    drho_ = std::min(drho_ / opts.bp_reg_increase_factor, 1 / opts.bp_reg_increase_factor);
+    rho_ = std::max(rho_ * drho_, opts.bp_reg_min);
+    rho_ = std::min(rho_, opts.bp_reg_max);
   }
 
   int N_;  // number of segments
   VectorNd<n> initial_state_;
-  SolverOptions opts_;
   SolverStats stats_;  // solver statistics (iterations, cost at each iteration, etc.)
   std::vector<std::unique_ptr<KnotPointFunctions<n, m>>>
       knotpoints_;                          // problem description and data

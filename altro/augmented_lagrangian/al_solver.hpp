@@ -156,13 +156,12 @@ class AugmentedLagrangianiLQR {
   double GetMaxPenalty() const;
 
  private:
-  static constexpr int kDefaultHeaderFrequency = 10;
+  Stopwatch CreateTimer(const std::string& name) { return GetStats().GetTimer()->Start(name); }
 
   ilqr::iLQR<n, m> ilqr_solver_;
   std::vector<std::shared_ptr<ALCost<n, m>>> costs_;
   SolverStatus status_ = SolverStatus::kUnsolved;
   VectorXd max_violation_;  // (N+1,) vector of constraint violations at each knot point
-  int header_frequency_ = kDefaultHeaderFrequency;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -219,22 +218,21 @@ void AugmentedLagrangianiLQR<n, m>::SetPenaltyScaling(const double& phi) {
 
 template <int n, int m>
 void AugmentedLagrangianiLQR<n, m>::Init() {
+  Stopwatch sw = CreateTimer("init");
+
   SolverStats& stats = GetStats();
-  stats.SetCapacity(GetOptions().max_iterations_total);
   stats.Reset();
-  stats.SetVerbosity(ilqr_solver_.GetOptions().verbose);
   stats.Log("iter_al", 0);
   stats.Log("viol", MaxViolation());
   stats.Log("pen", GetMaxPenalty());
-  if (stats.GetVerbosity() < LogLevel::kInner) {
-    stats.GetLogger().SetFrequency(header_frequency_);
-  } else {
-    stats.GetLogger().SetFrequency(std::numeric_limits<int>::max());
-  }
 }
 
 template <int n, int m>
 void AugmentedLagrangianiLQR<n, m>::Solve() {
+  // This check needs to happen before creating the first stopwatch
+  GetOptions().profiler_enable ? GetStats().GetTimer()->Activate() : GetStats().GetTimer()->Deactivate();
+  Stopwatch sw = CreateTimer("al");
+
   Init();
 
   for (int iteration = 0; iteration < GetOptions().max_iterations_outer; ++iteration) {
@@ -262,6 +260,8 @@ void AugmentedLagrangianiLQR<n, m>::Solve() {
 
 template <int n, int m>
 void AugmentedLagrangianiLQR<n, m>::UpdateDuals() {
+  Stopwatch sw = CreateTimer("dual_update");
+
   int N = this->NumSegments();
   for (int k = 0; k <= N; ++k) {
     // fmt::print("Updating Duals at index {}...\n", k);
@@ -271,6 +271,8 @@ void AugmentedLagrangianiLQR<n, m>::UpdateDuals() {
 
 template <int n, int m>
 void AugmentedLagrangianiLQR<n, m>::UpdatePenalties() {
+  Stopwatch sw = CreateTimer("penalty_update");
+
   int N = this->NumSegments();
   for (int k = 0; k <= N; ++k) {
     costs_[k]->UpdatePenalties();
@@ -279,6 +281,8 @@ void AugmentedLagrangianiLQR<n, m>::UpdatePenalties() {
 
 template <int n, int m>
 void AugmentedLagrangianiLQR<n, m>::UpdateConvergenceStatistics() {
+  Stopwatch sw = CreateTimer("stats");
+
   SolverStats& stats = GetStats();
   stats.iterations_outer++;
   stats.Log("viol", GetMaxViolation());
@@ -288,6 +292,8 @@ void AugmentedLagrangianiLQR<n, m>::UpdateConvergenceStatistics() {
 
 template <int n, int m>
 bool AugmentedLagrangianiLQR<n, m>::IsDone() {
+  Stopwatch sw = CreateTimer("convergence_check");
+
   SolverStats& stats = GetStats();
   SolverOptions& opts = GetOptions();
   const bool are_constraints_satisfied = stats.violations.back() < opts.constraint_tolerance;

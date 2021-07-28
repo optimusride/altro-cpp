@@ -2,7 +2,7 @@
 #include <fmt/color.h>
 #include <gtest/gtest.h>
 
-#include "altro/common/solver_options.hpp"
+#include "altro/common/solver_stats.hpp"
 
 namespace altro {
 

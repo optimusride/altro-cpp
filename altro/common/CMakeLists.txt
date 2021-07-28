@@ -12,11 +12,19 @@ add_library(common
   log_entry.cpp
   solver_logger.hpp
   solver_logger.cpp
+  timer.hpp
+  timer.cpp
+  profile_entry.hpp
+  profile_entry.cpp
 )
 target_link_libraries(common 
   PUBLIC
   Eigen3::Eigen
   fmt::fmt
   utils
+)
+target_compile_definitions(common 
+  PRIVATE
+  LOGDIR="${LOGDIR}"
 )
 export_library(common altroTargets "knotpoint.hpp;state_control_sized.hpp;trajectory.hpp;solver_options.hpp;solver_stats.hpp;log_entry.hpp;solver_logger.hpp;" altro/common)

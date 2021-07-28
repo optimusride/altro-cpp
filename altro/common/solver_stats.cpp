@@ -30,12 +30,21 @@ void SolverStats::Reset() {
   iterations_total = 0;
   iterations_outer = 0;
   len_ = 0;
-  int cur_capacity = cost.capacity();
   for (auto kv : floats_) {
     kv.second->clear();
   }
   logger_.Clear();
-  SetCapacity(cur_capacity);
+  
+  // Pull info from options
+  SetCapacity(opts_.max_iterations_total);
+  SetVerbosity(opts_.verbose);
+  ProfilerOutputToFile(opts_.profiler_output_to_file);
+
+  if (GetVerbosity() < LogLevel::kInner) {
+    GetLogger().SetFrequency(opts_.header_frequency);
+  } else {
+    GetLogger().SetFrequency(std::numeric_limits<int>::max());
+  }
 }
 
 void SolverStats::NewIteration() {
@@ -49,6 +58,18 @@ void SolverStats::NewIteration() {
     } else {
       kv.second->back() = 0.0;
     }
+  }
+}
+
+std::string SolverStats::ProfileOutputFile() {
+  return opts_.log_directory + "/" + opts_.profile_filename;
+}
+
+void SolverStats::ProfilerOutputToFile(const bool flag) {
+  if (flag) {
+    timer_->SetOutput(ProfileOutputFile());
+  } else {
+    timer_->SetOutput(stdout);
   }
 }
 

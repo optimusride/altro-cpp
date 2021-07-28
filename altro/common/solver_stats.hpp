@@ -3,10 +3,14 @@
 #include <fmt/format.h>
 #include <fmt/ostream.h>
 
+#include "altro/common/solver_options.hpp"
 #include "altro/common/solver_logger.hpp"
+#include "altro/common/timer.hpp"
 #include "altro/utils/utils.hpp"
 
 namespace altro {
+
+
 
 /**
  * @brief Describes the current state of the solver
@@ -38,7 +42,9 @@ enum class SolverStatus {
  */
 class SolverStats {
  public:
-  SolverStats() { DefaultLogger(); }
+  SolverStats() : timer_(Timer::MakeShared()) { 
+    DefaultLogger(); 
+  }
 
   double initial_cost = 0.0;
   int iterations_inner = 0;
@@ -91,6 +97,13 @@ class SolverStats {
    * @return Current verbosity level
    */
   LogLevel GetVerbosity() const { return logger_.GetLevel(); }
+  SolverLogger& GetLogger() { return logger_; }
+  const SolverLogger& GetLogger() const { return logger_; }
+  TimerPtr& GetTimer() { return timer_; }
+  const TimerPtr& GetTimer() const { return timer_; }
+  SolverOptions& GetOptions() { return opts_; }
+  const SolverOptions& GetOptions() const { return opts_; }
+  std::string ProfileOutputFile();
 
   /**
    * @brief Print the last iteration to the console
@@ -121,8 +134,6 @@ class SolverStats {
     SetData(title, value);
   }
 
-  SolverLogger& GetLogger() { return logger_; }
-
   /**
    * @brief Advance the data forward by one iteration, effectively saving 
    * all the current data.
@@ -130,7 +141,12 @@ class SolverStats {
    */
   void NewIteration();
 
+  //  TODO(bjackson): Make this private to not confuse the user
+  // Requires a friend relationship with SolverOptions
+  void ProfilerOutputToFile(bool flag);
+
  private:
+
   /**
    * @brief Saves the data in the corresponding vector.
    * 
@@ -168,6 +184,8 @@ class SolverStats {
 
   int len_ = 0;
   SolverLogger logger_;
+  TimerPtr timer_;
+  SolverOptions opts_;
 };
 
 template <class T>
@@ -182,6 +200,5 @@ void SolverStats::SetData(const std::string& title, T value) {
     search_float->second->back() = value;
   }
 }
-
 
 }  // namespace altro
