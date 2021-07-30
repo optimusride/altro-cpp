@@ -40,7 +40,7 @@ class TripleIntegratorProblem {
     }
   }
 
-  template <class Integrator = altro::problem::RungeKutta4>
+  template <class Integrator = altro::problem::RungeKutta4<NStates, NControls>>
   altro::problem::Problem MakeProblem(const bool add_constraints = false) {
     altro::problem::Problem prob(N);
 

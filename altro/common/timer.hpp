@@ -57,7 +57,7 @@ class Timer : public std::enable_shared_from_this<Timer> {
   friend Stopwatch;  // so that it can populate times_
 
  private:
-  Timer() = default;
+  Timer() = default;  // Make constructor private so it can only be created as a shared ptr
   std::vector<std::string> stack_;  // current profiler call stack e.g. "al/ilqr/cost"
   std::map<std::string, std::chrono::microseconds> times_;
   bool active_ = false;

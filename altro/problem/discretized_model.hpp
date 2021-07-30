@@ -5,27 +5,27 @@
 namespace altro {
 namespace problem {
 
-template <class Model, class Integrator = RungeKutta4>
+template <class Model, class Integrator = RungeKutta4<Model::NStates, Model::NControls>>
 class DiscretizedModel : public DiscreteDynamics {
  public:
-  explicit DiscretizedModel(const Model& model) : model_(model) {}
+  static constexpr int NStates = Model::NStates;
+  static constexpr int NControls = Model::NControls;
 
-  void EvaluateInplace(const VectorXdRef& x,
-                       const VectorXdRef& u, const float t,
-                       const float h, Eigen::Ref<VectorXd> xnext) const override {
+  explicit DiscretizedModel(const Model& model)
+      : model_(model), integrator_(model.StateDimension(), model.ControlDimension()) {}
+
+  void EvaluateInplace(const VectorXdRef& x, const VectorXdRef& u, const float t, const float h,
+                       Eigen::Ref<VectorXd> xnext) const override {
     integrator_.Integrate(model_, x, u, t, h, xnext);
   }
 
-  void Jacobian(const VectorXdRef& x,
-                const VectorXdRef& u, const float t,
-                const float h, Eigen::Ref<MatrixXd> jac) const override {
+  void Jacobian(const VectorXdRef& x, const VectorXdRef& u, const float t, const float h,
+                Eigen::Ref<MatrixXd> jac) const override {
     integrator_.Jacobian(model_, x, u, t, h, jac);
   }
 
-  void Hessian(const VectorXdRef& x,
-               const VectorXdRef& u, const float t,
-               const float h, const VectorXdRef& b,
-               Eigen::Ref<MatrixXd> hess) const override {
+  void Hessian(const VectorXdRef& x, const VectorXdRef& u, const float t, const float h,
+               const VectorXdRef& b, Eigen::Ref<MatrixXd> hess) const override {
     ALTRO_UNUSED(x);
     ALTRO_UNUSED(u);
     ALTRO_UNUSED(t);
@@ -37,6 +37,8 @@ class DiscretizedModel : public DiscreteDynamics {
   bool HasHessian() const override { return model_.HasHessian(); }
   int StateDimension() const override { return model_.StateDimension(); }
   int ControlDimension() const override { return model_.ControlDimension(); }
+
+  Integrator& GetIntegrator() { return integrator_; }
 
  private:
   Model model_;

@@ -9,10 +9,21 @@
 namespace altro {
 namespace problem {
 
+/**
+ * @brief An abstract dynamics model.
+ * 
+ * Defines both discrete and continuous-time dynamics models.
+ * 
+ * User-defined models should override the `NStates` and `NControls` constants
+ * to provide compile-time size information.
+ * 
+ */
 class Dynamics {
 public:
   virtual ~Dynamics() = default;
 
+  static constexpr int NStates = Eigen::Dynamic;
+  static constexpr int NControls = Eigen::Dynamic;
   virtual int StateDimension() const = 0;
   virtual int ControlDimension() const = 0;
 

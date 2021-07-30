@@ -57,6 +57,10 @@ class StateControlSized {
       ALTRO_ASSERT(m == m_, "Control sizes must be consistent.");
     }
   }
+  StateControlSized() : n_(n), m_(m) {
+    ALTRO_ASSERT(n > 0, "State dimension must be greater than zero.");
+    ALTRO_ASSERT(m > 0, "Control dimension must be greater than zero.");
+  }
 
   int StateDimension() const { return n_; }
   int ControlDimension() const { return m_; }

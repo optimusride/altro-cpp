@@ -25,8 +25,10 @@ namespace examples {
 class Unicycle : public problem::ContinuousDynamics {
  public:
   Unicycle() = default;
-  int StateDimension() const override { return 3; }
-  int ControlDimension() const override { return 2; }
+  static constexpr int NStates = 3;
+  static constexpr int NControls = 2;
+  int StateDimension() const override { return NStates; }
+  int ControlDimension() const override { return NControls; }
 
   void EvaluateInplace(const VectorXdRef& x, const VectorXdRef& u, const float t,
                        Eigen::Ref<VectorXd> xdot) const override;
