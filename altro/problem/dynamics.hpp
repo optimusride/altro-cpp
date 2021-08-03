@@ -10,6 +10,7 @@
 namespace altro {
 namespace problem {
 
+// clang-format off
 /**
  * @brief Represents a continuous dynamics function of the form:
  * \f[ \dot{x} = f(x, u) \f]
@@ -28,24 +29,25 @@ namespace problem {
  * - `bool HasHessian() const` - Specify if the Hessian is implemented
  *
  * Where we use the following Eigen type aliases:
- *    using VectorXdRef = Eigen::Ref<const Eigen::VectorXd>
- *    using JacobianRef = Eigen::Ref<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic,
- * Eigen::RowMajor>>
+ * 
+ *      using VectorXdRef = Eigen::Ref<const Eigen::VectorXd>
+ *      using JacobianRef = Eigen::Ref<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>
  *
  * The Jacobian is stored row-major since Jacobians are naturally evaluated
  * row-wise. Storing the underlying data in row-major format allows the rows to
  * be processed individually in a cache-friendly way.
  *
  * The user also has the option of defining the static constants:
- *    static constexpr int NStates
- *    static constexpr int NControls
- *    static constexpr int NOutputs
+ * 
+ *      static constexpr int NStates
+ *      static constexpr int NControls
+ *      static constexpr int NOutputs
  *
  * which can be used to provide compile-time size information. For best performance, 
  * it is highly recommended that the user specify these constants, which default to 
  * `Eigen::Dynamic` if not specified.
  *
- * # FunctionBase API
+ * ## FunctionBase API
  * If the original FunctionBase API is needed, the following lines need to be
  * added to the public interface of the derived class:
  *    using FunctionBase::Evaluate;
@@ -56,6 +58,7 @@ namespace problem {
  * that the time must be updated using `ContinuousDynamics::SetTime` before calling
  * `FunctionBase::Evaluate`.
  */
+// clang-format on
 class ContinuousDynamics : public FunctionBase {
  public:
   using FunctionBase::Evaluate;
@@ -94,9 +97,10 @@ class ContinuousDynamics : public FunctionBase {
   float t_;
 };
 
+// clang-format off
 /**
  * @brief Represents a discrete dynamics function of the form:
- * \f[ x_{k+1} = f(x_k, u_k) \f]
+ * \f$ x_{k+1} = f(x_k, u_k) \f$
  * 
  * This is the form of the dynamics expected by the altro library. A continuous 
  * time dynamics model can be converted to a discrete model using e.g. `DiscretizedDynamics`.
@@ -118,26 +122,28 @@ class ContinuousDynamics : public FunctionBase {
  * These can be set and retrieved using `SetTime`, `SetStep`, `GetTime`, and `GetStep`.
  * 
  * The following Eigen type aliases are used:
- *    using VectorXdRef = Eigen::Ref<const Eigen::VectorXd>
- *    using JacobianRef = Eigen::Ref<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic,
- * Eigen::RowMajor>>
+ * 
+ *      using VectorXdRef = Eigen::Ref<const Eigen::VectorXd>
+ *      using JacobianRef = Eigen::Ref<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>
  *
  * The Jacobian is stored row-major since Jacobians are naturally evaluated
  * row-wise. Storing the underlying data in row-major format allows the rows to
  * be processed individually in a cache-friendly way.
  *
  * The user also has the option of defining the static constants:
- *    static constexpr int NStates
- *    static constexpr int NControls
- *    static constexpr int NOutputs
+ * 
+ *      static constexpr int NStates
+ *      static constexpr int NControls
+ *      static constexpr int NOutputs
  *
  * which can be used to provide compile-time size information. For best performance, 
  * it is highly recommended that the user specify these constants, which default to 
  * `Eigen::Dynamic` if not specified.
  *
- * # FunctionBase API
+ * ## FunctionBase API
  * If the original FunctionBase API is needed, the following lines need to be
  * added to the public interface of the derived class:
+ * 
  *    using FunctionBase::Evaluate;
  *    using FunctionBase::Jacobian;
  *    using FunctionBase::Hessian;
@@ -146,6 +152,7 @@ class ContinuousDynamics : public FunctionBase {
  * that the time must be updated using `DiscreteDynamics::SetTime`  and 
  * `DiscreteDynamics.SetStep` before calling `FunctionBase::Evaluate`.
  */
+// clang-format on
 class DiscreteDynamics : public FunctionBase {
  public:
   using FunctionBase::Evaluate;

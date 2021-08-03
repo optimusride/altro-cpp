@@ -113,11 +113,12 @@ class NegativeOrthant {
 };
 using Inequality = NegativeOrthant;
 
+// clang-format off
 /**
  * @brief An abstract constraint of the form:
  * \f[ g(x, u) \in K \f]
  *
- * where \f$ K \f$ is an arbitrary convex cone, specified by @tparam ConType.
+ * where \f$ K \f$ is an arbitrary convex cone, specified by the `ConType` type parameteter.
  * This formulation supports generic equality and inequality constraints.
  *
  * # Interface
@@ -127,9 +128,9 @@ using Inequality = NegativeOrthant;
  * - `void Jacobian(const VectorXdRef& x, const VectorXdRef& u, JacobianRef out)`
  *
  * Where we use the following Eigen type aliases:
- *    using VectorXdRef = Eigen::Ref<const Eigen::VectorXd>
- *    using JacobianRef = Eigen::Ref<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic,
- * Eigen::RowMajor>>
+ *
+ *     using VectorXdRef = Eigen::Ref<const Eigen::VectorXd>
+ *     using JacobianRef = Eigen::Ref<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>
  *
  * The Jacobian is stored row-major since Jacobians are naturally evaluated
  * row-wise. Storing the underlying data in row-major format allows the rows to
@@ -143,6 +144,7 @@ using Inequality = NegativeOrthant;
  *
  * @tparam ConType The type of constraint (equality, inequality, conic, etc.)
  */
+// clang-format on
 template <class ConType>
 class Constraint : public FunctionBase {
  public:

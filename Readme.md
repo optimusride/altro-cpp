@@ -35,7 +35,13 @@ All the unit tests can be run by running
     ./run_tests.sh
   
 
-
-
-
-
+## Building documentation
+To build the documentation, run the following commands from the root directory:
+```
+mkdir build
+cd build
+cmake ..
+cmake --build . --target doxygen
+```
+The documentation will be built locally in `build/html`. Open the `build/html/index.html` 
+file in your browser to view the documentation.

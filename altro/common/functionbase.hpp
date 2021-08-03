@@ -7,6 +7,7 @@
 
 namespace altro {
 
+// clang-format off
 /**
  * @brief Represents a generic vector-valued function of the form 
  * \f[
@@ -33,23 +34,25 @@ namespace altro {
  * - `bool HasHessian() const` - Specify if the Hessian is implemented
  *
  * Where we use the following Eigen type aliases:
- *    using VectorXdRef = Eigen::Ref<const Eigen::VectorXd>
- *    using JacobianRef = Eigen::Ref<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic,
- * Eigen::RowMajor>>
+ * 
+ *      using VectorXdRef = Eigen::Ref<const Eigen::VectorXd>
+ *      using JacobianRef = Eigen::Ref<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>
  *
  * The Jacobian is stored row-major since Jacobians are naturally evaluated
  * row-wise. Storing the underlying data in row-major format allows the rows to
  * be processed individually in a cache-friendly way.
  *
  * The user also has the option of defining the static constants:
- *    static constexpr int NStates
- *    static constexpr int NControls
- *    static constexpr int NOutputs
+ * 
+ *      static constexpr int NStates
+ *      static constexpr int NControls
+ *      static constexpr int NOutputs
  *
  * which can be used to provide compile-time size information. These can value
  * can be queried on run-time types using the `StateMemorySize`, `ControlMemorySize`,
  * and `OutputMemorySize` functions.
  */
+// clang-format off
 class FunctionBase {
  public:
   virtual ~FunctionBase() = default;
@@ -86,6 +89,7 @@ class FunctionBase {
   static constexpr double kDefaultTolerance = 1e-4;
 };
 
+// clang-format on
 /**
  * @brief Represents an abstract scalar-valued function
  *
@@ -113,17 +117,20 @@ class FunctionBase {
  * true)
  *
  * Where we use the following Eigen type alias:
- *    using VectorXdRef = Eigen::Ref<const Eigen::VectorXd>
+ * 
+ *      using VectorXdRef = Eigen::Ref<const Eigen::VectorXd>
  *
  * The user also has the option of defining the static constants:
- *    static constexpr int NStates
- *    static constexpr int NControls
+ * 
+ *      static constexpr int NStates
+ *      static constexpr int NControls
  *
  * which can be used to provide compile-time size information. These values
  * can be queried on run-time types using the `StateMemorySize`, and `ControlMemorySize`
  * functions.
  *
  */
+// clang-format off
 class ScalarFunction : public FunctionBase {
  public:
   static const int NOutputs = 1;
