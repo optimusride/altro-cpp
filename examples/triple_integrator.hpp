@@ -17,6 +17,7 @@ namespace examples {
  */
 class TripleIntegrator : public problem::ContinuousDynamics {
  public:
+  using ContinuousDynamics::Evaluate;
   TripleIntegrator(int dof = 1) : dof_(dof) {
     ALTRO_ASSERT(dof > 0, "The degrees of freedom must be greater than 0.");
   }
@@ -24,16 +25,16 @@ class TripleIntegrator : public problem::ContinuousDynamics {
   int StateDimension() const override { return 3 * dof_; }
   int ControlDimension() const override { return dof_; }
 
-  void EvaluateInplace(const VectorXdRef& x,
+  void Evaluate(const VectorXdRef& x,
                        const VectorXdRef& u, float t,
-                       Eigen::Ref<VectorXd> xdot) const override;
+                       Eigen::Ref<VectorXd> xdot) override;
   void Jacobian(const VectorXdRef& x,
                 const VectorXdRef& u, float t,
-                Eigen::Ref<MatrixXd> jac) const override;
+                JacobianRef jac) override;
   void Hessian(const VectorXdRef& x,
                const VectorXdRef& u, float t,
                const VectorXdRef& b,
-               Eigen::Ref<MatrixXd> hess) const override;
+               Eigen::Ref<MatrixXd> hess) override;
   bool HasHessian() const override { return true; };
 
  private:

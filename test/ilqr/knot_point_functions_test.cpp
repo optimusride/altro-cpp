@@ -330,7 +330,7 @@ TEST_F(KnotPointFunctionsTest, DynamicsExpansion) {
 
   DynamicsExpansion<n_static, m_static> dyn_exp =
       kpf_static.GetDynamicsExpansion();
-  MatrixXd jac(n, n + m);
+  RowMajorXd jac(n, n + m);
   kpf_static.GetModelPtr()->Jacobian(x, u, t, h, jac);
   EXPECT_TRUE(dyn_exp.GetJacobian().isApprox(jac));
 

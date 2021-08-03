@@ -47,3 +47,12 @@ target_link_libraries(timer_test
 )
 gtest_discover_tests(timer_test)
 target_compile_definitions(timer_test PRIVATE LOGDIR="${CMAKE_CURRENT_BINARY_DIR}")
+
+add_executable(functionbase_test
+  functionbase_test.cpp
+)
+target_link_libraries(functionbase_test
+  gtest_main
+  common
+)
+gtest_discover_tests(functionbase_test)

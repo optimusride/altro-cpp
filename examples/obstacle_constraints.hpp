@@ -95,7 +95,7 @@ class CircleConstraint : public constraints::Constraint<constraints::NegativeOrt
   int OutputDimension() const override { return obstacles_.size(); }
 
   void Evaluate(const VectorXdRef& x, const VectorXdRef& /*u*/,
-                Eigen::Ref<VectorXd> c) const override {
+                Eigen::Ref<VectorXd> c) override {
     const double px = x(x_index_);
     const double py = x(y_index_);
     for (size_t i = 0; i < obstacles_.size(); ++i) {
@@ -105,7 +105,7 @@ class CircleConstraint : public constraints::Constraint<constraints::NegativeOrt
   }
 
   void Jacobian(const VectorXdRef& x, const VectorXdRef& /*u*/,
-                Eigen::Ref<MatrixXd> jac) const override {
+                JacobianRef jac) override {
     const double px = x(x_index_);
     const double py = x(y_index_);
     for (size_t i = 0; i < obstacles_.size(); ++i) {

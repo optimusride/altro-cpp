@@ -18,7 +18,7 @@ struct TestFunc {
 TEST(DerivativeCheckerTest, Jacobian) {
   TestFunc f;
   VectorXd x = Eigen::Vector4d(1, 2, 3, 4);
-  MatrixXd jac = FiniteDiffJacobian<5, 4>(f, x);
+  RowMajorXd jac = FiniteDiffJacobian<5, 4>(f, x);
 
   MatrixXd ans = MatrixXd(5, 4);
   ans << 0, cos(x(1)), 0, 0, 0, 0, -sin(x(2)), 0, x(3) * exp(x(0)), 0, 0,
@@ -39,7 +39,7 @@ TEST(DerivativeCheckerTest, JacobianCentralDiff) {
   TestFunc f;
   VectorXd x = Eigen::Vector4d(1, 2, 3, 4);
   double eps = 1e-6;
-  MatrixXd jac = FiniteDiffJacobian<5,4>(f, x);
+  RowMajorXd jac = FiniteDiffJacobian<5,4>(f, x);
 
   MatrixXd ans = MatrixXd(5, 4);
   ans << 0, cos(x(1)), 0, 0, 0, 0, -sin(x(2)), 0, x(3) * exp(x(0)), 0, 0,
@@ -49,7 +49,7 @@ TEST(DerivativeCheckerTest, JacobianCentralDiff) {
   double err_forward = (jac - ans).norm();
 
   bool central = true;
-  MatrixXd jac2 = FiniteDiffJacobian<5,4>(f, x, eps, central);
+  RowMajorXd jac2 = FiniteDiffJacobian<5,4>(f, x, eps, central);
   double err_central = (jac2 - ans).norm();
   // std::cout << "forward: " << err_forward << std::endl
   //           << "central: " << err_central << std::endl;
@@ -164,11 +164,11 @@ TEST(DerivativeCheckerTest, NewJacobian) {
   VectorXd x2 = VectorXd::LinSpaced(6,1,6);
   VectorXd x = VectorXd::LinSpaced(4,1,4);
   Eigen::Vector4d x3 = VectorXd::LinSpaced(4,1,4);
-  MatrixXd jac1 = FiniteDiffJacobian<5, 4, TestFunc>(f, x);
-  MatrixXd jac2 = FiniteDiffJacobian<5, 4, TestFunc>(f, x2.head(4));
-  MatrixXd jac3 = FiniteDiffJacobian<5, 4, TestFunc>(f, x3);
+  RowMajorXd jac1 = FiniteDiffJacobian<5, 4, TestFunc>(f, x);
+  RowMajorXd jac2 = FiniteDiffJacobian<5, 4, TestFunc>(f, x2.head(4));
+  RowMajorXd jac3 = FiniteDiffJacobian<5, 4, TestFunc>(f, x3);
 
-  MatrixXd ans = MatrixXd(5, 4);
+  RowMajorXd ans = MatrixXd(5, 4);
   ans << 0, cos(x(1)), 0, 0, 0, 0, -sin(x(2)), 0, x(3) * exp(x(0)), 0, 0,
       exp(x(0)), x(0) * 20, 0, 0, 0, 0, cos(pow(x(1), 2)) * 2 * x(1), x(3),
       x(2);

@@ -15,6 +15,12 @@ using MatrixNxMd = Eigen::Matrix<double, n, m>;
 
 using VectorXdRef = Eigen::Ref<const Eigen::VectorXd>; 
 
+template <int n, int m>
+using RowMajorNxMd = Eigen::Matrix<double, n, m, Eigen::RowMajor>;
+using RowMajorXd = RowMajorNxMd<Eigen::Dynamic, Eigen::Dynamic>;
+
+using JacobianRef = Eigen::Ref<RowMajorXd>;
+
 using VectorXd = Eigen::VectorXd;
 using VectorXf = Eigen::VectorXf;
 

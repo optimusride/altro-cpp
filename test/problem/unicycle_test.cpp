@@ -61,12 +61,12 @@ TEST(UnicycleTest, BenchmarkRK4) {
   const float t = 1.1;
   const float h = 0.1;
 
-  auto eval = [&]() { dmodel.EvaluateInplace(x, u, t, h, xnext); };
+  auto eval = [&]() { dmodel.Evaluate(x, u, t, h, xnext); };
   fmt::print("\nIntegration\n");
   utils::Benchmark<std::chrono::microseconds>(eval, 2000).Print();
 
   fmt::print("\nJacobian\n");
-  MatrixNxMd<NStates, NStates + NControls> jac;
+  RowMajorNxMd<NStates, NStates + NControls> jac;
   auto jacobian = [&]() { dmodel.Jacobian(x, u, t, h, jac); };
   utils::Benchmark<std::chrono::microseconds>(jacobian, 2000).Print();
 }

@@ -2,6 +2,7 @@
 
 #include <iostream>
 
+#include "altro/common/functionbase.hpp"
 #include "altro/eigentypes.hpp"
 #include "altro/utils/derivative_checker.hpp"
 #include "altro/utils/utils.hpp"
@@ -10,336 +11,181 @@ namespace altro {
 namespace problem {
 
 /**
- * @brief An abstract dynamics model.
- * 
- * Defines both discrete and continuous-time dynamics models.
- * 
- * User-defined models should override the `NStates` and `NControls` constants
- * to provide compile-time size information.
- * 
+ * @brief Represents a continuous dynamics function of the form:
+ * \f[ \dot{x} = f(x, u) \f]
+ *
+ * As a specialization of the `FunctionsBase` interface, the user is
+ * expected is expected implement the following interface:
+ *
+ * # Interface
+ * - `int StateDimension() const` - number of states (length of x)
+ * - `int ControlDimension() const` - number of controls (length of u)
+ * - `void Evaluate(const VectorXdRef& x, const VectorXdRef& u, float t, Eigen::Ref<Eigen::VectorXd>
+ * out)`
+ * - `void Jacobian(const VectorXdRef& x, const VectorXdRef& u, float t, JacobianRef out)`
+ * - `void Hessian(const VectorXdRef& x, const VectorXdRef& u, float t, const VectorXdRef& b,
+ * Eigen::Ref<Eigen::MatrixXd> hess)` - optional
+ * - `bool HasHessian() const` - Specify if the Hessian is implemented
+ *
+ * Where we use the following Eigen type aliases:
+ *    using VectorXdRef = Eigen::Ref<const Eigen::VectorXd>
+ *    using JacobianRef = Eigen::Ref<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic,
+ * Eigen::RowMajor>>
+ *
+ * The Jacobian is stored row-major since Jacobians are naturally evaluated
+ * row-wise. Storing the underlying data in row-major format allows the rows to
+ * be processed individually in a cache-friendly way.
+ *
+ * The user also has the option of defining the static constants:
+ *    static constexpr int NStates
+ *    static constexpr int NControls
+ *    static constexpr int NOutputs
+ *
+ * which can be used to provide compile-time size information. For best performance, 
+ * it is highly recommended that the user specify these constants, which default to 
+ * `Eigen::Dynamic` if not specified.
+ *
+ * # FunctionBase API
+ * If the original FunctionBase API is needed, the following lines need to be
+ * added to the public interface of the derived class:
+ *    using FunctionBase::Evaluate;
+ *    using FunctionBase::Jacobian;
+ *    using FunctionBase::Hessian;
+ *
+ * NOTE: If using the FunctionBase API with time-varying dynamics, remember
+ * that the time must be updated using `ContinuousDynamics::SetTime` before calling
+ * `FunctionBase::Evaluate`.
  */
-class Dynamics {
-public:
-  virtual ~Dynamics() = default;
+class ContinuousDynamics : public FunctionBase {
+ public:
+  using FunctionBase::Evaluate;
+  using FunctionBase::Jacobian;
+  using FunctionBase::Hessian;
 
-  static constexpr int NStates = Eigen::Dynamic;
-  static constexpr int NControls = Eigen::Dynamic;
-  virtual int StateDimension() const = 0;
-  virtual int ControlDimension() const = 0;
+  int OutputDimension() const override { return StateDimension(); }
 
-  /**
-   * @brief Indicate whether Hessian is defined.
-   *
-   * @return true Hessian is defined
-   * @return false Hessian is not defined
-   */
-  virtual bool HasHessian() const = 0;
+  // New Interface
+  virtual void Evaluate(const VectorXdRef& x, const VectorXdRef& u, float t,
+                        Eigen::Ref<VectorXd> xdot) = 0;
+  virtual void Jacobian(const VectorXdRef& x, const VectorXdRef& u, float t, JacobianRef jac) = 0;
+  virtual void Hessian(const VectorXdRef& x, const VectorXdRef& u, float t, const VectorXdRef& b,
+                       Eigen::Ref<MatrixXd> hess) = 0;
+
+  // Convenience methods
+  VectorXd Evaluate(const VectorXdRef& x, const VectorXdRef& u, float t);
+  VectorXd operator()(const VectorXdRef& x, const VectorXdRef& u, float t);
+
+  // FunctionBase API
+  void Evaluate(const VectorXdRef& x, const VectorXdRef& u, Eigen::Ref<VectorXd> out) override {
+    Evaluate(x, u, GetTime(), out);
+  }
+  void Jacobian(const VectorXdRef& x, const VectorXdRef& u, JacobianRef jac) override {
+    Jacobian(x, u, GetTime(), jac);
+  }
+  void Hessian(const VectorXdRef& x, const VectorXdRef& u, const VectorXdRef& b,
+               Eigen::Ref<MatrixXd> hess) override {  // NOLINT(performance-unnecessary-value-param)
+    Hessian(x, u, GetTime(), b, hess);
+  }
+
+  float GetTime() const { return t_; }
+  void SetTime(float t) { t_ = t; }
+
+ protected:
+  float t_;
 };
 
-class ContinuousDynamics : public Dynamics {
-public:
-  ~ContinuousDynamics() override = default;
+/**
+ * @brief Represents a discrete dynamics function of the form:
+ * \f[ x_{k+1} = f(x_k, u_k) \f]
+ * 
+ * This is the form of the dynamics expected by the altro library. A continuous 
+ * time dynamics model can be converted to a discrete model using e.g. `DiscretizedDynamics`.
+ *
+ * As a specialization of the `FunctionsBase` interface, the user is
+ * expected is expected implement the following interface:
+ *
+ * # Interface
+ * - `int StateDimension() const` - number of states (length of x)
+ * - `int ControlDimension() const` - number of controls (length of u)
+ * - `void Evaluate(const VectorXdRef& x, const VectorXdRef& u, float t, float h, Eigen::Ref<Eigen::VectorXd>
+ * out)`
+ * - `void Jacobian(const VectorXdRef& x, const VectorXdRef& u, float t, float h, JacobianRef out)`
+ * - `void Hessian(const VectorXdRef& x, const VectorXdRef& u, float t, float h, const VectorXdRef& b,
+ * Eigen::Ref<Eigen::MatrixXd> hess)` - optional
+ * - `bool HasHessian() const` - Specify if the Hessian is implemented
+ *
+ * Where `t` is the time (for time-dependent dynamics) and `h` is the time step. 
+ * These can be set and retrieved using `SetTime`, `SetStep`, `GetTime`, and `GetStep`.
+ * 
+ * The following Eigen type aliases are used:
+ *    using VectorXdRef = Eigen::Ref<const Eigen::VectorXd>
+ *    using JacobianRef = Eigen::Ref<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic,
+ * Eigen::RowMajor>>
+ *
+ * The Jacobian is stored row-major since Jacobians are naturally evaluated
+ * row-wise. Storing the underlying data in row-major format allows the rows to
+ * be processed individually in a cache-friendly way.
+ *
+ * The user also has the option of defining the static constants:
+ *    static constexpr int NStates
+ *    static constexpr int NControls
+ *    static constexpr int NOutputs
+ *
+ * which can be used to provide compile-time size information. For best performance, 
+ * it is highly recommended that the user specify these constants, which default to 
+ * `Eigen::Dynamic` if not specified.
+ *
+ * # FunctionBase API
+ * If the original FunctionBase API is needed, the following lines need to be
+ * added to the public interface of the derived class:
+ *    using FunctionBase::Evaluate;
+ *    using FunctionBase::Jacobian;
+ *    using FunctionBase::Hessian;
+ *
+ * NOTE: If using the FunctionBase API with time-varying dynamics, remember
+ * that the time must be updated using `DiscreteDynamics::SetTime`  and 
+ * `DiscreteDynamics.SetStep` before calling `FunctionBase::Evaluate`.
+ */
+class DiscreteDynamics : public FunctionBase {
+ public:
+  using FunctionBase::Evaluate;
+  using FunctionBase::Jacobian;
+  using FunctionBase::Hessian;
 
-  /**
-   * @brief Evaluate the continuous-time dynamics
-   *
-   * @param x state vector
-   * @param u control vector
-   * @param t independent variable (e.g. time)
-   * @return VectorXd the state derivative
-   */
-  virtual VectorXd Evaluate(const VectorXd &x, const VectorXd &u,
-                            const float t) const {
-    VectorXd xdot(x.rows());
-    EvaluateInplace(x, u, t, xdot);
-    return xdot;
+  int OutputDimension() const override { return StateDimension(); }
+
+  // New Interface
+  virtual void Evaluate(const VectorXdRef& x, const VectorXdRef& u, float t, float h,
+                        Eigen::Ref<VectorXd> xdot) = 0;
+  virtual void Jacobian(const VectorXdRef& x, const VectorXdRef& u, float t, float h, JacobianRef jac) = 0;
+  virtual void Hessian(const VectorXdRef& x, const VectorXdRef& u, float t, float h, const VectorXdRef& b,
+                       Eigen::Ref<MatrixXd> hess) = 0;
+
+  // Convenience methods
+  VectorXd Evaluate(const VectorXdRef& x, const VectorXdRef& u, float t, float h);
+  VectorXd operator()(const VectorXdRef& x, const VectorXdRef& u, float t, float h);
+
+  // FunctionBase API
+  void Evaluate(const VectorXdRef& x, const VectorXdRef& u, Eigen::Ref<VectorXd> out) override {
+    Evaluate(x, u, GetTime(), GetStep(), out);
   }
-  VectorXd operator()(const VectorXd &x, const VectorXd &u,
-                      const float t) const {
-    return Evaluate(x, u, t);
+  void Jacobian(const VectorXdRef& x, const VectorXdRef& u, JacobianRef jac) override {
+    Jacobian(x, u, GetTime(), GetStep(), jac);
   }
-
-  virtual void EvaluateInplace(const VectorXdRef &x,
-                               const VectorXdRef &u,
-                               float t,
-                               Eigen::Ref<VectorXd> xdot) const = 0;
-
-  /**
-   * @brief Evaluate the nxm continuous dynamics Jacobian
-   *
-   * User must supply a pre-initialized Jacobian matrix.
-   *
-   * @param[in] x state vector (dimension n)
-   * @param[in] u control vector (dimension m)
-   * @param[in] t independent variable (e.g. time)
-   * @param[out] jac dense (n,m) dynamics Jacobian
-  */
-  virtual void Jacobian(const VectorXdRef &x,
-                        const VectorXdRef &u, float t,
-                        Eigen::Ref<MatrixXd> jac) const = 0;
-
-  /**
-   * @brief Evaluate the derivative of the Jacobian-transpose vector product:
-   * d/dx(J^T b).
-   *
-   * Not made pure virtual since it doesn't have to be defined.
-   *
-   * User must supply a pre-initialized Hessian matrix.
-   *
-   * @param[in] x state vector (dimension n)
-   * @param[in] u control vector (dimension m)
-   * @param[in] t independent variable (e.g. time)
-   * @param[in] b vector multiplying the Jacobian transpose (dimension n)
-   * @param[out] hess nxm derivative of the Jacobian-tranpose vector product
-   */
-  virtual void Hessian(const VectorXdRef &x,
-                       const VectorXdRef &u, const float t,
-                       const VectorXdRef &b,
-                       Eigen::Ref<MatrixXd> hess) const { // NOLINT(performance-unnecessary-value-param)
-    ALTRO_UNUSED(x);
-    ALTRO_UNUSED(u);
-    ALTRO_UNUSED(t);
-    ALTRO_UNUSED(b);
-    ALTRO_UNUSED(hess);
-  }
-
-  bool CheckJacobian(const double eps = 1e-4, const bool verbose = false) const {
-    const int n = StateDimension();
-    const int m = ControlDimension();
-    VectorXd x = VectorXd::Random(n);
-    VectorXd u = VectorXd::Random(m);
-    float t = static_cast<float>(rand()) / RAND_MAX;
-    return CheckJacobian(x, u, t, eps, verbose);
-  }
-
-  bool CheckJacobian(const VectorXdRef &x,
-                     const VectorXdRef &u, const float t,
-                     const double eps = 1e-4, const bool verbose = false) const {
-    int n = StateDimension();
-    int m = ControlDimension();
-    VectorXd z(n + m);
-    z << x, u;
-
-    // Calculate Jacobian
-    MatrixXd jac = MatrixXd::Zero(n, n + m);
-    Jacobian(x, u, t, jac);
-
-    // Calculate using finite differencing
-    auto fz = [&](auto z) -> VectorXd {
-      return this->Evaluate(z.head(n), z.tail(m), t);
-    };
-    auto fd_jac =
-        utils::FiniteDiffJacobian<Eigen::Dynamic, Eigen::Dynamic>(fz, z);
-
-    // Compare
-    double err = (fd_jac - jac).norm();
-
-    // Print results
-    if (verbose) {
-      if (err > eps) {
-        std::cout << "Provided:\n" << jac << std::endl;
-        std::cout << "Finite Difference:\n" << fd_jac << std::endl;
-      }
-      std::cout << "Error: " << err << std::endl;
-    }
-
-    return err < eps;
+  void Hessian(const VectorXdRef& x, const VectorXdRef& u, const VectorXdRef& b,
+               Eigen::Ref<MatrixXd> hess) override {  // NOLINT(performance-unnecessary-value-param)
+    Hessian(x, u, GetTime(), GetStep(), b, hess);
   }
 
-  bool CheckHessian(const double eps = 1e-4, const bool verbose = false) {
-    int n = StateDimension();
-    int m = ControlDimension();
-    VectorXd x = VectorXd::Random(n);
-    VectorXd u = VectorXd::Random(m);
-    VectorXd b = VectorXd::Random(n);
-    float t = static_cast<float>(rand()) / RAND_MAX;
-    return CheckHessian(x, u, t, b, eps, verbose);
-  }
-  bool CheckHessian(const VectorXdRef &x,
-                    const VectorXdRef &u, const float t,
-                    const VectorXdRef &b,
-                    const double eps = 1e-4, const bool verbose = false) {
-    int n = StateDimension();
-    int m = ControlDimension();
-    VectorXd z(n + m);
-    z << x, u;
+  float GetTime() const { return t_; }
+  void SetTime(float t) { t_ = t; }
+  float GetStep() const { return h_; }
+  void SetStep(float h) { h_ = h; }
 
-    MatrixXd hess = MatrixXd::Zero(n + m, n + m);
-    Hessian(x, u, t, b, hess);
-
-    auto jvp = [&](auto z) -> double {
-      return this->Evaluate(z.head(n), z.tail(m), t).transpose() * b;
-    };
-    MatrixXd fd_hess = utils::FiniteDiffHessian(jvp, z);
-
-    double err = (fd_hess - hess).norm();
-
-    if (verbose) {
-      if (err > eps) {
-        std::cout << "Provided:\n" << hess << std::endl;
-        std::cout << "Finite Difference:\n" << fd_hess << std::endl;
-      }
-      std::cout << "Error: " << err << std::endl;
-    }
-
-    return err < eps;
-  }
+ protected:
+  float t_;
+  float h_;
 };
 
-class DiscreteDynamics : public Dynamics {
-public:
-  ~DiscreteDynamics() override = default;
-
-  /**
-   * @brief Evaluate the discrete-time dynamics
-   *
-   * @param[in] x state vector
-   * @param[in] u control vector
-   * @param[in] t independent variable (e.g. time)
-   * @param[in] h segment length (e.g. time step)
-   * @return VectorXd the next state vector
-   */
-  virtual VectorXd Evaluate(const VectorXd &x, const VectorXd &u, const float t,
-                            const float h) const {
-    VectorXd xnext(x.rows());
-    EvaluateInplace(x, u, t, h, xnext);
-    return xnext;
-  }
-  VectorXd operator()(const VectorXd &x, const VectorXd &u, const float t,
-                      const float h) const {
-    return Evaluate(x, u, t, h);
-  }
-
-  virtual void EvaluateInplace(const VectorXdRef &x,
-                               const VectorXdRef &u,
-                               float t, float h,
-                               Eigen::Ref<VectorXd> xnext) const = 0;
-
-  /**
-   * @brief Evaluate the nxm discrete dynamics Jacobian
-   *
-   * User must supply a pre-initialized Jacobian matrix.
-   *
-   * @param[in] x (n,) state vector (dimension n)
-   * @param[in] u (m,) control vector (dimension m)
-   * @param[in] t independent variable (e.g. time)
-   * @param[in] h segment length (e.g. time step)
-   * @param[out] jac dense (n,m) dynamics Jacobian
-   */
-  virtual void Jacobian(const VectorXdRef &x,
-                        const VectorXdRef &u, float t,
-                        float h, Eigen::Ref<MatrixXd> jac) const = 0;
-
-  /**
-   * @brief Evaluate the derivative of the Jacobian-transpose vector product:
-   * d/dx(J^T b).
-   *
-   * Not made pure virtual since it doesn't have to be defined.
-   *
-   * User must supply a pre-initialized Hessian matrix.
-   *
-   * @param[in] x (n,) state vector (dimension n)
-   * @param[in] u (m,) control vector (dimension m)
-   * @param[in] t independent variable (e.g. time)
-   * @param[in] b (n,) vector multiplying the Jacobian transpose (dimension n)
-   * @param hvp nxm derivative of the Jacobian-tranpose vector product
-   */
-  virtual void Hessian(const VectorXdRef &x,
-                       const VectorXdRef &u, float t,
-                       float h, const VectorXdRef &b,
-                       Eigen::Ref<MatrixXd> hess) const {  // NOLINT(performance-unnecessary-value-param)
-    ALTRO_UNUSED(x);
-    ALTRO_UNUSED(u);
-    ALTRO_UNUSED(t);
-    ALTRO_UNUSED(h);
-    ALTRO_UNUSED(b);
-    ALTRO_UNUSED(hess);
-  }
-
-  bool CheckJacobian(const double eps = 1e-4, const bool verbose = false) const {
-    int n = StateDimension();
-    int m = ControlDimension();
-    VectorXd x = VectorXd::Random(n);
-    VectorXd u = VectorXd::Random(m);
-    const float t = static_cast<float>(rand()) / RAND_MAX;
-    const float h = 0.1;
-    return CheckJacobian(x, u, t, h, eps, verbose);
-  }
-
-  bool CheckJacobian(const VectorXdRef &x,
-                     const VectorXdRef &u, const float t,
-                     const float h, const double eps = 1e-4, const bool verbose = false) const {
-    int n = StateDimension();
-    int m = ControlDimension();
-    VectorXd z(n + m);
-    z << x, u;
-
-    // Calculate Jacobian
-    MatrixXd jac = MatrixXd::Zero(n, n + m);
-    Jacobian(x, u, t, h, jac);
-
-    // Calculate using finite differencing
-    auto fz = [&](auto z) -> VectorXd {
-      return this->Evaluate(z.head(n), z.tail(m), t, h);
-    };
-    auto fd_jac = utils::FiniteDiffJacobian<Eigen::Dynamic, Eigen::Dynamic>(fz, z);
-
-    // Compare
-    double err = (fd_jac - jac).norm();
-
-    // Print result
-    if (verbose) {
-      if (err > eps) {
-        std::cout << "Provided:\n" << jac << std::endl;
-        std::cout << "Finite Difference:\n" << fd_jac << std::endl;
-      }
-      std::cout << "Error: " << err << std::endl;
-    }
-
-    return err < eps;
-  }
-
-  bool CheckHessian(const double eps = 1e-4, const bool verbose = false) {
-    int n = StateDimension();
-    int m = ControlDimension();
-    VectorXd x = VectorXd::Random(n);
-    VectorXd u = VectorXd::Random(m);
-    VectorXd b = VectorXd::Random(n);
-    const float t = static_cast<float>(rand()) / RAND_MAX;
-    const float h = 0.1;
-    return CheckHessian(x, u, t, h, b, eps, verbose);
-  }
-
-  bool CheckHessian(const VectorXdRef &x,
-                    const VectorXdRef &u, const float t,
-                    const float h, const VectorXdRef &b,
-                    const double eps = 1e-4, const bool verbose = false) {
-    int n = StateDimension();
-    int m = ControlDimension();
-    VectorXd z(n + m);
-    z << x, u;
-
-    MatrixXd hess = MatrixXd::Zero(n + m, n + m);
-    Hessian(x, u, t, h, b, hess);
-
-    auto jvp = [&](auto z) -> double {
-      return this->Evaluate(z.head(n), z.tail(m), t, h).transpose() * b;
-    };
-    MatrixXd fd_hess = utils::FiniteDiffHessian(jvp, z);
-
-    double err = (fd_hess - hess).norm();
-
-    if (verbose) {
-      if (err > eps) {
-        std::cout << "Provided:\n" << hess << std::endl;
-        std::cout << "Finite Difference:\n" << fd_hess << std::endl;
-      }
-      std::cout << "Error: " << err << std::endl;
-    }
-
-    return err < eps;
-  }
-};
-
-} // namespace problem
-} // namespace altro
+}  // namespace problem
+}  // namespace altro

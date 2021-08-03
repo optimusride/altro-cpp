@@ -39,7 +39,7 @@ TEST_F(CostExpansionTest, ConstructionDeath) {
   if (utils::AssertionsActive()) {
     auto bad_state = [&]() { CostExpansion<4, 3> expansion(n - 1, m); };
     EXPECT_DEATH(bad_state(), "Assert.*State sizes must be consistent");
-  
+
     auto bad_control = [&]() { CostExpansion<4, 3> expansion(n, m + 1); };
     EXPECT_DEATH(bad_control(), "Assert.*Control sizes must be consistent");
   }
@@ -102,10 +102,10 @@ TEST_F(CostExpansionTest, GetParts) {
 
 TEST_F(CostExpansionTest, QuadraticCostExpansionDynamic) {
   CostExpansion<HEAP, HEAP> expansion(n, m);
-  examples::QuadraticCost costfun(Q, R, H, q, r, c);
+  std::shared_ptr<examples::QuadraticCost> costfun = std::make_shared<examples::QuadraticCost>(Q, R, H, q, r, c);
+  // examples::QuadraticCost costfun(Q, R, H, q, r, c);
   KnotPoint<HEAP, HEAP> z = KnotPoint<HEAP, HEAP>::Random(n, m);
-  KnotPoint<n_static, m_static> z_static =
-      KnotPoint<n_static, m_static>::Random(n, m);
+  KnotPoint<n_static, m_static> z_static = KnotPoint<n_static, m_static>::Random(n, m);
 
   // try with a dynamically-sized knot point
   expansion.CalcExpansion(costfun, z);
@@ -126,10 +126,10 @@ TEST_F(CostExpansionTest, QuadraticCostExpansionDynamic) {
 
 TEST_F(CostExpansionTest, QuadraticCostExpansionStatic) {
   CostExpansion<n_static, m_static> expansion(n, m);
-  examples::QuadraticCost costfun(Q, R, H, q, r, c);
+  std::shared_ptr<examples::QuadraticCost> costfun = std::make_shared<examples::QuadraticCost>(Q, R, H, q, r, c);
+  // examples::QuadraticCost costfun(Q, R, H, q, r, c);
   KnotPoint<HEAP, HEAP> z = KnotPoint<HEAP, HEAP>::Random(n, m);
-  KnotPoint<n_static, m_static> z_static =
-      KnotPoint<n_static, m_static>::Random(n, m);
+  KnotPoint<n_static, m_static> z_static = KnotPoint<n_static, m_static>::Random(n, m);
 
   // try with a dynamically-sized knot point
   expansion.CalcExpansion(costfun, z);

@@ -11,6 +11,7 @@ add_library(problem
   problem.hpp
 )
 target_link_libraries(problem
+  PUBLIC
   common
   constraints
 )

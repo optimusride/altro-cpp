@@ -18,14 +18,15 @@ class GoalConstraint : public constraints::Constraint<constraints::Equality> {
     return std::make_shared<GoalConstraint>(xf);
   }
 
+  int StateDimension() const override { return xf_.size(); }
   int OutputDimension() const override { return xf_.size(); }
 
-  void Evaluate(const VectorXdRef& x, const VectorXdRef& u, Eigen::Ref<VectorXd> c) const override {
+  void Evaluate(const VectorXdRef& x, const VectorXdRef& u, Eigen::Ref<VectorXd> c) override {
     ALTRO_UNUSED(u);
     c = x - xf_;
   }
   void Jacobian(const VectorXdRef& x, const VectorXdRef& u,
-                Eigen::Ref<MatrixXd> jac) const override {
+                JacobianRef jac) override {
     ALTRO_UNUSED(x);
     ALTRO_UNUSED(u);
     jac.setIdentity();
@@ -82,12 +83,14 @@ class ControlBound : public constraints::Constraint<constraints::NegativeOrthant
     ValidateBounds();
   }
 
+  int ControlDimension() const override { return m_; }
+
   int OutputDimension() const override {
     return index_lower_bound_.size() + index_upper_bound_.size();
   }
 
   void Evaluate(const VectorXdRef& /*x*/, const VectorXdRef& u,
-                Eigen::Ref<VectorXd> c) const override {
+                Eigen::Ref<VectorXd> c) override {
     ALTRO_ASSERT(u.size() == m_, "Inconsistent control dimension when evaluating control bound.");
 
     for (size_t i = 0; i < index_lower_bound_.size(); ++i) {
@@ -102,7 +105,7 @@ class ControlBound : public constraints::Constraint<constraints::NegativeOrthant
   }
 
   void Jacobian(const VectorXdRef& x, const VectorXdRef& u,
-                Eigen::Ref<MatrixXd> jac) const override {
+                JacobianRef jac) override {
     (void) u; // surpress erroneous unused variable error
     ALTRO_ASSERT(u.size() == m_, "Inconsistent control dimension when evaluating control bound.");
     jac.setZero();

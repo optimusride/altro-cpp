@@ -4,10 +4,10 @@
 namespace altro {
 namespace examples {
 
-void TripleIntegrator::EvaluateInplace(const VectorXdRef& x,
+void TripleIntegrator::Evaluate(const VectorXdRef& x,
                                        const VectorXdRef& u,
                                        const float t,
-                                       Eigen::Ref<VectorXd> xdot) const {
+                                       Eigen::Ref<VectorXd> xdot) {
   ALTRO_UNUSED(t);
   for (int i = 0; i < dof_; ++i) {
     xdot[i] = x[i + dof_];
@@ -18,7 +18,7 @@ void TripleIntegrator::EvaluateInplace(const VectorXdRef& x,
 
 void TripleIntegrator::Jacobian(const VectorXdRef& x,
                                 const VectorXdRef& u,
-                                const float t, Eigen::Ref<MatrixXd> jac) const {
+                                const float t, JacobianRef jac) {
   ALTRO_UNUSED(x);
   ALTRO_UNUSED(u);
   ALTRO_UNUSED(t);
@@ -34,7 +34,7 @@ void TripleIntegrator::Hessian(const VectorXdRef& x,
                                const VectorXdRef& u,
                                const float t,
                                const VectorXdRef& b,
-                               Eigen::Ref<MatrixXd> hess) const {
+                               Eigen::Ref<MatrixXd> hess) {
   ALTRO_UNUSED(x);
   ALTRO_UNUSED(u);
   ALTRO_UNUSED(t);

@@ -28,6 +28,7 @@ TEST(TripleIntegratorTest, ConstructorDeath) {
 }
 
 TEST(TripleIntegratorTest, Evaluate) {
+  srand(0);
   int degrees_of_freedom = 2;
   TripleIntegrator model2(degrees_of_freedom);
   VectorXd x = VectorXd::Random(model2.StateDimension());
@@ -44,6 +45,7 @@ TEST(TripleIntegratorTest, Evaluate) {
 }
 
 TEST(TripleIntegratorTest, Jacobian) {
+  srand(0);
   int degrees_of_freedom = 2;
   TripleIntegrator model2(degrees_of_freedom);
   int n = model2.StateDimension();
@@ -51,9 +53,9 @@ TEST(TripleIntegratorTest, Jacobian) {
   double t = 0.0;
   VectorXd x = VectorXd::Random(n);
   VectorXd u = VectorXd::Random(m);
-  MatrixXd jac = MatrixXd::Zero(n, n + m);
+  RowMajorXd jac = MatrixXd::Zero(n, n + m);
   model2.Jacobian(x, u, t, jac);
-  MatrixXd jac_ans(n, n + m);
+  RowMajorXd jac_ans(n, n + m);
   // clang-format off
   jac_ans << 0,0, 1,0, 0,0, 0,0,
              0,0, 0,1, 0,0, 0,0,
@@ -66,6 +68,7 @@ TEST(TripleIntegratorTest, Jacobian) {
 }
 
 TEST(TripleIntegrator, Hessian) {
+  srand(0);
   int degrees_of_freedom = 2;
   TripleIntegrator model2(degrees_of_freedom);
   int n = model2.StateDimension();
@@ -80,6 +83,7 @@ TEST(TripleIntegrator, Hessian) {
 }
 
 TEST(TripleIntegrator, Discretize) {
+  srand(0);
   int degrees_of_freedom = 2;
   TripleIntegrator model_cont(degrees_of_freedom);
   problem::DiscretizedModel<TripleIntegrator> model_discrete(model_cont);
@@ -102,10 +106,10 @@ TEST(TripleIntegrator, Discretize) {
   VectorXd xnext3 = model_discrete(x, u, t, h);
   EXPECT_TRUE(xnext.isApprox(xnext3));
 
-  MatrixXd jac = MatrixXd::Zero(n, n + m);
+  RowMajorXd jac = MatrixXd::Zero(n, n + m);
   model_discrete.Jacobian(x, u, t, h, jac);
 
-  MatrixXd jac_cont = MatrixXd::Zero(n, n + m);
+  RowMajorXd jac_cont = MatrixXd::Zero(n, n + m);
   model_cont.Jacobian(x, u, t, jac_cont);
   MatrixXd A = jac_cont.topLeftCorner(n, n);
   MatrixXd B = jac_cont.topRightCorner(n, m);
@@ -127,6 +131,7 @@ TEST(TripleIntegrator, Discretize) {
 }
 
 TEST(TripleIntegratorTest, EulerIntegration) {
+  srand(0);
   int degrees_of_freedom = 2;
   TripleIntegrator model_cont(degrees_of_freedom);
   problem::DiscretizedModel<TripleIntegrator, problem::ExplicitEuler> model_discrete(model_cont);
@@ -139,9 +144,9 @@ TEST(TripleIntegratorTest, EulerIntegration) {
   VectorXd xnext = model_discrete.Evaluate(x, u, t, h);
   EXPECT_TRUE(xnext.isApprox(x + model_cont(x, u, t) * h));
 
-  MatrixXd jac = MatrixXd::Zero(n, n + m);
+  RowMajorXd jac = MatrixXd::Zero(n, n + m);
   model_discrete.Jacobian(x, u, t, h, jac);
-  MatrixXd jac_ans(n, n + m);
+  RowMajorXd jac_ans(n, n + m);
   jac_ans << 1, 0, h, 0, 0, 0, 0, 0, 0, 1, 0, h, 0, 0, 0, 0, 0, 0, 1, 0, h, 0,
       0, 0, 0, 0, 0, 1, 0, h, 0, 0, 0, 0, 0, 0, 1, 0, h, 0, 0, 0, 0, 0, 0, 1, 0,
       h;
@@ -149,6 +154,7 @@ TEST(TripleIntegratorTest, EulerIntegration) {
 }
 
 TEST(TripleIntegratorTest, DerivativeChecks) {
+  srand(0);
   int degrees_of_freedom = 2;
   TripleIntegrator model2(degrees_of_freedom);
   int n = model2.StateDimension();
@@ -156,7 +162,7 @@ TEST(TripleIntegratorTest, DerivativeChecks) {
   double t = 0.0;
   VectorXd x = VectorXd::Random(n);
   VectorXd u = VectorXd::Random(m);
-  MatrixXd jac = MatrixXd::Zero(n, n + m);
+  RowMajorXd jac = MatrixXd::Zero(n, n + m);
   model2.Jacobian(x, u, t, jac);
   MatrixXd A = jac.topLeftCorner(n, n);
   MatrixXd B = jac.topRightCorner(n, m);
@@ -178,14 +184,14 @@ TEST(TripleIntegratorTest, DerivativeChecks) {
 
   VectorXd b = VectorXd::Random(n);
   auto jvp = [&](auto z) -> MatrixXd {
-    MatrixXd jac_(n, n + m);
+    RowMajorXd jac_(n, n + m);
     model2.Jacobian(z.head(n), z.tail(m), t, jac_);
     return jac_.transpose() * b;
   };
   auto hess = utils::FiniteDiffJacobian<-1,-1>(jvp, z);
   EXPECT_FLOAT_EQ(hess.norm(), 0.0);
 
-  EXPECT_TRUE(model2.CheckJacobian(x, u, t));
+  EXPECT_TRUE(model2.CheckJacobian(x, u));
 
   constexpr std::size_t kIter = 100;
   for (std::size_t i = 0; i < kIter; ++i) {
@@ -194,6 +200,7 @@ TEST(TripleIntegratorTest, DerivativeChecks) {
 }
 
 TEST(TripleIntegratorTest, DiscreteDerivativeChecks) {
+  srand(0);
   int degrees_of_freedom = 2;
   TripleIntegrator model_cont(degrees_of_freedom);
   problem::DiscretizedModel<TripleIntegrator> model_discrete(model_cont);
@@ -205,6 +212,7 @@ TEST(TripleIntegratorTest, DiscreteDerivativeChecks) {
 }
 
 TEST(TripleIntegratorTest, HessianChecks) {
+  srand(0);
   int degrees_of_freedom = 2;
   TripleIntegrator model_cont(degrees_of_freedom);
   problem::DiscretizedModel<TripleIntegrator> model_discrete(model_cont);

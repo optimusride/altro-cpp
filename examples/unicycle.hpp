@@ -30,12 +30,12 @@ class Unicycle : public problem::ContinuousDynamics {
   int StateDimension() const override { return NStates; }
   int ControlDimension() const override { return NControls; }
 
-  void EvaluateInplace(const VectorXdRef& x, const VectorXdRef& u, const float t,
-                       Eigen::Ref<VectorXd> xdot) const override;
+  void Evaluate(const VectorXdRef& x, const VectorXdRef& u, const float t,
+                       Eigen::Ref<VectorXd> xdot) override;
   void Jacobian(const VectorXdRef& x, const VectorXdRef& u, const float t,
-                Eigen::Ref<MatrixXd> jac) const override;
+                JacobianRef jac) override;
   void Hessian(const VectorXdRef& x, const VectorXdRef& u, const float t, const VectorXdRef& b,
-               Eigen::Ref<MatrixXd> hess) const override;
+               Eigen::Ref<MatrixXd> hess) override;
   bool HasHessian() const override { return true; };
 };
 

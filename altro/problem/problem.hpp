@@ -22,6 +22,7 @@ namespace problem {
  */
 class IdentityDynamics : public DiscreteDynamics {
  public:
+  using DiscreteDynamics::Evaluate;
   explicit IdentityDynamics(int n, int m) : n_(n), m_(m) {
     ALTRO_ASSERT(n > 0, "State dimension must be greater than zero.");
     ALTRO_ASSERT(m > 0, "Control dimension must be greater than zero.");
@@ -30,17 +31,17 @@ class IdentityDynamics : public DiscreteDynamics {
   int StateDimension() const override { return n_; }
   int ControlDimension() const override { return m_; }
 
-  void EvaluateInplace(const VectorXdRef& x, const VectorXdRef& /*u*/, const float /*t*/,
-                       const float /*h*/, Eigen::Ref<VectorXd> xnext) const override {
+  void Evaluate(const VectorXdRef& x, const VectorXdRef& /*u*/, const float /*t*/,
+                       const float /*h*/, Eigen::Ref<VectorXd> xnext) override {
     xnext = x;
   }
   void Jacobian(const VectorXdRef& /*x*/, const VectorXdRef& /*u*/, const float /*t*/,
-                const float /*h*/, Eigen::Ref<MatrixXd> jac) const override {
+                const float /*h*/, JacobianRef jac) override {
     jac.setIdentity();
   }
   void Hessian(const VectorXdRef& /*x*/, const VectorXdRef& /*u*/, const float /*t*/,
                const float /*h*/, const VectorXdRef& /*b*/,
-               Eigen::Ref<MatrixXd> hess) const override {
+               Eigen::Ref<MatrixXd> hess) override {
     hess.setZero();
   }
   bool HasHessian() const override { return true; }

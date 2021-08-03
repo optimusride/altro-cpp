@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <array>
+#include <memory>
 
 #include "altro/eigentypes.hpp"
 #include "altro/problem/dynamics.hpp"
@@ -29,6 +30,9 @@ namespace problem {
  */
 template <int NStates, int NControls>
 class ExplicitIntegrator : public StateControlSized<NStates, NControls> {
+ protected:
+  using DynamicsPtr = std::shared_ptr<ContinuousDynamics>;
+
  public:
   ExplicitIntegrator(int n, int m) : StateControlSized<NStates, NControls>(n, m) {}
   ExplicitIntegrator() : StateControlSized<NStates, NControls>() {
@@ -47,9 +51,9 @@ class ExplicitIntegrator : public StateControlSized<NStates, NControls> {
    * @param[in] h discretization step length (e.g. time step)
    * @return VectorXd state vector at the end of the time step
    */
-  virtual void Integrate(const ContinuousDynamics& dynamics, const VectorXdRef& x,
+  virtual void Integrate(const DynamicsPtr& dynamics, const VectorXdRef& x,
                          const VectorXdRef& u, float t, float h,
-                         Eigen::Ref<VectorXd> xnext) const = 0;
+                         Eigen::Ref<VectorXd> xnext) = 0;
 
   /**
    * @brief Evaluate the Jacobian of the discrete dynamics
@@ -66,8 +70,8 @@ class ExplicitIntegrator : public StateControlSized<NStates, NControls> {
    * @param[in] h discretization step length (e.g. time step)
    * @param[out] jac discrete dynamics Jacobian evaluated at x, u, t.
    */
-  virtual void Jacobian(const ContinuousDynamics& dynamics, const VectorXdRef& x,
-                        const VectorXdRef& u, float t, float h, Eigen::Ref<MatrixXd> jac) const = 0;
+  virtual void Jacobian(const DynamicsPtr& dynamics, const VectorXdRef& x,
+                        const VectorXdRef& u, float t, float h, JacobianRef jac) = 0;
 };
 
 /**
@@ -81,15 +85,16 @@ class ExplicitIntegrator : public StateControlSized<NStates, NControls> {
 class ExplicitEuler final : public ExplicitIntegrator<Eigen::Dynamic, Eigen::Dynamic> {
  public:
   ExplicitEuler(int n, int m) : ExplicitIntegrator<Eigen::Dynamic, Eigen::Dynamic>(n, m) {}
-  void Integrate(const ContinuousDynamics& dynamics, const VectorXdRef& x, const VectorXdRef& u,
-                 float t, float h, Eigen::Ref<VectorXd> xnext) const override {
-    xnext = x + dynamics(x, u, t) * h;
+  void Integrate(const DynamicsPtr& dynamics, const VectorXdRef& x, const VectorXdRef& u,
+                 float t, float h, Eigen::Ref<VectorXd> xnext) override {
+    dynamics->Evaluate(x, u, t,  xnext);
+    xnext = x + xnext * h;
   }
-  void Jacobian(const ContinuousDynamics& dynamics, const VectorXdRef& x, const VectorXdRef& u,
-                float t, float h, Eigen::Ref<MatrixXd> jac) const override {
+  void Jacobian(const DynamicsPtr& dynamics, const VectorXdRef& x, const VectorXdRef& u,
+                float t, float h, JacobianRef jac) override {
     int n = x.size();
     int m = u.size();
-    dynamics.Jacobian(x, u, t, jac);
+    dynamics->Jacobian(x, u, t, jac);
     jac = MatrixXd::Identity(n, n + m) + jac * h;
   }
 };
@@ -104,6 +109,7 @@ class ExplicitEuler final : public ExplicitIntegrator<Eigen::Dynamic, Eigen::Dyn
  */
 template <int NStates, int NControls>
 class RungeKutta4 final : public ExplicitIntegrator<NStates, NControls> {
+  using typename ExplicitIntegrator<NStates, NControls>::DynamicsPtr;
  public:
 
   RungeKutta4(int n, int m) : ExplicitIntegrator<NStates, NControls>(n, m) {
@@ -112,34 +118,34 @@ class RungeKutta4 final : public ExplicitIntegrator<NStates, NControls> {
   RungeKutta4() : ExplicitIntegrator<NStates, NControls>() {
     Init();
   }
-  void Integrate(const ContinuousDynamics& dynamics, const VectorXdRef& x, const VectorXdRef& u,
-                 float t, float h, Eigen::Ref<VectorXd> xnext) const override {
+  void Integrate(const DynamicsPtr& dynamics, const VectorXdRef& x, const VectorXdRef& u,
+                 float t, float h, Eigen::Ref<VectorXd> xnext) override {
 
-    dynamics.EvaluateInplace(x, u, t, k1_);
-    dynamics.EvaluateInplace(x + k1_ * 0.5 * h, u, t + 0.5 * h, k2_);  // NOLINT(readability-magic-numbers)
-    dynamics.EvaluateInplace(x + k2_ * 0.5 * h, u, t + 0.5 * h, k3_);  // NOLINT(readability-magic-numbers)
-    dynamics.EvaluateInplace(x + k3_ * h, u, t + h, k4_);
+    dynamics->Evaluate(x, u, t, k1_);
+    dynamics->Evaluate(x + k1_ * 0.5 * h, u, t + 0.5 * h, k2_);  // NOLINT(readability-magic-numbers)
+    dynamics->Evaluate(x + k2_ * 0.5 * h, u, t + 0.5 * h, k3_);  // NOLINT(readability-magic-numbers)
+    dynamics->Evaluate(x + k3_ * h, u, t + h, k4_);
     xnext = x + h * (k1_ + 2 * k2_ + 2 * k3_ + k4_) / 6;  // NOLINT(readability-magic-numbers)
   }
-  void Jacobian(const ContinuousDynamics& dynamics, const VectorXdRef& x, const VectorXdRef& u,
-                float t, float h, Eigen::Ref<MatrixXd> jac) const override {
-    int n = dynamics.StateDimension();
-    int m = dynamics.ControlDimension();
+  void Jacobian(const DynamicsPtr& dynamics, const VectorXdRef& x, const VectorXdRef& u,
+                float t, float h, JacobianRef jac) override {
+    int n = dynamics->StateDimension();
+    int m = dynamics->ControlDimension();
 
-    dynamics.EvaluateInplace(x, u, t, k1_);
-    dynamics.EvaluateInplace(x + k1_ * 0.5 * h, u, t + 0.5 * h, k2_);  // NOLINT(readability-magic-numbers)
-    dynamics.EvaluateInplace(x + k2_ * 0.5 * h, u, t + 0.5 * h, k3_);  // NOLINT(readability-magic-numbers)
+    dynamics->Evaluate(x, u, t, k1_);
+    dynamics->Evaluate(x + k1_ * 0.5 * h, u, t + 0.5 * h, k2_);  // NOLINT(readability-magic-numbers)
+    dynamics->Evaluate(x + k2_ * 0.5 * h, u, t + 0.5 * h, k3_);  // NOLINT(readability-magic-numbers)
 
-    dynamics.Jacobian(x, u, t, jac);
+    dynamics->Jacobian(x, u, t, jac);
     A_[0] = jac.topLeftCorner(n, n);
     B_[0] = jac.topRightCorner(n, m);
-    dynamics.Jacobian(x + 0.5 * k1_ * h, u, 0.5 * t, jac);  // NOLINT(readability-magic-numbers)
+    dynamics->Jacobian(x + 0.5 * k1_ * h, u, 0.5 * t, jac);  // NOLINT(readability-magic-numbers)
     A_[1] = jac.topLeftCorner(n, n);
     B_[1] = jac.topRightCorner(n, m);
-    dynamics.Jacobian(x + 0.5 * k2_ * h, u, 0.5 * t, jac);  // NOLINT(readability-magic-numbers)
+    dynamics->Jacobian(x + 0.5 * k2_ * h, u, 0.5 * t, jac);  // NOLINT(readability-magic-numbers)
     A_[2] = jac.topLeftCorner(n, n);
     B_[2] = jac.topRightCorner(n, m);
-    dynamics.Jacobian(x + k3_ * h, u, t, jac);
+    dynamics->Jacobian(x + k3_ * h, u, t, jac);
     A_[3] = jac.topLeftCorner(n, n);
     B_[3] = jac.topRightCorner(n, m);
 
@@ -179,14 +185,14 @@ class RungeKutta4 final : public ExplicitIntegrator<NStates, NControls> {
   // These need to be mutable to keep the integration methods as const methods
   // Since they replace arrays that would otherwise be created temporarily and 
   // provide no public access, it should be fine.
-  mutable VectorNd<NStates> k1_;
-  mutable VectorNd<NStates> k2_;
-  mutable VectorNd<NStates> k3_;
-  mutable VectorNd<NStates> k4_;
-  mutable std::array<MatrixNxMd<NStates, NStates>, 4> A_;
-  mutable std::array<MatrixNxMd<NStates, NControls>, 4> B_;
-  mutable std::array<MatrixNxMd<NStates, NStates>, 4> dA_;
-  mutable std::array<MatrixNxMd<NStates, NControls>, 4> dB_;
+  VectorNd<NStates> k1_;
+  VectorNd<NStates> k2_;
+  VectorNd<NStates> k3_;
+  VectorNd<NStates> k4_;
+  std::array<MatrixNxMd<NStates, NStates>, 4> A_;
+  std::array<MatrixNxMd<NStates, NControls>, 4> B_;
+  std::array<MatrixNxMd<NStates, NStates>, 4> dA_;
+  std::array<MatrixNxMd<NStates, NControls>, 4> dB_;
 };
 
 }  // namespace problem

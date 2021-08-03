@@ -1,6 +1,7 @@
 #pragma once
 
 #include <iostream>
+#include <memory>
 
 #include "altro/common/knotpoint.hpp"
 #include "altro/common/state_control_sized.hpp"
@@ -13,7 +14,7 @@ namespace ilqr {
 
 template <int n, int m>
 class DynamicsExpansion : public StateControlSized<n, m> {
-  using JacType = Eigen::Matrix<double, n, AddSizes(n, m)>;
+  using JacType = Eigen::Matrix<double, n, AddSizes(n, m), Eigen::RowMajor>;
 
  public:
   explicit DynamicsExpansion(int state_dim, int control_dim)
@@ -31,20 +32,20 @@ class DynamicsExpansion : public StateControlSized<n, m> {
   JacType& GetJacobian() { return jac_; };
 
   template <int n2, int m2, class Dynamics>
-  void CalcExpansion(const Dynamics& model,
+  void CalcExpansion(const std::shared_ptr<Dynamics>& model,
                      const KnotPoint<n2, m2>& z) {
     CalcExpansion(model, z.State(), z.Control(), z.GetTime(), z.GetStep());
   }
 
-  void CalcExpansion(const problem::DiscreteDynamics& model,
+  void CalcExpansion(const std::shared_ptr<problem::DiscreteDynamics>& model,
                      const VectorXdRef& x,
                      const VectorXdRef& u, const float t,
                      const float h) {
-    model.Jacobian(x, u, t, h, jac_);
+    model->Jacobian(x, u, t, h, jac_);
   }
 
   // Include this just to provide a more descriptive error message
-  void CalcExpansion(const problem::ContinuousDynamics& model,
+  void CalcExpansion(const std::shared_ptr<problem::ContinuousDynamics>& model,
                      const VectorXdRef& x,
                      const VectorXdRef& u, const float t,
                      const float h) {

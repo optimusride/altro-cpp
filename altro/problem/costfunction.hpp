@@ -3,142 +3,71 @@
 #include <iostream>
 
 #include "altro/eigentypes.hpp"
+#include "altro/common/functionbase.hpp"
 #include "altro/utils/derivative_checker.hpp"
 
 namespace altro {
 namespace problem {
-class CostFunction {
+
+/**
+ * @brief Represents a scalar-valued cost function.
+ *
+ * As a specialization of the ScalarFunction interface, users are expected to
+ * implement the interface described below. The key difference from the
+ * `ScalarFunction` interface is that the partial derivatives with repsect to the
+ * states and controls are passed in separately instead of as a single argument.
+ * The original API simply passes in the appropriate portions of the joint
+ * derivative.
+ *
+ * # Interface
+ * The user must define the following functions:
+ * - `int StateDimension() const` - number of states (length of x)
+ * - `int ControlDimension() const` - number of controls (length of u)
+ * - `double Evaluate(const VectorXdRef& x, const VectorXdRef& u)`
+ * - `void Gradient(const VectorXdRef& x, const VectorXdRef& u, Eigen::Ref<Eigen::VectorXd> dx,
+ * Eigen::Ref<Eigen::VectorXd> du)`
+ * - `void Hessian(const VectorXdRef& x, const VectorXdRef& u, Eigen::Ref<Eigen::MatrixXd> dxdx,
+ * Eigen::Ref<Eigen::MatrixXd> dxdu, Eigen::Ref<Eigen::MatrixXd> dudu)`
+ * - `bool HasHessian() const` - Specify if the Hessian is implemented - optional (assumed to be
+ * true)
+ * 
+ * Where we use the following Eigen type alias:
+ *    using VectorXdRef = Eigen::Ref<const Eigen::VectorXd>
+ *
+ * The user also has the option of defining the static constants:
+ *    static constexpr int NStates
+ *    static constexpr int NControls
+ *
+ * which can be used to provide compile-time size information. For best performance, 
+ * it is highly recommended that the user specifies these constants for their implementation.
+ * 
+ * # ScalarFunction API
+ * To use the ScalarFunction API, insert the following lines into the public 
+ * interface of the derived class:
+ *    using ScalarFunction::Gradient;
+ *    using ScalarFunction::Hessian;
+ */
+class CostFunction : public altro::ScalarFunction {
  public:
-  virtual ~CostFunction() = default;
+  using altro::ScalarFunction::Hessian;
 
-  /**
-   * @brief Evaluate the cost at a single knot point
-   *
-   * @param x state vector
-   * @param u control vector
-   * @return double the cost
-   */
-  virtual double Evaluate(const VectorXdRef& x, const VectorXdRef& u) const = 0;
-
-  /**
-   * @brief Evaluate the gradient of the cost at a single knot point
-   *
-   * @pre the gradient terms @param dx and @param du must be initialized
-   * (typically with zeros).
-   *
-   * @param[in] x (n,) state vector
-   * @param[in] u (m,) control vector
-   * @param[out] dx (n,) gradient of the cost wrt the state
-   * @param[out] du (m,) gradient of the cost wrt the control vector
-   */
+  // New Interface
   virtual void Gradient(const VectorXdRef& x, const VectorXdRef& u, Eigen::Ref<VectorXd> dx,
-                        Eigen::Ref<VectorXd> du) const = 0;
-
-  /**
-   * @brief Evaluate the Hessian of the cost at a single knot point
-   *
-   * @pre the Hessian terms @param dxdx, @param dxdu and @param dudu must be
-   * initialized
-   * (typically with zeros).
-   *
-   * @param[in] x (n,) state vector
-   * @param[in] u (m,) control vector
-   * @param[out] dxdx (n,n) Hessian wrt the states
-   * @param[out] dxdu (n,m) Hessian cross-term between states and controls
-   * @param[out] dudu (m,m) Hessian wrt to the controls
-   */
+                        Eigen::Ref<VectorXd> du) = 0;
   virtual void Hessian(const VectorXdRef& x, const VectorXdRef& u, Eigen::Ref<MatrixXd> dxdx,
-                       Eigen::Ref<MatrixXd> dxdu, Eigen::Ref<MatrixXd> dudu) const = 0;
+                       Eigen::Ref<MatrixXd> dxdu, Eigen::Ref<MatrixXd> dudu) = 0;
 
-  /**
-   * @brief Check if the gradient is correct
-   *
-   * Compares the implemented gradient method to the result obtained using
-   * finite differences. The 2-norm error must be less than @param eps.
-   *
-   * @param x state vector
-   * @param u control vector
-   * @param eps error tolerance
-   * @param eps_fd finite difference step size
-   * @return true if gradient is correct
-   */
-  bool CheckGradient(const VectorXdRef& x, const VectorXdRef& u, const double eps = 1e-4,
-                     const double eps_fd = 1e-6, const bool verbose = false) {
-    int n = x.size();
-    int m = u.size();
-    VectorXd z(n + m);
-    z << x, u;
-
-    VectorXd dx = VectorXd::Zero(n);
-    VectorXd du = VectorXd::Zero(m);
-    Gradient(x, u, dx, du);
-
-    auto fz = [&](auto z) -> double { return this->Evaluate(z.head(n), z.tail(m)); };
-    VectorXd fd_grad = utils::FiniteDiffGradient(fz, z, eps * eps_fd);
-
-    double err_x = (dx - fd_grad.head(n)).norm();
-    double err_u = (du - fd_grad.tail(m)).norm();
-
-    bool pass = (err_x < eps) && (err_u < eps);
-    if (verbose) {
-      if (!pass) {
-        VectorXd grad(n + m);
-        grad << dx, du;
-        std::cout << "Provided:\n" << grad << std::endl;
-        std::cout << "Finite Difference:\n" << fd_grad << std::endl;
-      }
-      std::cout << "Errors (dx, du): " << err_x << ", " << err_u << std::endl;
-    }
-
-    return pass;
+  void Gradient(const VectorXdRef& x, const VectorXdRef& u, Eigen::Ref<VectorXd> grad) override {
+    Gradient(x, u, grad.head(StateDimension()), grad.tail(ControlDimension()));
   }
-
-  /**
-   * @brief Check if the Hessian is correct
-   *
-   * Compares the implemented Hessian method to the result obtained using
-   * finite differences. The 2-norm error must be less than @param eps.
-   *
-   * @param x state vector
-   * @param u control vector
-   * @param eps error tolerance
-   * @param eps_fd finite difference step size
-   * @return true if Hessian is correct
-   */
-  bool CheckHessian(const VectorXdRef& x, const VectorXdRef& u, const double eps = 1e-4,
-                    const double eps_fd = 1e-4, const bool verbose = false) {
-    int n = x.size();
-    int m = u.size();
-    VectorXd z(n + m);
-    z << x, u;
-
-    MatrixXd dxdx = MatrixXd::Zero(n, n);
-    MatrixXd dxdu = MatrixXd::Zero(n, m);
-    MatrixXd dudu = MatrixXd::Zero(m, m);
-    Hessian(x, u, dxdx, dxdu, dudu);
-
-    auto fz = [&](auto z) -> double { return this->Evaluate(z.head(n), z.tail(m)); };
-    MatrixXd fd_hess = utils::FiniteDiffHessian(fz, z, eps_fd);
-
-    double err_xx = (dxdx - fd_hess.topLeftCorner(n, n)).norm();
-    double err_xu = (dxdu - fd_hess.topRightCorner(n, m)).norm();
-    double err_uu = (dudu - fd_hess.bottomRightCorner(m, m)).norm();
-
-    bool pass = (err_xx < eps) && (err_xu < eps) && (err_uu < eps);
-    if (verbose) {
-      if (!pass) {
-        MatrixXd hess(n + m, n + m);
-        hess << dxdx, dxdu, dxdu.transpose(), dudu;
-        std::cout << "Provided:\n" << hess << std::endl;
-        std::cout << "Finite Difference:\n" << fd_hess << std::endl;
-      }
-      std::cout << "Errors (xx, xu, uu): " << err_xx << ", " << err_xu << ", " << err_uu
-                << std::endl;
-    }
-
-    return pass;
+  void Hessian(const VectorXdRef& x, const VectorXdRef& u, Eigen::Ref<MatrixXd> hess) override {
+    const int n = StateDimension();
+    const int m = ControlDimension();
+    constexpr int Nx = NStates;
+    constexpr int Nu = NControls;
+    Hessian(x, u, hess.topLeftCorner<Nx, Nx>(n, n), hess.topRightCorner<Nx, Nu>(n, m),
+            hess.bottomRightCorner<Nu, Nu>(m, m));
   }
 };
-
 }  // namespace problem
 }  // namespace altro

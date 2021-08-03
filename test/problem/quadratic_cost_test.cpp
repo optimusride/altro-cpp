@@ -139,7 +139,8 @@ TEST_F(QuadraticCostTest, CheckHessian) {
   for (std::size_t i = 0; i < kIter; ++i) {
     VectorXd x = VectorXd::Random(3);
     VectorXd u = VectorXd::Random(2);
-    EXPECT_TRUE(qcost.CheckHessian(x, u));
+    VectorXd b = VectorXd::Ones(1);
+    EXPECT_TRUE(qcost.CheckHessian(x, u, b));
   }
 }
 

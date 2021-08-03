@@ -20,7 +20,7 @@ namespace constraints {
  * @tparam ConType Type of constraint (equality, inequality, conic, etc.)
  */
 template <int n, int m, class ConType>
-class ConstraintValues : public StateControlSized<n, m>, Constraint<ConType> {
+class ConstraintValues : public Constraint<ConType> {
   static constexpr int p = Eigen::Dynamic;
   static constexpr int n_m = AddSizes(n, m);
 
@@ -35,7 +35,7 @@ class ConstraintValues : public StateControlSized<n, m>, Constraint<ConType> {
    * can be evaluated with inputs that are consistent with state_dim and control_dim
    */
   ConstraintValues(const int state_dim, const int control_dim, ConstraintPtr<ConType> con)
-      : StateControlSized<n, m>(state_dim, control_dim), con_(std::move(con)) {
+      : n_(state_dim), m_(control_dim), con_(std::move(con)) {
     int output_dim = con_->OutputDimension();
     c_.setZero(output_dim);
     lambda_.setZero(output_dim);
@@ -49,6 +49,8 @@ class ConstraintValues : public StateControlSized<n, m>, Constraint<ConType> {
   }
 
   /***************************** Getters **************************************/
+  int StateDimension() const override { return n_; }
+  int ControlDimension() const override { return m_; }
 
   VectorNd<p>& GetDuals() { return lambda_; }
   VectorNd<p>& GetPenalty() { return penalty_; }
@@ -212,12 +214,14 @@ class ConstraintValues : public StateControlSized<n, m>, Constraint<ConType> {
   double MaxPenalty() { return penalty_.maxCoeff(); }
 
   // Pass constraint interface to internal pointer
+  static constexpr int NStates = n;
+  static constexpr int NControls = m;
   int OutputDimension() const override { return con_->OutputDimension(); }
-  void Evaluate(const VectorXdRef& x, const VectorXdRef& u, Eigen::Ref<VectorXd> c) const override {
+  void Evaluate(const VectorXdRef& x, const VectorXdRef& u, Eigen::Ref<VectorXd> c) override {
     con_->Evaluate(x, u, c);
   }
   void Jacobian(const VectorXdRef& x, const VectorXdRef& u,
-                Eigen::Ref<MatrixXd> jac) const override {
+                JacobianRef jac) override {
     con_->Jacobian(x, u, jac);
   }
 
@@ -235,11 +239,13 @@ class ConstraintValues : public StateControlSized<n, m>, Constraint<ConType> {
   }
 
  private:
+  const int n_;  // state dimension
+  const int m_;  // control dimension
   ConstraintPtr<ConType> con_;
   VectorNd<p> c_;            // constraint value
   VectorNd<p> lambda_;       // Langrange multiplier
   VectorNd<p> penalty_;      // penalty values
-  MatrixNxMd<p, n_m> jac_;    // Jacobian
+  RowMajorNxMd<p, n_m> jac_;    // Jacobian
   MatrixNxMd<n_m, n_m> hess_;  // Hessian
 
   VectorNd<p> lambda_proj_;     // projected multiplier

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+
 #include "altro/common/knotpoint.hpp"
 #include "altro/common/state_control_sized.hpp"
 #include "altro/eigentypes.hpp"
@@ -106,18 +108,18 @@ class CostExpansion : public StateControlSized<n, m> {
    * @param[in] z state and control at which to evaluate the expansion
    */
   template <int n2, int m2>
-  void CalcExpansion(const problem::CostFunction& costfun,
+  void CalcExpansion(const std::shared_ptr<problem::CostFunction>& costfun,
                      const KnotPoint<n2, m2>& z) {
     CalcExpansion(costfun, z.State(), z.Control());
   }
 
-  void CalcExpansion(const problem::CostFunction& costfun,
+  void CalcExpansion(const std::shared_ptr<problem::CostFunction>& costfun,
                      const VectorXdRef& x,
                      const VectorXdRef& u) {
     ALTRO_ASSERT(x.rows() == this->n_, "Inconsistent state dimension.");
     ALTRO_ASSERT(u.rows() == this->m_, "Inconsistent control dimension.");
-    costfun.Gradient(x, u, dx_, du_);
-    costfun.Hessian(x, u, dxdx_, dxdu_, dudu_);
+    costfun->Gradient(x, u, dx_, du_);
+    costfun->Hessian(x, u, dxdx_, dxdu_, dudu_);
   }
 
   void SetZero() {

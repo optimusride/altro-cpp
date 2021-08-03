@@ -16,6 +16,8 @@ add_library(common
   timer.cpp
   profile_entry.hpp
   profile_entry.cpp
+  functionbase.hpp
+  functionbase.cpp
 )
 target_link_libraries(common 
   PUBLIC

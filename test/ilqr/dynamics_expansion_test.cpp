@@ -11,9 +11,12 @@ namespace ilqr {
 
 class DynamicsExpansionTest : public ::testing::Test {
  public:
+  using Model = examples::TripleIntegrator;
+  using DiscreteModel = problem::DiscretizedModel<Model>;
+
   int n = 6;
   int m = 2;
-  examples::TripleIntegrator model = examples::TripleIntegrator(2);
+  Model model = examples::TripleIntegrator(2);
 
  protected:
   void SetUp() override {}
@@ -66,7 +69,7 @@ TEST_F(DynamicsExpansionTest, SetJac) {
   B = MatrixXd::Constant(n, m, 5);
   B(0, 0) = 9;
 
-  MatrixXd jac_ans(n, n + m);
+  RowMajorXd jac_ans(n, n + m);
   // clang-format off
 	jac_ans << 2,2,2,2,2,2, 9,5,
 	           2,2,2,2,2,2, 5,5,
@@ -85,7 +88,7 @@ TEST_F(DynamicsExpansionTest, SetJacStatic) {
   B = MatrixXd::Constant(n, m, 5);
   B(0, 0) = 9;
 
-  MatrixXd jac_ans(n, n + m);
+  RowMajorXd jac_ans(n, n + m);
   // clang-format off
 	jac_ans << 2,2,2,2,2,2, 9,5,
 	           2,2,2,2,2,2, 5,5,
@@ -102,10 +105,13 @@ TEST_F(DynamicsExpansionTest, CalcJacobian) {
   KnotPoint<HEAP, HEAP> z = KnotPoint<HEAP, HEAP>::Random(n, m);
   problem::DiscretizedModel<examples::TripleIntegrator> model_d(model);
 
-  EXPECT_THROW(expansion.CalcExpansion(model, z), std::runtime_error);
-  expansion.CalcExpansion(model_d, z);
+  std::shared_ptr<Model> modelptr = std::make_shared<Model>(model);
+  std::shared_ptr<DiscreteModel> dmodelptr = std::make_shared<DiscreteModel>(model);
 
-  MatrixXd jac = MatrixXd::Zero(STATE_DIM, STATE_DIM + CONTROL_DIM);
+  EXPECT_THROW(expansion.CalcExpansion(modelptr, z), std::runtime_error);
+  expansion.CalcExpansion(dmodelptr, z);
+
+  RowMajorXd jac = MatrixXd::Zero(STATE_DIM, STATE_DIM + CONTROL_DIM);
   model_d.Jacobian(z.State(), z.Control(), z.GetTime(), z.GetStep(), jac);
   EXPECT_TRUE(expansion.GetJacobian().isApprox(jac));
 }
@@ -115,10 +121,13 @@ TEST_F(DynamicsExpansionTest, CalcJacobianStatic) {
   KnotPoint<STATE_DIM, CONTROL_DIM> z = KnotPoint<STATE_DIM, CONTROL_DIM>::Random(n, m);
   problem::DiscretizedModel<examples::TripleIntegrator> model_d(model);
 
-  EXPECT_THROW(expansion.CalcExpansion(model, z), std::runtime_error);
-  expansion.CalcExpansion(model_d, z);
+  std::shared_ptr<Model> modelptr = std::make_shared<Model>(model);
+  std::shared_ptr<DiscreteModel> dmodelptr = std::make_shared<DiscreteModel>(model);
 
-  MatrixXd jac = MatrixXd::Zero(STATE_DIM, STATE_DIM + CONTROL_DIM);
+  EXPECT_THROW(expansion.CalcExpansion(modelptr, z), std::runtime_error);
+  expansion.CalcExpansion(dmodelptr, z);
+
+  RowMajorXd jac = MatrixXd::Zero(STATE_DIM, STATE_DIM + CONTROL_DIM);
   model_d.Jacobian(z.State(), z.Control(), z.GetTime(), z.GetStep(), jac);
   EXPECT_TRUE(expansion.GetJacobian().isApprox(jac));
 }

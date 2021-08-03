@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include "altro/common/functionbase.hpp"
 #include "altro/eigentypes.hpp"
 #include "altro/utils/utils.hpp"
 
@@ -113,47 +114,50 @@ class NegativeOrthant {
 using Inequality = NegativeOrthant;
 
 /**
- * @brief An abstract constraint
+ * @brief An abstract constraint of the form:
+ * \f[ g(x, u) \in K \f]
  *
- * Users are expected to implement this interface class in order to provide
- * constraint function and derivatives to the trajectory optimization solver.
+ * where \f$ K \f$ is an arbitrary convex cone, specified by @tparam ConType.
+ * This formulation supports generic equality and inequality constraints.
+ *
+ * # Interface
+ * The user is expected to implement the folowing interface when defining a constraint:
+ * - `int OutputDimension() const` - size of output (length of constraint).
+ * - `void Evaluate(const VectorXdRef& x, const VectorXdRef& u, Eigen::Ref<Eigen::VectorXd> out)`
+ * - `void Jacobian(const VectorXdRef& x, const VectorXdRef& u, JacobianRef out)`
+ *
+ * Where we use the following Eigen type aliases:
+ *    using VectorXdRef = Eigen::Ref<const Eigen::VectorXd>
+ *    using JacobianRef = Eigen::Ref<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic,
+ * Eigen::RowMajor>>
+ *
+ * The Jacobian is stored row-major since Jacobians are naturally evaluated
+ * row-wise. Storing the underlying data in row-major format allows the rows to
+ * be processed individually in a cache-friendly way.
  *
  * The constraint is required to at least have continuous 1st order derivatives,
  * and these derivatives must be implemented by the user. No automatic or
- * approximation differentiation methods are provided.
+ * approximation differentiation methods are provided, although the Jacobian
+ * can be verified using a finite difference method using `CheckJacobian`. See
+ * documentation for `FunctionBase` for more information.
  *
  * @tparam ConType The type of constraint (equality, inequality, conic, etc.)
  */
 template <class ConType>
-class Constraint {
+class Constraint : public FunctionBase {
  public:
-  virtual ~Constraint() = default;
+  // These aren't used right now, but they need to be defined.
+  int StateDimension() const override {
+    ALTRO_ASSERT(false, "StateDimension hasn't been defined for this constraint.");
+    return -1;
+  }
+  int ControlDimension() const override {
+    ALTRO_ASSERT(false, "ControlDimension hasn't been defined for this constraint.");
+    return -1;
+  }
 
-  virtual int OutputDimension() const = 0;
-
-  /**
-   * @brief Evaluate the constraint, storing the result in the vector @param c.
-   *
-   * @param[in] x (n,) State vector.
-   * @param[in] u (m,) Control vector.
-   * @param[out] c (p,) Output vector. The constraint is satisfied when this vector is in
-   * the appropriate cone (specified by ConType).
-   */
-  virtual void Evaluate(const VectorXdRef& x, const VectorXdRef& u,
-                        Eigen::Ref<VectorXd> c) const = 0;
-
-  /**
-   * @brief Evaluate the constraint Jacobian, storing the result in the matrix
-   * @param jac.
-   *
-   * @param[in] x (n,) State vector.
-   * @param[in] u (m,) Control vector.
-   * @param[out] jac (p,n+m) Constraint Jacobian, where p is the length of the
-   * constraint (equal to OutputDimension()).
-   */
-  virtual void Jacobian(const VectorXdRef& x, const VectorXdRef& u,
-                        Eigen::Ref<MatrixXd> jac) const = 0;
   // TODO(bjackson) [SW-14476] add 2nd order terms when implementing DDP
+  bool HasHessian() const override { return false; }
 };
 
 template <class ConType>

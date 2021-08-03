@@ -35,7 +35,7 @@ template <int n, int m>
 class KnotPointFunctions : public StateControlSized<n, m> {
   using DynamicsPtr = std::shared_ptr<problem::DiscreteDynamics>;
   using CostFunPtr = std::shared_ptr<problem::CostFunction>;
-  using JacType = Eigen::Matrix<double, n, AddSizes(n, m)>;
+  using JacType = Eigen::Matrix<double, n, AddSizes(n, m), Eigen::RowMajor>;
 
 public:
   KnotPointFunctions(DynamicsPtr dynamics, CostFunPtr costfun)
@@ -92,7 +92,7 @@ public:
   void Dynamics(const VectorXdRef &x,
                 const VectorXdRef &u, float t, float h,
                 Eigen::Ref<VectorXd> xnext) const { // NOLINT(performance-unnecessary-value-param)
-    model_ptr_->EvaluateInplace(x, u, t, h, xnext);
+    model_ptr_->Evaluate(x, u, t, h, xnext);
   }
 
   /**
@@ -104,7 +104,7 @@ public:
   void CalcCostExpansion(const VectorXdRef &x,
                          const VectorXdRef &u) {
     cost_expansion_.SetZero();
-    cost_expansion_.CalcExpansion(*costfun_ptr_, x, u);
+    cost_expansion_.CalcExpansion(costfun_ptr_, x, u);
   }
 
   /**
@@ -120,7 +120,7 @@ public:
                              const float h) {
     if (model_ptr_) {
       dynamics_expansion_.SetZero();
-      dynamics_expansion_.CalcExpansion(*model_ptr_, x, u, t, h);
+      dynamics_expansion_.CalcExpansion(model_ptr_, x, u, t, h);
     }
   }
 

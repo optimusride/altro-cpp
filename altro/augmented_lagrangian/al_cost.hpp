@@ -31,16 +31,13 @@ namespace augmented_lagrangian {
  * @tparam m Compile-time control dimension.
  */
 template <int n, int m>
-class ALCost : public problem::CostFunction, public StateControlSized<n, m> {
+class ALCost : public problem::CostFunction {
   template <class ConType>
   using ConstraintValueVec =
       std::vector<std::shared_ptr<constraints::ConstraintValues<n, m, ConType>>>;
 
  public:
-  ALCost(const int state_dim, const int control_dim)
-      : StateControlSized<n, m>(state_dim, control_dim) {
-    Init();
-  }
+  ALCost(const int state_dim, const int control_dim) : n_(state_dim), m_(control_dim) { Init(); }
 
   /**
    * @brief Construct a new ALCost object from a Problem
@@ -52,8 +49,7 @@ class ALCost : public problem::CostFunction, public StateControlSized<n, m> {
    * @param k Index of the knot point. 0 <= k <= prob.NumSegments()
    */
   ALCost(const problem::Problem& prob, const int k)
-      : StateControlSized<n, m>(prob.GetDynamics(k)->StateDimension(),
-                                prob.GetDynamics(k)->ControlDimension()) {
+      : n_(prob.GetDynamics(k)->StateDimension()), m_(prob.GetDynamics(k)->ControlDimension()) {
     SetCostFunction(prob.GetCostFunction(k));
     SetEqualityConstraints(prob.GetEqualityConstraints().at(k).begin(),
                            prob.GetEqualityConstraints().at(k).end());
@@ -63,6 +59,11 @@ class ALCost : public problem::CostFunction, public StateControlSized<n, m> {
   }
 
   /***************************** Getters **************************************/
+
+  int StateDimension() const override { return n_; }
+  int ControlDimension() const override { return m_; }
+  static constexpr int NStates = n;
+  static constexpr int NControls = m;
 
   ConstraintValueVec<constraints::Equality>& GetEqualityConstraints() { return eq_; }
   ConstraintValueVec<constraints::Inequality>& GetInequalityConstraints() { return ineq_; }
@@ -233,6 +234,7 @@ class ALCost : public problem::CostFunction, public StateControlSized<n, m> {
   }
 
   /***************************** Methods **************************************/
+
   /**
    * @brief Evaluate the augmented Lagrangian cost
    *
@@ -242,7 +244,7 @@ class ALCost : public problem::CostFunction, public StateControlSized<n, m> {
    *
    * @pre The cost function must be set prior to calling this function.
    */
-  double Evaluate(const VectorXdRef& x, const VectorXdRef& u) const override {
+  double Evaluate(const VectorXdRef& x, const VectorXdRef& u) override {
     ALTRO_ASSERT(costfun_ != nullptr, "Cost function must be set before evaluating.");
     double J = costfun_->Evaluate(x, u);
     for (size_t i = 0; i < eq_.size(); ++i) {
@@ -255,7 +257,7 @@ class ALCost : public problem::CostFunction, public StateControlSized<n, m> {
   }
 
   void Gradient(const VectorXdRef& x, const VectorXdRef& u, Eigen::Ref<VectorXd> dx,
-                Eigen::Ref<VectorXd> du) const override {
+                Eigen::Ref<VectorXd> du) override {
     ALTRO_ASSERT(costfun_ != nullptr, "Cost function must be set before evaluating.");
     costfun_->Gradient(x, u, dx, du);
     for (size_t i = 0; i < eq_.size(); ++i) {
@@ -271,7 +273,7 @@ class ALCost : public problem::CostFunction, public StateControlSized<n, m> {
   }
 
   void Hessian(const VectorXdRef& x, const VectorXdRef& u, Eigen::Ref<MatrixXd> dxdx,
-                       Eigen::Ref<MatrixXd> dxdu, Eigen::Ref<MatrixXd> dudu) const override {
+               Eigen::Ref<MatrixXd> dxdu, Eigen::Ref<MatrixXd> dudu) override {
     ALTRO_ASSERT(costfun_ != nullptr, "Cost function must be set before evaluating.");
     costfun_->Hessian(x, u, dxdx, dxdu, dudu);
     for (size_t i = 0; i < eq_.size(); ++i) {
@@ -391,6 +393,9 @@ class ALCost : public problem::CostFunction, public StateControlSized<n, m> {
   ConstraintValueVec<constraints::Equality> eq_;
   ConstraintValueVec<constraints::Inequality> ineq_;
 
+  const int n_;
+  const int m_;
+
   // Flag for using full/Gauss newton
   // TODO(bjackson): Add an option to change this, and use it in the expansion.
   bool full_newton_ = false;
@@ -400,11 +405,11 @@ class ALCost : public problem::CostFunction, public StateControlSized<n, m> {
 
   // Arrays for collecting the cost expansion before adding
   // must be mutable since the CostFunction interface requires a const method
-  mutable VectorNd<n> dx_tmp_;
-  mutable VectorNd<m> du_tmp_;
-  mutable MatrixNxMd<n, n> dxdx_tmp_;
-  mutable MatrixNxMd<n, m> dxdu_tmp_;
-  mutable MatrixNxMd<m, m> dudu_tmp_;
+  VectorNd<n> dx_tmp_;
+  VectorNd<m> du_tmp_;
+  MatrixNxMd<n, n> dxdx_tmp_;
+  MatrixNxMd<n, m> dxdu_tmp_;
+  MatrixNxMd<m, m> dudu_tmp_;
 };
 
 }  // namespace augmented_lagrangian
