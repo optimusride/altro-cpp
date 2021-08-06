@@ -31,7 +31,7 @@ class Trajectory {
    * @param N the number of segments in the trajectory. This means there are
    * N+1 state vectors and N control vectors.
    */
-  explicit Trajectory(int N) : traj_(N) {}
+  explicit Trajectory(int N) : traj_(N+1) {}
   explicit Trajectory(int _n, int _m, int N)
       : traj_(N + 1, KnotPoint<n, m, T>(_n, _m)) {}
   explicit Trajectory(std::vector<KnotPoint<n, m, T>> zs) : traj_(zs) {}

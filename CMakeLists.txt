@@ -137,6 +137,8 @@ macro(export_library lib_name export_name headers relative_path)
   )
 endmacro()
 
+# This adds the -fPIC option for all build targets. The position independent code is required for the library to be usable with vehicle repo. 
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 add_subdirectory(altro)
 if (BUILD_EXAMPLES)
