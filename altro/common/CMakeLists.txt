@@ -29,4 +29,4 @@ target_compile_definitions(common
   PRIVATE
   LOGDIR="${LOGDIR}"
 )
-export_library(common altroTargets "knotpoint.hpp;state_control_sized.hpp;trajectory.hpp;solver_options.hpp;solver_stats.hpp;log_entry.hpp;solver_logger.hpp;timer.hpp;profile_entry.hpp" altro/common)
+export_library(common altroTargets "knotpoint.hpp;state_control_sized.hpp;trajectory.hpp;solver_options.hpp;solver_stats.hpp;log_entry.hpp;solver_logger.hpp;timer.hpp;profile_entry.hpp;functionbase.hpp" altro/common)

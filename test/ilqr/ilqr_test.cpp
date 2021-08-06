@@ -230,11 +230,11 @@ TEST_F(TripleIntegratoriLQRTest, Rollout) {
 
   EXPECT_TRUE(Z->State(N).isApprox(Eigen::VectorXd::Zero(n)));
   solver.Rollout();
-  for (const auto z : *Z) {
+  for (const auto& z : *Z) {
     EXPECT_TRUE(z.State().isApprox(solver.GetInitialState()));
   }
 
-  for (auto z : *Z) {
+  for (auto& z : *Z) {
     z.Control().setConstant(0.1);
   }
   solver.Rollout();

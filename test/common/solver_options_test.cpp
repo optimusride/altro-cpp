@@ -66,8 +66,8 @@ void PseudoSolve(SolverStats& stats, LogLevel verbosity, int outer_iters = 5) {
       stats.iterations_inner++;
       stats.iterations_total++;
       stats.Log("dJ", dJ);
-      stats.Log("viol", pow10(-outer) + std::exp2(-inner));
-      stats.Log("grad", pow10(-outer) + pow10(-inner));
+      stats.Log("viol", std::pow(10, -outer) + std::exp2(-inner));
+      stats.Log("grad", std::pow(10, -outer) + std::pow(10, -inner));
       stats.Log("iters", stats.iterations_total);
       stats.NewIteration();
       if (stats.GetVerbosity() >= LogLevel::kInner) {

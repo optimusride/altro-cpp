@@ -116,7 +116,7 @@ TEST_F(TrajectoryTest, Iteration) {
   EXPECT_EQ(k, N+1);
 
   k = 0;
-  for (const auto z : traj) {
+  for (const auto& z : traj) {
     EXPECT_TRUE(z.State().isApprox(X[k]));
     ++k;
   }
