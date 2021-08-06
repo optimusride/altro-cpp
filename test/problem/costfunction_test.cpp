@@ -6,6 +6,9 @@
 #include "altro/problem/costfunction.hpp"
 
 namespace altro {
+// Needed to prevent linker errors
+constexpr int ScalarFunction::NOutputs;
+
 namespace problem {
 
 class TestCostFunction : public CostFunction {
@@ -36,6 +39,10 @@ class TestCostFunction : public CostFunction {
     dxdu.setZero();
   }
 };
+
+// Needed to prevent linker errors
+constexpr int TestCostFunction::NStates;
+constexpr int TestCostFunction::NControls;
 
 TEST(FunctionBase, CostFunSizes) {
   TestCostFunction costfun;

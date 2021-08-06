@@ -1,11 +1,13 @@
 # Dynamics 
 add_executable(dynamics_test
   dynamics_test.cpp
+  dynamics_test.hpp
 )
 target_link_libraries(dynamics_test
   PRIVATE
   gtest_main
   problem
+  common
   fmt::fmt
 )
 gtest_discover_tests(dynamics_test)
@@ -18,6 +20,7 @@ target_link_libraries(costfunction_test
   PRIVATE
   gtest_main
   problem
+  common
   fmt::fmt
 )
 gtest_discover_tests(costfunction_test)
