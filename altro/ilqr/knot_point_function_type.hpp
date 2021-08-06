@@ -35,7 +35,7 @@ template <int n, int m>
 class KnotPointFunctions : public StateControlSized<n, m> {
   using DynamicsPtr = std::shared_ptr<problem::DiscreteDynamics>;
   using CostFunPtr = std::shared_ptr<problem::CostFunction>;
-  using JacType = Eigen::Matrix<double, n, AddSizes(n, m), Eigen::RowMajor>;
+  using JacType = Eigen::Matrix<double, n, AddSizes(n, m)>;
 
 public:
   KnotPointFunctions(DynamicsPtr dynamics, CostFunPtr costfun)

@@ -43,8 +43,8 @@ bool FunctionBase::CheckJacobian(const VectorXdRef& x, const VectorXdRef& u,
 
   // NOTE(bjackson): The NOLINT comments here and below are to surpress clang-tidy 
   // warnings about uninitialized values, even though these are clearly initialized.
-  RowMajorXd fd_jac = RowMajorXd::Zero(n, n + m);  // NOLINT
-  RowMajorXd jac = RowMajorXd::Zero(n, n + m);  // NOLINT
+  MatrixXd fd_jac = MatrixXd::Zero(n, n + m);  // NOLINT
+  MatrixXd jac = MatrixXd::Zero(n, n + m);  // NOLINT
   VectorXd z(n + m);
   z << x, u;
 

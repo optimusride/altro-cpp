@@ -26,7 +26,7 @@ class GoalConstraint : public constraints::Constraint<constraints::Equality> {
     c = x - xf_;
   }
   void Jacobian(const VectorXdRef& x, const VectorXdRef& u,
-                JacobianRef jac) override {
+                Eigen::Ref<MatrixXd> jac) override {
     ALTRO_UNUSED(x);
     ALTRO_UNUSED(u);
     jac.setIdentity();
@@ -105,7 +105,7 @@ class ControlBound : public constraints::Constraint<constraints::NegativeOrthant
   }
 
   void Jacobian(const VectorXdRef& x, const VectorXdRef& u,
-                JacobianRef jac) override {
+                Eigen::Ref<MatrixXd> jac) override {
     (void) u; // surpress erroneous unused variable error
     ALTRO_ASSERT(u.size() == m_, "Inconsistent control dimension when evaluating control bound.");
     jac.setZero();

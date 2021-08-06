@@ -19,7 +19,7 @@ void Unicycle::Evaluate(const VectorXdRef& x, const VectorXdRef& u, const float 
 }
 
 void Unicycle::Jacobian(const VectorXdRef& x, const VectorXdRef& u, const float t,
-                        JacobianRef jac) {
+                        Eigen::Ref<MatrixXd> jac) {
   ALTRO_UNUSED(t);
   double theta = x(2);  // angle
   double v = u(0);      // linear velocity

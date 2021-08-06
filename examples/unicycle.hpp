@@ -33,7 +33,7 @@ class Unicycle : public problem::ContinuousDynamics {
   void Evaluate(const VectorXdRef& x, const VectorXdRef& u, const float t,
                        Eigen::Ref<VectorXd> xdot) override;
   void Jacobian(const VectorXdRef& x, const VectorXdRef& u, const float t,
-                JacobianRef jac) override;
+                Eigen::Ref<MatrixXd> jac) override;
   void Hessian(const VectorXdRef& x, const VectorXdRef& u, const float t, const VectorXdRef& b,
                Eigen::Ref<MatrixXd> hess) override;
   bool HasHessian() const override { return true; };

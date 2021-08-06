@@ -18,7 +18,7 @@ void TripleIntegrator::Evaluate(const VectorXdRef& x,
 
 void TripleIntegrator::Jacobian(const VectorXdRef& x,
                                 const VectorXdRef& u,
-                                const float t, JacobianRef jac) {
+                                const float t, Eigen::Ref<MatrixXd> jac) {
   ALTRO_UNUSED(x);
   ALTRO_UNUSED(u);
   ALTRO_UNUSED(t);

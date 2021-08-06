@@ -44,10 +44,10 @@ TEST(DynamicsTest, Jacobian) {
 
   VectorXd x = Eigen::Vector4d(1, 2, 3, 4);
   VectorXd u = Eigen::Vector2d(5, 6);
-  RowMajorXd jac(4, 6);
+  MatrixXd jac(4, 6);
   const float t = 0.1;
   model.Jacobian(x, u, t, jac);
-  RowMajorXd expected(4, 6);
+  MatrixXd expected(4, 6);
   // clang-format off
   expected << 
       0, 0, 0, 0, t, 0, 

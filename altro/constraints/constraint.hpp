@@ -125,16 +125,11 @@ using Inequality = NegativeOrthant;
  * The user is expected to implement the folowing interface when defining a constraint:
  * - `int OutputDimension() const` - size of output (length of constraint).
  * - `void Evaluate(const VectorXdRef& x, const VectorXdRef& u, Eigen::Ref<Eigen::VectorXd> out)`
- * - `void Jacobian(const VectorXdRef& x, const VectorXdRef& u, JacobianRef out)`
+ * - `void Jacobian(const VectorXdRef& x, const VectorXdRef& u, Eigen::Ref<MatrixXd> out)`
  *
- * Where we use the following Eigen type aliases:
- *
- *     using VectorXdRef = Eigen::Ref<const Eigen::VectorXd>
- *     using JacobianRef = Eigen::Ref<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>
- *
- * The Jacobian is stored row-major since Jacobians are naturally evaluated
- * row-wise. Storing the underlying data in row-major format allows the rows to
- * be processed individually in a cache-friendly way.
+ * Where we use the following Eigen type alias:
+ * 
+ *      using VectorXdRef = Eigen::Ref<const Eigen::VectorXd>
  *
  * The constraint is required to at least have continuous 1st order derivatives,
  * and these derivatives must be implemented by the user. No automatic or

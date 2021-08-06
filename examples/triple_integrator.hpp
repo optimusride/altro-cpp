@@ -30,7 +30,7 @@ class TripleIntegrator : public problem::ContinuousDynamics {
                        Eigen::Ref<VectorXd> xdot) override;
   void Jacobian(const VectorXdRef& x,
                 const VectorXdRef& u, float t,
-                JacobianRef jac) override;
+                Eigen::Ref<MatrixXd> jac) override;
   void Hessian(const VectorXdRef& x,
                const VectorXdRef& u, float t,
                const VectorXdRef& b,

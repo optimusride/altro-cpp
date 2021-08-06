@@ -221,7 +221,7 @@ class ConstraintValues : public Constraint<ConType> {
     con_->Evaluate(x, u, c);
   }
   void Jacobian(const VectorXdRef& x, const VectorXdRef& u,
-                JacobianRef jac) override {
+                Eigen::Ref<MatrixXd> jac) override {
     con_->Jacobian(x, u, jac);
   }
 
@@ -245,7 +245,7 @@ class ConstraintValues : public Constraint<ConType> {
   VectorNd<p> c_;            // constraint value
   VectorNd<p> lambda_;       // Langrange multiplier
   VectorNd<p> penalty_;      // penalty values
-  RowMajorNxMd<p, n_m> jac_;    // Jacobian
+  MatrixNxMd<p, n_m> jac_;    // Jacobian
   MatrixNxMd<n_m, n_m> hess_;  // Hessian
 
   VectorNd<p> lambda_proj_;     // projected multiplier

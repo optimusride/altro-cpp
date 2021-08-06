@@ -28,19 +28,14 @@ namespace altro {
  * - `int ControlDimension() const` - number of controls (length of u)
  * - `int OutputDimension() const` - size of output (length of out).
  * - `void Evaluate(const VectorXdRef& x, const VectorXdRef& u, Eigen::Ref<Eigen::VectorXd> out)`
- * - `void Jacobian(const VectorXdRef& x, const VectorXdRef& u, JacobianRef out)`
+ * - `void Jacobian(const VectorXdRef& x, const VectorXdRef& u, Eigen::Ref<MatrixXd> out)`
  * - `void Hessian(const VectorXdRef& x, const VectorXdRef& u, const VectorXdRef& b,
  * Eigen::Ref<Eigen::MatrixXd> hess)` - optional
  * - `bool HasHessian() const` - Specify if the Hessian is implemented
  *
- * Where we use the following Eigen type aliases:
+ * Where we use the following Eigen type alias:
  * 
  *      using VectorXdRef = Eigen::Ref<const Eigen::VectorXd>
- *      using JacobianRef = Eigen::Ref<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>
- *
- * The Jacobian is stored row-major since Jacobians are naturally evaluated
- * row-wise. Storing the underlying data in row-major format allows the rows to
- * be processed individually in a cache-friendly way.
  *
  * The user also has the option of defining the static constants:
  * 
@@ -66,7 +61,7 @@ class FunctionBase {
   virtual int OutputDimension() const = 0;
 
   virtual void Evaluate(const VectorXdRef& x, const VectorXdRef& u, Eigen::Ref<VectorXd> out) = 0;
-  virtual void Jacobian(const VectorXdRef& x, const VectorXdRef& u, JacobianRef jac) = 0;
+  virtual void Jacobian(const VectorXdRef& x, const VectorXdRef& u, Eigen::Ref<MatrixXd> jac) = 0;
   virtual void Hessian(const VectorXdRef& x, const VectorXdRef& u, const VectorXdRef& b,
                        Eigen::Ref<MatrixXd> hess) {  // NOLINT(performance-unnecessary-value-param)
     ALTRO_UNUSED(x);
@@ -147,9 +142,11 @@ class ScalarFunction : public FunctionBase {
     out(0) = Evaluate(x, u);
   }
 
-  void Jacobian(const VectorXdRef& x, const VectorXdRef& u, JacobianRef jac) override {
+  void Jacobian(const VectorXdRef& x, const VectorXdRef& u, Eigen::Ref<MatrixXd> jac) override {
     ALTRO_ASSERT(jac.rows() == 1, "Jacobian of a scalar function must have a single row.");
-    Gradient(x, u, jac.row(0));
+    // Reinterpret the 1xN Jacobian as an Nx1 column vector
+    Eigen::Map<VectorNd<jac.ColsAtCompileTime>> grad(jac.data(), jac.cols());
+    Gradient(x, u, grad);
   }
 
   void Hessian(const VectorXdRef& x, const VectorXdRef& u, const VectorXdRef& b,

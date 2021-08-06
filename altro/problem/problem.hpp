@@ -36,7 +36,7 @@ class IdentityDynamics : public DiscreteDynamics {
     xnext = x;
   }
   void Jacobian(const VectorXdRef& /*x*/, const VectorXdRef& /*u*/, const float /*t*/,
-                const float /*h*/, JacobianRef jac) override {
+                const float /*h*/, Eigen::Ref<MatrixXd> jac) override {
     jac.setIdentity();
   }
   void Hessian(const VectorXdRef& /*x*/, const VectorXdRef& /*u*/, const float /*t*/,

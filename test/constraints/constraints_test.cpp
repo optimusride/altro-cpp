@@ -101,11 +101,11 @@ TEST(CircleConstraint, Jacobian) {
 
   const Eigen::Vector2d x(0.5, 1.5);
   const Eigen::Vector2d u(-0.25, 0.25);
-  RowMajorNxMd<2, 2> jac = Eigen::Matrix2d::Zero();
+  MatrixNxMd<2, 2> jac = Eigen::Matrix2d::Zero();
   obs.Jacobian(x, u, jac);
   Eigen::Vector2d d1 = x - p1; 
   Eigen::Vector2d d2 = x - p2; 
-  RowMajorXd jac_expected(2,2);
+  MatrixXd jac_expected(2,2);
   jac_expected << -2 * d1(0), -2 * d1(1), -2 * d2(0), -2 * d2(1);
 
   auto eval = [&](auto x_) {
@@ -114,7 +114,7 @@ TEST(CircleConstraint, Jacobian) {
     return c_;
   };
   VectorXd x2 = x;
-  RowMajorXd jac_fd = utils::FiniteDiffJacobian<-1, -1>(eval, x2);
+  MatrixXd jac_fd = utils::FiniteDiffJacobian<-1, -1>(eval, x2);
 
   EXPECT_TRUE(jac.isApprox(jac_expected));
   EXPECT_TRUE(jac.isApprox(jac_fd, 1e-4));
@@ -165,9 +165,9 @@ TEST_F(ConstraintValueTest, ConstraintInterface) {
   EXPECT_TRUE(c2.isApprox(c_expected));
 
   // Jacobian method
-  RowMajorXd jac(n, n + m);
-  RowMajorXd jac2(n, n + m);
-  RowMajorXd jac_expected(n, n + m);
+  MatrixXd jac(n, n + m);
+  MatrixXd jac2(n, n + m);
+  MatrixXd jac_expected(n, n + m);
   jac_expected << MatrixXd::Identity(n, n), MatrixXd::Zero(n, m);
   goal->Jacobian(x, u, jac);
   EXPECT_TRUE(jac.isApprox(jac_expected));

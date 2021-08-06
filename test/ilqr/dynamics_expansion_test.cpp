@@ -69,7 +69,7 @@ TEST_F(DynamicsExpansionTest, SetJac) {
   B = MatrixXd::Constant(n, m, 5);
   B(0, 0) = 9;
 
-  RowMajorXd jac_ans(n, n + m);
+  MatrixXd jac_ans(n, n + m);
   // clang-format off
 	jac_ans << 2,2,2,2,2,2, 9,5,
 	           2,2,2,2,2,2, 5,5,
@@ -88,7 +88,7 @@ TEST_F(DynamicsExpansionTest, SetJacStatic) {
   B = MatrixXd::Constant(n, m, 5);
   B(0, 0) = 9;
 
-  RowMajorXd jac_ans(n, n + m);
+  MatrixXd jac_ans(n, n + m);
   // clang-format off
 	jac_ans << 2,2,2,2,2,2, 9,5,
 	           2,2,2,2,2,2, 5,5,
@@ -111,7 +111,7 @@ TEST_F(DynamicsExpansionTest, CalcJacobian) {
   EXPECT_THROW(expansion.CalcExpansion(modelptr, z), std::runtime_error);
   expansion.CalcExpansion(dmodelptr, z);
 
-  RowMajorXd jac = MatrixXd::Zero(STATE_DIM, STATE_DIM + CONTROL_DIM);
+  MatrixXd jac = MatrixXd::Zero(STATE_DIM, STATE_DIM + CONTROL_DIM);
   model_d.Jacobian(z.State(), z.Control(), z.GetTime(), z.GetStep(), jac);
   EXPECT_TRUE(expansion.GetJacobian().isApprox(jac));
 }
@@ -127,7 +127,7 @@ TEST_F(DynamicsExpansionTest, CalcJacobianStatic) {
   EXPECT_THROW(expansion.CalcExpansion(modelptr, z), std::runtime_error);
   expansion.CalcExpansion(dmodelptr, z);
 
-  RowMajorXd jac = MatrixXd::Zero(STATE_DIM, STATE_DIM + CONTROL_DIM);
+  MatrixXd jac = MatrixXd::Zero(STATE_DIM, STATE_DIM + CONTROL_DIM);
   model_d.Jacobian(z.State(), z.Control(), z.GetTime(), z.GetStep(), jac);
   EXPECT_TRUE(expansion.GetJacobian().isApprox(jac));
 }

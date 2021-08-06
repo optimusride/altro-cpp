@@ -66,7 +66,7 @@ TEST(UnicycleTest, BenchmarkRK4) {
   utils::Benchmark<std::chrono::microseconds>(eval, 2000).Print();
 
   fmt::print("\nJacobian\n");
-  RowMajorNxMd<NStates, NStates + NControls> jac;
+  MatrixNxMd<NStates, NStates + NControls> jac;
   auto jacobian = [&]() { dmodel.Jacobian(x, u, t, h, jac); };
   utils::Benchmark<std::chrono::microseconds>(jacobian, 2000).Print();
 }

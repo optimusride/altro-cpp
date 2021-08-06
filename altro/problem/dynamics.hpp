@@ -23,19 +23,14 @@ namespace problem {
  * - `int ControlDimension() const` - number of controls (length of u)
  * - `void Evaluate(const VectorXdRef& x, const VectorXdRef& u, float t, Eigen::Ref<Eigen::VectorXd>
  * out)`
- * - `void Jacobian(const VectorXdRef& x, const VectorXdRef& u, float t, JacobianRef out)`
+ * - `void Jacobian(const VectorXdRef& x, const VectorXdRef& u, float t, Eigen::Ref<MatrixXd> out)`
  * - `void Hessian(const VectorXdRef& x, const VectorXdRef& u, float t, const VectorXdRef& b,
  * Eigen::Ref<Eigen::MatrixXd> hess)` - optional
  * - `bool HasHessian() const` - Specify if the Hessian is implemented
  *
- * Where we use the following Eigen type aliases:
+ * Where we use the following Eigen type alias:
  * 
  *      using VectorXdRef = Eigen::Ref<const Eigen::VectorXd>
- *      using JacobianRef = Eigen::Ref<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>
- *
- * The Jacobian is stored row-major since Jacobians are naturally evaluated
- * row-wise. Storing the underlying data in row-major format allows the rows to
- * be processed individually in a cache-friendly way.
  *
  * The user also has the option of defining the static constants:
  * 
@@ -70,7 +65,7 @@ class ContinuousDynamics : public FunctionBase {
   // New Interface
   virtual void Evaluate(const VectorXdRef& x, const VectorXdRef& u, float t,
                         Eigen::Ref<VectorXd> xdot) = 0;
-  virtual void Jacobian(const VectorXdRef& x, const VectorXdRef& u, float t, JacobianRef jac) = 0;
+  virtual void Jacobian(const VectorXdRef& x, const VectorXdRef& u, float t, Eigen::Ref<MatrixXd> jac) = 0;
   virtual void Hessian(const VectorXdRef& x, const VectorXdRef& u, float t, const VectorXdRef& b,
                        Eigen::Ref<MatrixXd> hess) = 0;
 
@@ -82,7 +77,7 @@ class ContinuousDynamics : public FunctionBase {
   void Evaluate(const VectorXdRef& x, const VectorXdRef& u, Eigen::Ref<VectorXd> out) override {
     Evaluate(x, u, GetTime(), out);
   }
-  void Jacobian(const VectorXdRef& x, const VectorXdRef& u, JacobianRef jac) override {
+  void Jacobian(const VectorXdRef& x, const VectorXdRef& u, Eigen::Ref<MatrixXd> jac) override {
     Jacobian(x, u, GetTime(), jac);
   }
   void Hessian(const VectorXdRef& x, const VectorXdRef& u, const VectorXdRef& b,
@@ -113,7 +108,7 @@ class ContinuousDynamics : public FunctionBase {
  * - `int ControlDimension() const` - number of controls (length of u)
  * - `void Evaluate(const VectorXdRef& x, const VectorXdRef& u, float t, float h, Eigen::Ref<Eigen::VectorXd>
  * out)`
- * - `void Jacobian(const VectorXdRef& x, const VectorXdRef& u, float t, float h, JacobianRef out)`
+ * - `void Jacobian(const VectorXdRef& x, const VectorXdRef& u, float t, float h, Eigen::Ref<MatrixXd> out)`
  * - `void Hessian(const VectorXdRef& x, const VectorXdRef& u, float t, float h, const VectorXdRef& b,
  * Eigen::Ref<Eigen::MatrixXd> hess)` - optional
  * - `bool HasHessian() const` - Specify if the Hessian is implemented
@@ -121,14 +116,9 @@ class ContinuousDynamics : public FunctionBase {
  * Where `t` is the time (for time-dependent dynamics) and `h` is the time step. 
  * These can be set and retrieved using `SetTime`, `SetStep`, `GetTime`, and `GetStep`.
  * 
- * The following Eigen type aliases are used:
+ * Where we use the following Eigen type alias:
  * 
  *      using VectorXdRef = Eigen::Ref<const Eigen::VectorXd>
- *      using JacobianRef = Eigen::Ref<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>
- *
- * The Jacobian is stored row-major since Jacobians are naturally evaluated
- * row-wise. Storing the underlying data in row-major format allows the rows to
- * be processed individually in a cache-friendly way.
  *
  * The user also has the option of defining the static constants:
  * 
@@ -164,7 +154,7 @@ class DiscreteDynamics : public FunctionBase {
   // New Interface
   virtual void Evaluate(const VectorXdRef& x, const VectorXdRef& u, float t, float h,
                         Eigen::Ref<VectorXd> xdot) = 0;
-  virtual void Jacobian(const VectorXdRef& x, const VectorXdRef& u, float t, float h, JacobianRef jac) = 0;
+  virtual void Jacobian(const VectorXdRef& x, const VectorXdRef& u, float t, float h, Eigen::Ref<MatrixXd> jac) = 0;
   virtual void Hessian(const VectorXdRef& x, const VectorXdRef& u, float t, float h, const VectorXdRef& b,
                        Eigen::Ref<MatrixXd> hess) = 0;
 
@@ -176,7 +166,7 @@ class DiscreteDynamics : public FunctionBase {
   void Evaluate(const VectorXdRef& x, const VectorXdRef& u, Eigen::Ref<VectorXd> out) override {
     Evaluate(x, u, GetTime(), GetStep(), out);
   }
-  void Jacobian(const VectorXdRef& x, const VectorXdRef& u, JacobianRef jac) override {
+  void Jacobian(const VectorXdRef& x, const VectorXdRef& u, Eigen::Ref<MatrixXd> jac) override {
     Jacobian(x, u, GetTime(), GetStep(), jac);
   }
   void Hessian(const VectorXdRef& x, const VectorXdRef& u, const VectorXdRef& b,

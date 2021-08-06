@@ -14,7 +14,7 @@ namespace ilqr {
 
 template <int n, int m>
 class DynamicsExpansion : public StateControlSized<n, m> {
-  using JacType = Eigen::Matrix<double, n, AddSizes(n, m), Eigen::RowMajor>;
+  using JacType = Eigen::Matrix<double, n, AddSizes(n, m)>;
 
  public:
   explicit DynamicsExpansion(int state_dim, int control_dim)

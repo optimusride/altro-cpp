@@ -37,7 +37,7 @@ class DiscretizedModel : public DiscreteDynamics {
   }
 
   void Jacobian(const VectorXdRef& x, const VectorXdRef& u, const float t, const float h,
-                JacobianRef jac) override {
+                Eigen::Ref<MatrixXd> jac) override {
     integrator_.Jacobian(model_, x, u, t, h, jac);
   }
 

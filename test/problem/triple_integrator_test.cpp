@@ -53,9 +53,9 @@ TEST(TripleIntegratorTest, Jacobian) {
   double t = 0.0;
   VectorXd x = VectorXd::Random(n);
   VectorXd u = VectorXd::Random(m);
-  RowMajorXd jac = MatrixXd::Zero(n, n + m);
+  MatrixXd jac = MatrixXd::Zero(n, n + m);
   model2.Jacobian(x, u, t, jac);
-  RowMajorXd jac_ans(n, n + m);
+  MatrixXd jac_ans(n, n + m);
   // clang-format off
   jac_ans << 0,0, 1,0, 0,0, 0,0,
              0,0, 0,1, 0,0, 0,0,
@@ -106,10 +106,10 @@ TEST(TripleIntegrator, Discretize) {
   VectorXd xnext3 = model_discrete(x, u, t, h);
   EXPECT_TRUE(xnext.isApprox(xnext3));
 
-  RowMajorXd jac = MatrixXd::Zero(n, n + m);
+  MatrixXd jac = MatrixXd::Zero(n, n + m);
   model_discrete.Jacobian(x, u, t, h, jac);
 
-  RowMajorXd jac_cont = MatrixXd::Zero(n, n + m);
+  MatrixXd jac_cont = MatrixXd::Zero(n, n + m);
   model_cont.Jacobian(x, u, t, jac_cont);
   MatrixXd A = jac_cont.topLeftCorner(n, n);
   MatrixXd B = jac_cont.topRightCorner(n, m);
@@ -144,9 +144,9 @@ TEST(TripleIntegratorTest, EulerIntegration) {
   VectorXd xnext = model_discrete.Evaluate(x, u, t, h);
   EXPECT_TRUE(xnext.isApprox(x + model_cont(x, u, t) * h));
 
-  RowMajorXd jac = MatrixXd::Zero(n, n + m);
+  MatrixXd jac = MatrixXd::Zero(n, n + m);
   model_discrete.Jacobian(x, u, t, h, jac);
-  RowMajorXd jac_ans(n, n + m);
+  MatrixXd jac_ans(n, n + m);
   jac_ans << 1, 0, h, 0, 0, 0, 0, 0, 0, 1, 0, h, 0, 0, 0, 0, 0, 0, 1, 0, h, 0,
       0, 0, 0, 0, 0, 1, 0, h, 0, 0, 0, 0, 0, 0, 1, 0, h, 0, 0, 0, 0, 0, 0, 1, 0,
       h;
@@ -162,7 +162,7 @@ TEST(TripleIntegratorTest, DerivativeChecks) {
   double t = 0.0;
   VectorXd x = VectorXd::Random(n);
   VectorXd u = VectorXd::Random(m);
-  RowMajorXd jac = MatrixXd::Zero(n, n + m);
+  MatrixXd jac = MatrixXd::Zero(n, n + m);
   model2.Jacobian(x, u, t, jac);
   MatrixXd A = jac.topLeftCorner(n, n);
   MatrixXd B = jac.topRightCorner(n, m);
@@ -184,7 +184,7 @@ TEST(TripleIntegratorTest, DerivativeChecks) {
 
   VectorXd b = VectorXd::Random(n);
   auto jvp = [&](auto z) -> MatrixXd {
-    RowMajorXd jac_(n, n + m);
+    MatrixXd jac_(n, n + m);
     model2.Jacobian(z.head(n), z.tail(m), t, jac_);
     return jac_.transpose() * b;
   };

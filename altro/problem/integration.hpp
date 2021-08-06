@@ -71,7 +71,7 @@ class ExplicitIntegrator : public StateControlSized<NStates, NControls> {
    * @param[out] jac discrete dynamics Jacobian evaluated at x, u, t.
    */
   virtual void Jacobian(const DynamicsPtr& dynamics, const VectorXdRef& x,
-                        const VectorXdRef& u, float t, float h, JacobianRef jac) = 0;
+                        const VectorXdRef& u, float t, float h, Eigen::Ref<MatrixXd> jac) = 0;
 };
 
 /**
@@ -91,7 +91,7 @@ class ExplicitEuler final : public ExplicitIntegrator<Eigen::Dynamic, Eigen::Dyn
     xnext = x + xnext * h;
   }
   void Jacobian(const DynamicsPtr& dynamics, const VectorXdRef& x, const VectorXdRef& u,
-                float t, float h, JacobianRef jac) override {
+                float t, float h, Eigen::Ref<MatrixXd> jac) override {
     int n = x.size();
     int m = u.size();
     dynamics->Jacobian(x, u, t, jac);
@@ -128,7 +128,7 @@ class RungeKutta4 final : public ExplicitIntegrator<NStates, NControls> {
     xnext = x + h * (k1_ + 2 * k2_ + 2 * k3_ + k4_) / 6;  // NOLINT(readability-magic-numbers)
   }
   void Jacobian(const DynamicsPtr& dynamics, const VectorXdRef& x, const VectorXdRef& u,
-                float t, float h, JacobianRef jac) override {
+                float t, float h, Eigen::Ref<MatrixXd> jac) override {
     int n = dynamics->StateDimension();
     int m = dynamics->ControlDimension();
 

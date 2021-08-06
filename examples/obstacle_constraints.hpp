@@ -105,7 +105,7 @@ class CircleConstraint : public constraints::Constraint<constraints::NegativeOrt
   }
 
   void Jacobian(const VectorXdRef& x, const VectorXdRef& /*u*/,
-                JacobianRef jac) override {
+                Eigen::Ref<MatrixXd> jac) override {
     const double px = x(x_index_);
     const double py = x(y_index_);
     for (size_t i = 0; i < obstacles_.size(); ++i) {

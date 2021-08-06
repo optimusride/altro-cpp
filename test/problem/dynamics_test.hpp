@@ -26,7 +26,7 @@ class TestDynamics : public ContinuousDynamics {
   }
 
   void Jacobian(const VectorXdRef& x, const VectorXdRef& u, const float t,
-                JacobianRef jac) override {
+                Eigen::Ref<MatrixXd> jac) override {
     jac.setZero();
     jac(0, 4) = t;
     jac(1, 5) = t;
