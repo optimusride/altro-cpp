@@ -38,17 +38,18 @@ bool FunctionBase::CheckJacobian(const double eps, const bool verbose) {
 
 bool FunctionBase::CheckJacobian(const VectorXdRef& x, const VectorXdRef& u, 
                     const double eps, const bool verbose) {
+  int p = OutputDimension();
   int n = x.size(); 
   int m = u.size(); 
 
   // NOTE(bjackson): The NOLINT comments here and below are to surpress clang-tidy 
   // warnings about uninitialized values, even though these are clearly initialized.
-  MatrixXd fd_jac = MatrixXd::Zero(n, n + m);  // NOLINT
-  MatrixXd jac = MatrixXd::Zero(n, n + m);  // NOLINT
+  MatrixXd fd_jac = MatrixXd::Zero(p, n + m);  // NOLINT
+  MatrixXd jac = MatrixXd::Zero(p, n + m);  // NOLINT
   VectorXd z(n + m);
   z << x, u;
 
-  // // Calculate Jacobian
+  // Calculate Jacobian
   Jacobian(x, u, jac);
 
   // Calculate using finite differencing
