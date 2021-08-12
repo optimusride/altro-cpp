@@ -181,7 +181,7 @@ configure_package_config_file(${CMAKE_CURRENT_SOURCE_DIR}/Config.cmake.in
 # Generate the version file for the config file
 write_basic_package_version_file(
   "${CMAKE_CURRENT_BINARY_DIR}/altroConfigVersion.cmake"
-  VERSION "${altro_VERSION_MAJOR}.${altro_VERSION_MINOR}"
+  VERSION "${altro_VERSION_MAJOR}.${altro_VERSION_MINOR}.${altro_VERSION_PATCH}"
   COMPATIBILITY AnyNewerVersion
 )
 
