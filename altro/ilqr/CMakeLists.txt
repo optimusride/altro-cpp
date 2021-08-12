@@ -13,7 +13,6 @@ target_link_libraries(ilqr
 	problem
 	utils
 	Eigen3::Eigen
+  threadpool
 )
 export_library(ilqr altroTargets "cost_expansion.hpp;ilqr.hpp;knot_point_function_type.hpp;dynamics_expansion.hpp" altro/ilqr)
-
-add_subdirectory(test)

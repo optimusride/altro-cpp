@@ -89,7 +89,7 @@ class ContinuousDynamics : public FunctionBase {
   void SetTime(float t) { t_ = t; }
 
  protected:
-  float t_;
+  float t_ = 0.0F;
 };
 
 // clang-format off
@@ -180,8 +180,8 @@ class DiscreteDynamics : public FunctionBase {
   void SetStep(float h) { h_ = h; }
 
  protected:
-  float t_;
-  float h_;
+  float t_ = 0.0F;
+  float h_ = 0.0F;
 };
 
 }  // namespace problem

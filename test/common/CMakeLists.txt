@@ -56,3 +56,15 @@ target_link_libraries(functionbase_test
   common
 )
 gtest_discover_tests(functionbase_test)
+
+add_executable(threadpool_test
+  threadpool_test.cpp
+)
+target_link_libraries(threadpool_test
+  PRIVATE
+  gtest_main
+  common
+  threadpool
+)
+gtest_discover_tests(threadpool_test TEST_LIST THREADTESTS)
+set_tests_properties(${THREADTESTS} PROPERTIES RUN_SERIAL True)

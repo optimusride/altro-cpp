@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <array>
 
 #include "altro/common/state_control_sized.hpp"
 #include "altro/eigentypes.hpp"

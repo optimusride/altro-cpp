@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.12.1)
-project(altro VERSION 0.1.1)
+project(altro VERSION 0.2.0)
 
 set(CMAKE_CXX_STANDARD 14)
 
@@ -8,6 +8,7 @@ add_compile_options(-Wall -Wextra -pedantic -Werror)
 # Defines GNU standard installation directories
 include(GNUInstallDirs)
 include(CMakePrintHelpers)
+include(FindThreads)
 
 # Check if MacOS
 if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
@@ -34,6 +35,7 @@ file(MAKE_DIRECTORY ${LOGDIR})
 if (BUILD_TESTS)
   set(BUILD_EXAMPLES ON)
 endif()
+
 
 ################################################################################
 ############################ ADD EIGEN LIB #####################################

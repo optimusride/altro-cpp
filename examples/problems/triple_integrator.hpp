@@ -47,19 +47,23 @@ class TripleIntegratorProblem {
     // Cost Function
     Eigen::VectorXd xref = xf;
     Eigen::VectorXd uref(m);
-    std::shared_ptr<CostFunType> qcost =
-        std::make_shared<CostFunType>(CostFunType::LQRCost(Q, R, xref, uref));
     const bool is_term = true;
     std::shared_ptr<CostFunType> qterm =
         std::make_shared<CostFunType>(CostFunType::LQRCost(Qf, R * 0, xref, uref, is_term));
-    prob.SetCostFunction(qcost, 0, N);
+    for (int k = 0; k < N; ++k) {
+      std::shared_ptr<CostFunType> qcost =
+          std::make_shared<CostFunType>(CostFunType::LQRCost(Q, R, xref, uref));
+      prob.SetCostFunction(qcost, k);
+    }
     prob.SetCostFunction(qterm, N);
 
     // Dynamics
     using DModelType = altro::problem::DiscretizedModel<ModelType, Integrator>;
     ModelType model_continuous(dof);
-    std::shared_ptr<DModelType> model = std::make_shared<DModelType>(model_continuous);
-    prob.SetDynamics(model, 0, N);
+    DModelType model = DModelType(model_continuous);
+    for (int k = 0; k < N; ++k) {
+      prob.SetDynamics(std::make_shared<DModelType>(model), k);
+    }
 
     // Initial State
     prob.SetInitialState(x0);
@@ -72,9 +76,9 @@ class TripleIntegratorProblem {
         lb.emplace_back(-ubnd[i]);
         ub.emplace_back(+ubnd[i]);
       }
-      altro::constraints::ConstraintPtr<altro::constraints::Inequality> bnd = 
-          std::make_shared<altro::examples::ControlBound>(lb, ub);
       for (int k = 0; k < N; ++k) {
+        altro::constraints::ConstraintPtr<altro::constraints::Inequality> bnd = 
+            std::make_shared<altro::examples::ControlBound>(lb, ub);
         prob.SetConstraint(bnd, k);
       }
 

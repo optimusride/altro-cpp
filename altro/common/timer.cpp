@@ -1,11 +1,12 @@
 #include "altro/common/timer.hpp"
 #include "altro/common/profile_entry.hpp"
 #include "altro/utils/assert.hpp"
+#include "fmt/chrono.h"
 
 namespace altro {
 
 Timer::~Timer() { 
-  if (!printed_summary_) {
+  if (!printed_summary_ && active_) {
     PrintSummary(); 
   }
   // Close the file if the Timer has ownship

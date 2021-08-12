@@ -1,0 +1,7 @@
+Number of threads: 8
+Serial time: 21.5819ms
+Serial w/ 8 tasks: 0.6996140335383397x slower
+Parallel w/ 4 tasks and 4 threads: 1.89x speedup, 47.15% expected
+Parallel w/ 8 tasks and 8 threads: 3.80x speedup, 47.45% expected
+Parallel w/ 16 tasks and 8 threads: 4.70x speedup, 58.75% expected
+Parallel w/ 32 tasks and 8 threads: 4.29x speedup, 53.66% expected

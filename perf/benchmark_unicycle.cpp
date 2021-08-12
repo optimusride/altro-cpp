@@ -28,6 +28,7 @@ void SolveUnicycle() {
   SetProfilerOptions(solver, "unicycle");
   solver.SetPenalty(10.0);
   solver.GetOptions().verbose = LogLevel::kDebug;
+  solver.GetOptions().nthreads = 4;
 
   auto start = std::chrono::high_resolution_clock::now();
   solver.Solve();

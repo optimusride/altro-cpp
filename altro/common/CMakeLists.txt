@@ -30,3 +30,18 @@ target_compile_definitions(common
   LOGDIR="${LOGDIR}"
 )
 export_library(common altroTargets "knotpoint.hpp;state_control_sized.hpp;trajectory.hpp;solver_options.hpp;solver_stats.hpp;log_entry.hpp;solver_logger.hpp;timer.hpp;profile_entry.hpp;functionbase.hpp" altro/common)
+
+add_library(threadpool
+  threadsafe_queue.hpp
+  threadsafe_queue.cpp
+  threadpool.hpp
+  threadpool.cpp
+)
+target_link_libraries(threadpool
+  PUBLIC
+  Threads::Threads
+  PRIVATE
+  fmt::fmt
+  utils
+)
+export_library(threadpool altroTargets "threadpool.hpp;threadsafe_queue.hpp" altro/common)

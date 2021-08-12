@@ -7,24 +7,6 @@
 namespace altro {
 namespace problem {
 
-void Problem::SetCostFunction(const std::shared_ptr<CostFunction>& costfun, int k_start, int k_stop) {
-  ALTRO_ASSERT(k_start >= 0, "Invalid starting knot point index.");
-  ALTRO_ASSERT(k_start < k_stop, "Starting index must be less than terminal index.");
-  ALTRO_ASSERT(k_stop <= N_ + 1, "Invalid terminal knot point index.");
-  for (int k = k_start; k < k_stop; ++k) {
-    SetCostFunction(costfun, k);
-  }
-}
-
-void Problem::SetDynamics(const std::shared_ptr<DiscreteDynamics>& model, int k_start, int k_stop) {
-  ALTRO_ASSERT(k_start >= 0, "Invalid starting knot point index.");
-  ALTRO_ASSERT(k_start < k_stop, "Starting index must be less than terminal index.");
-  ALTRO_ASSERT(k_stop <= N_, "Invalid terminal knot point index.");
-  for (int k = k_start; k < k_stop; ++k) {
-    SetDynamics(model, k);
-  }
-}
-
 bool Problem::IsFullyDefined(const bool verbose) const {
   bool valid = true;
   for (int k = 0; k <= N_; ++k) {

@@ -59,15 +59,21 @@ class TripleIntegratoriLQRTest : public ::testing::Test {
     altro::problem::Problem prob(N);
 
     // Cost Function
-    std::shared_ptr<CostFunType> costfun_ptr = std::make_shared<CostFunType>(GenCostFun());
+    std::shared_ptr<CostFunType> costfun_ptr;
     std::shared_ptr<CostFunType> costfun_term_ptr = std::make_shared<CostFunType>(GenCostFun(true));
-    prob.SetCostFunction(costfun_ptr, 0, N);
-    prob.SetCostFunction(costfun_term_ptr, N, N + 1);
+    for (int k = 0; k < N; ++k) {
+      costfun_ptr = std::make_shared<CostFunType>(GenCostFun());
+      prob.SetCostFunction(costfun_ptr, k);
+    }
+    prob.SetCostFunction(costfun_term_ptr, N);
 
     // Dynamics
     altro::examples::TripleIntegrator model_cont(dof);
-    std::shared_ptr<ModelType> model = std::make_shared<ModelType>(model_cont);
-    prob.SetDynamics(model, 0, N);
+    std::shared_ptr<ModelType> model;
+    for (int k = 0; k < N; ++k) {
+      model = std::make_shared<ModelType>(model_cont);
+      prob.SetDynamics(model, k);
+    }
 
     // Constraints
     goal = std::make_shared<altro::examples::GoalConstraint>(xf);

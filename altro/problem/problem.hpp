@@ -94,21 +94,27 @@ class Problem {
   }
 
   /**
-   * @brief Set the cost function for an interval of knot points
-   *
-   * Set all knot points in the interval [k_start, k_stop) to the same cost
-   * function.
-   *
-   * To set all knot points to have the same cost function, use
-   * @code {.cpp}
-   * SetCostFunction(costfun, 0, N+1) ;
-   * @endcode
-   *
-   * @param costfun Cost function object pointer
-   * @param k_start Starting index (inclusive) (0 <= k_start < k_stop)
-   * @param k_stop  Terminal index (exclusive) (k_start < k_stop <= N)
+   * @brief Set the cost function for an interval of consecutive knot points
+   * 
+   * Generally, each element of the input vector should be unique to ensure 
+   * there are no race conditions when parallelizing over knot points.
+   * 
+   * @tparam CostFun A class derived from CostFunction.
+   * @param costfuns A vector of cost function pointers. These pointers will by
+   * copied into the problem and solver directly. It is the user's responsibility
+   * to make sure that this operation does not result in race conditions when 
+   * parallelized. To make sure this doesn't happen, the user should generally 
+   * create a unique copy of the cost function for each knot point.
+   * @param k_start Starting index (inclusive). All the pointers will be copied
+   * starting from this knot point. Defaults to the start of the trajectory.
    */
-  void SetCostFunction(const std::shared_ptr<CostFunction>& costfun, int k_start, int k_stop);
+  template <class CostFun>
+  void SetCostFunction(const std::vector<std::shared_ptr<CostFun>>& costfuns, int k_start = 0) {
+    for (size_t i = 0; i < costfuns.size(); ++i) {
+      int k = i + k_start;
+      SetCostFunction(costfuns[i], k);
+    }
+  }
 
   /**
    * @brief Set the dynamics model at time step k
@@ -130,21 +136,30 @@ class Problem {
   }
 
   /**
-   * @brief Set the dynamics model for an interval of knot points
-   *
-   * Set all knot points in the interval [k_start, k_stop) to the same dynamics
-   * model.
-   *
-   * To set all knot points to have the same dynamics model.
-   * @code {.cpp}
-   * SetDynamics(costfun, 0, N) ;
-   * @endcode
-   *
-   * @param costfun Cost function object pointer
-   * @param k_start Starting index (inclusive) (0 <= k_start < k_stop)
-   * @param k_stop  Terminal index (exclusive) (k_start < k_stop < N)
+   * @brief Set the dynamics functions for an interval of consecutive knot points.
+   * 
+   * Generally, each element of the input vector should be unique to ensure 
+   * there are no race conditions when parallelizing over knot points.
+   * 
+   * @tparam Dynamics A class derived from `problem::DiscreteDynamics`.
+   * @param models A vector of dynamics function pointers. These pointers will by
+   * copied into the problem and solver directly. It is the user's responsibility
+   * to make sure that this operation does not result in race conditions when 
+   * parallelized. To make sure this doesn't happen, the user should generally 
+   * create a unique copy of the dynamics for each knot point. This is 
+   * critically important for `DiscretizedModel`s, since these allocate temporary
+   * storage for evaluating the numerical integration that cannot be used in a
+   * thread-safe way without creating a new model for each knot point.
+   * @param k_start Starting index (inclusive). All the pointers will be copied
+   * starting from this knot point. Defaults to the start of the trajectory.
    */
-  void SetDynamics(const std::shared_ptr<DiscreteDynamics>& model, int k_start, int k_stop);
+  template <class Dynamics>
+  void SetDynamics(const std::vector<std::shared_ptr<Dynamics>>& models, int k_start = 0) {
+    for (size_t i = 0; i < models.size(); ++i) {
+      int k = i + k_start;
+      SetDynamics(models[i], k);
+    }
+  }
 
   template <class ConType>
   void SetConstraint(std::shared_ptr<constraints::Constraint<ConType>> con, int k);

@@ -31,8 +31,9 @@ TEST(ProblemTests, AddDynamics) {
   if (utils::AssertionsActive()) {
     EXPECT_DEATH(prob.GetDynamics(1), "Assert.*Dynamics have not been defined.");
   }
-  prob.SetDynamics(model_ptr, 0, N);
   for (int k = 0; k < N; ++k) {
+    ModelPtr model_ptr = MakeModel();
+    prob.SetDynamics(model_ptr, k);
     EXPECT_NE(prob.GetDynamics(k), nullptr);
   }
   EXPECT_FALSE(prob.IsFullyDefined());
@@ -46,7 +47,10 @@ TEST(ProblemTests, AddCosts) {
   EXPECT_NE(prob.GetCostFunction(5), nullptr);
   EXPECT_EQ(prob.GetCostFunction(0), nullptr);
 
-  prob.SetCostFunction(costfun_ptr, 0, 4);
+  for (int k = 0; k < 4; ++k) {
+    costfun_ptr = MakeCost();
+    prob.SetCostFunction(costfun_ptr, k);
+  }
   EXPECT_NE(prob.GetCostFunction(0), nullptr);
   EXPECT_NE(prob.GetCostFunction(1), nullptr);
   EXPECT_NE(prob.GetCostFunction(2), nullptr);
@@ -58,11 +62,15 @@ TEST(ProblemTests, AddCosts) {
 TEST(ProblemTests, DynamicsAndCosts) {
   int N = 10;
   Problem prob(N);
-  CostPtr costfun_ptr = MakeCost();
-  ModelPtr model_ptr = MakeModel();
 
-  prob.SetDynamics(model_ptr, 0, N);
-  prob.SetCostFunction(costfun_ptr, 0, N);
+  std::vector<CostPtr> costfuns;
+  std::vector<ModelPtr> models;
+  for (int k = 0; k < N; ++k) {
+    costfuns.emplace_back(MakeCost());
+    models.emplace_back(MakeModel());
+  }
+  prob.SetDynamics(models);
+  prob.SetCostFunction(costfuns);
   EXPECT_FALSE(prob.IsFullyDefined());
 }
 
@@ -92,8 +100,15 @@ TEST(ProblemTests, FullyDefined) {
   ModelPtr model_ptr = MakeModel();
   VectorXd x0 = VectorXd::Random(6);
 
-  prob.SetDynamics(model_ptr, 0, N);
-  prob.SetCostFunction(costfun_ptr, 0, N + 1);
+  std::vector<CostPtr> costfuns;
+  std::vector<ModelPtr> models;
+  for (int k = 0; k < N; ++k) {
+    costfuns.emplace_back(MakeCost());
+    models.emplace_back(MakeModel());
+  }
+  costfuns.emplace_back(MakeCost());
+  prob.SetDynamics(models);
+  prob.SetCostFunction(costfuns);
   prob.SetInitialState(x0);
 
   EXPECT_TRUE(prob.IsFullyDefined());

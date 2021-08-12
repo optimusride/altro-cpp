@@ -42,8 +42,11 @@ problem::Problem MakeProblem(int dof = 2, int N = 10) {
   ModelPtr model_ptr = MakeModel(dof); 
   VectorXd x0 = VectorXd::Random(3 * dof);
 
-  prob.SetDynamics(model_ptr, 0, N);
-  prob.SetCostFunction(costfun_ptr, 0, N+1);
+  for (int k = 0; k < N; ++k) {
+    prob.SetDynamics(MakeModel(dof), k);
+    prob.SetCostFunction(MakeCost(dof), k);
+  }
+  prob.SetCostFunction(MakeCost(dof), N);
   prob.SetInitialState(x0);
 
   return prob;

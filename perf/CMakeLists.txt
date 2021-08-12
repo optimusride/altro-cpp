@@ -21,3 +21,29 @@ target_compile_definitions(benchmark_unicycle
   PRIVATE
   LOCAL_LOG_DIR="${LOCAL_LOG_DIR}"
 )
+
+add_executable(benchmark_expansions
+  benchmark_expansions.cpp
+)
+target_link_libraries(benchmark_expansions
+  PRIVATE
+  example_problems
+  common
+)
+target_compile_definitions(benchmark_expansions
+  PRIVATE
+  LOCAL_LOG_DIR="${LOCAL_LOG_DIR}"
+)
+
+add_executable(benchmark_threadpool
+  benchmark_threadpool.cpp
+)
+target_link_libraries(benchmark_threadpool
+  PRIVATE
+  example_problems
+  common
+)
+target_compile_definitions(benchmark_threadpool
+  PRIVATE
+  LOCAL_LOG_DIR="${LOCAL_LOG_DIR}"
+)

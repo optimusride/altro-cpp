@@ -2,11 +2,15 @@
 
 #include <fmt/format.h>
 #include <fmt/ostream.h>
+#include <thread>
+#include <cmath>
 
 #include "altro/utils/utils.hpp"
 #include "altro/common/solver_logger.hpp"
 
 namespace altro {
+
+constexpr int kPickHardwareThreads = -1;
 
 /**
  * @brief Options for augmented Lagrangian and iLQR solvers
@@ -46,7 +50,16 @@ struct SolverOptions {
   bool profiler_output_to_file = false;    // Output to file (true) or stdout (false)
   std::string log_directory;
   std::string profile_filename = "profiler.out";
+  int nthreads = 1;                        // Number of processors to use. Set to kPickHardwareThreads to choose automatically.
+  int tasks_per_thread = 1;
   // clang-format on
+
+  int NumThreads() const {
+    if (nthreads == kPickHardwareThreads) {
+      return std::thread::hardware_concurrency();
+    }
+    return std::max(nthreads, 1);
+  }
 };
 
 }  // namespace altro

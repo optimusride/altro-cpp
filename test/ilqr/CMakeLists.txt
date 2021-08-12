@@ -33,10 +33,12 @@ add_executable(ilqr_class_test
   ilqr_class_test.cpp
 )
 target_link_libraries(ilqr_class_test
+  PRIVATE
   gtest_main
   ilqr
   dynamics_examples
   cost_function_examples
+  example_problems
 )
 gtest_discover_tests(ilqr_class_test)
 

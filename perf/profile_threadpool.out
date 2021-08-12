@@ -1,0 +1,5 @@
+Number of threads: 4
+Serial Time: 17.34ms
+Parallel Time: 4.51ms
+Speedup: 3.84x
+Percent: 96.03%

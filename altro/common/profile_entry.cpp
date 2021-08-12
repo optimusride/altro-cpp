@@ -37,8 +37,16 @@ void ProfileEntry::CalcStats() {
   int time_us = time.count();
   int total_us = total_time.count();
   const int percent_scaling = 100;
-  percent_total = percent_scaling * time_us / total_us;
-  percent_parent = percent_scaling * time / parent_time;
+  if (total_us == 0) {
+    percent_total = -1;
+  } else {
+    percent_total = percent_scaling * time_us / total_us;
+  }
+  if (parent_time.count() == 0) {
+    percent_parent = -1;
+  } else {
+    percent_parent = percent_scaling * time / parent_time;
+  }
 }
 
 void ProfileEntry::Print(const int width) {

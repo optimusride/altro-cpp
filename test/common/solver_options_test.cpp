@@ -77,7 +77,7 @@ void PseudoSolve(SolverStats& stats, LogLevel verbosity, int outer_iters = 5) {
 
     // AL stats
     stats.iterations_outer++;
-    stats.Log("pen", pow10(outer));
+    stats.Log("pen", std::pow(10, outer));
     stats.Log("iter_al", stats.iterations_outer);
     if (stats.GetVerbosity() < LogLevel::kInner) {
         stats.PrintLast();

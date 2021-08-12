@@ -65,11 +65,15 @@ altro::problem::Problem UnicycleProblem::MakeProblem(const bool add_constraints)
       std::make_shared<examples::QuadraticCost>(examples::QuadraticCost::LQRCost(Q, R, xf, uref));
   qterm = std::make_shared<examples::QuadraticCost>(
       examples::QuadraticCost::LQRCost(Qf, R * 0, xf, uref, true));
-  prob.SetCostFunction(qcost, 0, N);
+  for (int k = 0; k < N; ++k) {
+    prob.SetCostFunction(qcost, k);
+  }
   prob.SetCostFunction(qterm, N);
 
   // Dynamics
-  prob.SetDynamics(model, 0, N);
+  for (int k = 0; k < N; ++k) {
+    prob.SetDynamics(model, k);
+  }
 
   // Constraints
   if (add_constraints) {

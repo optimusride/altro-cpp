@@ -1,13 +1,17 @@
 #pragma once
 
+#include <array>
 #include <functional>
+#include <future>
 #include <iostream>
 #include <map>
+#include <thread>
 
 #include "altro/common/solver_stats.hpp"
 #include "altro/common/state_control_sized.hpp"
-#include "altro/common/trajectory.hpp"
+#include "altro/common/threadpool.hpp"
 #include "altro/common/timer.hpp"
+#include "altro/common/trajectory.hpp"
 #include "altro/eigentypes.hpp"
 #include "altro/ilqr/knot_point_function_type.hpp"
 #include "altro/problem/problem.hpp"
@@ -15,7 +19,6 @@
 
 namespace altro {
 namespace ilqr {
-
 
 /**
  * @brief Solve an unconstrained trajectory optimization problem using
@@ -44,6 +47,24 @@ class iLQR {
     initial_state_is_set = true;
     Init();
   }
+
+  iLQR(const iLQR& other) = delete;
+  iLQR& operator=(const iLQR& other) = delete;
+  iLQR(iLQR&& other) noexcept
+      : N_(other.N_),
+        initial_state_(std::move(other.initial_state_)),
+        stats_(std::move(other.stats_)),
+        knotpoints_(std::move(other.knotpoints_)),
+        Z_(std::move(other.Z_)),
+        Zbar_(std::move(other.Zbar_)),
+        status_(other.status_),
+        costs_(std::move(other.costs_)),
+        grad_(std::move(other.grad_)),
+        rho_(other.rho_),
+        drho_(other.drho_),
+        deltaV_(std::move(other.deltaV_)),
+        initial_state_is_set(other.initial_state_is_set),
+        max_violation_callback_(std::move(other.max_violation_callback_)) {}
 
   /**
    * @brief Copy the data from a Problem class into the iLQR solver
@@ -106,6 +127,43 @@ class iLQR {
   VectorNd<n>& GetInitialState() { return initial_state_; }
   double GetRegularization() { return rho_; }
 
+  /**
+   * @brief Get the assignment of the trajectory into tasks.
+   * 
+   * A task is defined by a set of consecutive knot point indices whose 
+   * expansions will be processed serially. Although all knot points can be
+   * processed in parallel, it's usually better to "chunk" the trajectory into
+   * the number of available parallel processors.
+   * 
+   * Most users will not need to consume this information.
+   * 
+   * @return std::vector<int>& A vector of strictly increasing knot point indices.
+   * Each tasks processes knotpoints in the interval [`inds[k]`, `inds[k+1]`),
+   * where `inds[0] = 0` and inds.back() = N+1`.
+   * 
+   */
+  std::vector<int>& GetTaskAssignment() {
+    if (ShouldRedoTaskAssignment()) {
+      DefaultTaskAssignment();
+    }
+    return work_inds_;
+  }
+
+  /**
+   * @brief Get the number of threads used in the iLQR solver
+   *
+   * @return Number of threads
+   */
+  size_t NumThreads() const { return pool_.NumThreads(); }
+
+  /**
+   * @brief Get the number of tasks that can be executed in parallel.
+   *
+   * Controlled via `AssignWork`.
+   *
+   */
+  int NumTasks() const { return work_inds_.size() - 1; }
+
   /***************************** Setters **************************************/
   /**
    * @brief Store a pointer to the trajectory
@@ -128,6 +186,39 @@ class iLQR {
 
   void SetConstraintCallback(const std::function<double()>& max_violation) {
     max_violation_callback_ = max_violation;
+  }
+
+  /**
+   * @brief Set the division of knot points indices into parallelizable tasks.
+   * 
+   * Defines groups of consecutive knotpoints that should be processed in series
+   * as a single task. Each group can then be run independently and in parallel.
+   * For best performance, the number of tasks should be equal to the number of 
+   * available cores.
+   * 
+   * Once this is set, the solver will no longer automatically adjust the 
+   * number of tasks if the number of requested threads (via `GetOptions().nthreads`)
+   * or tasks per thread (via `GetOptions().tasks_per_thread`) changes.
+   * changes. Is is the user's responsibility to modify this as needed once set.
+   * 
+   * @param inds A strictly increasing vector of knot point indices. For a vector
+   * of length N, it defines N-1 tasks, where each task processes indices in the
+   * interval [`inds[i]`, `inds[i+1]`).
+   */
+  void SetTaskAssignment(std::vector<int> inds) {
+    ALTRO_ASSERT(work_inds_.back() == NumSegments() + 1,
+                 "Work inds should include the terminal index.");
+    ALTRO_ASSERT(work_inds_[0] == 0, "Work inds should start with a 0.");
+    ALTRO_ASSERT(work_inds_.size() >= 2, "Work inds must have at least 2 elements.");
+    bool is_sorted = true;
+    for (int i = 1; i < inds.size(); ++i) {
+      if (inds[i] <= inds[i - 1]) {
+        is_sorted = false;
+      }
+    }
+    ALTRO_ASSERT(issorted, "Work inds must be a set of strictly increasing integers.");
+    work_inds_ = std::move(inds);
+    custom_work_assignment_ = true;
   }
 
   /***************************** Algorithm **************************************/
@@ -206,12 +297,17 @@ class iLQR {
     Stopwatch sw = stats_.GetTimer()->Start("expansions");
     ALTRO_ASSERT(Z_ != nullptr, "Trajectory pointer must be set before updating the expansions.");
 
-    // TODO(bjackson): do this in parallel
-    for (int k = 0; k <= N_; ++k) {
-      KnotPoint<n, m>& z = Z_->GetKnotPoint(k);
-      knotpoints_[k]->CalcCostExpansion(z.State(), z.Control());
-      knotpoints_[k]->CalcDynamicsExpansion(z.State(), z.Control(), z.GetTime(), z.GetStep());
-      costs_(k) = GetKnotPointFunction(k).Cost(z.State(), z.Control());
+    int nthreads = NumThreads();
+    if (nthreads == 1) {
+      UpdateExpansionsBlock(0, NumSegments() + 1);
+    } else {
+      {
+        Stopwatch sw2 = stats_.GetTimer()->Start("add_tasks");
+        for (const std::function<void()>& task : tasks_) {
+          pool_.AddTask(task);
+        }
+      }
+      pool_.Wait();
     }
   }
 
@@ -406,13 +502,12 @@ class iLQR {
     Stopwatch sw = stats_.GetTimer()->Start("stats");
 
     double dgrad = NormalizedFeedforwardGain();
-    double dJ = 0.0; 
+    double dJ = 0.0;
     if (stats_.iterations_inner == 0) {
       dJ = stats_.initial_cost - stats_.cost.back();
     } else {
       dJ = stats_.cost.rbegin()[1] - stats_.cost.rbegin()[0];
     }
-    
 
     // stats_.gradient.emplace_back(dgrad);
     stats_.iterations_inner++;
@@ -491,6 +586,15 @@ class iLQR {
     return grad_.sum() / grad_.size();
   }
 
+  void UpdateExpansionsBlock(int start, int stop) {
+    for (int k = start; k < stop; ++k) {
+      KnotPoint<n, m>& z = Z_->GetKnotPoint(k);
+      knotpoints_[k]->CalcCostExpansion(z.State(), z.Control());
+      knotpoints_[k]->CalcDynamicsExpansion(z.State(), z.Control(), z.GetTime(), z.GetStep());
+      costs_(k) = GetKnotPointFunction(k).Cost(z.State(), z.Control());
+    }
+  }
+
  private:
   void Init() {
     status_ = SolverStatus::kUnsolved;
@@ -500,6 +604,62 @@ class iLQR {
     deltaV_[1] = 0.0;
     rho_ = GetOptions().bp_reg_initial;
     drho_ = 0.0;
+
+    LaunchThreads();
+  }
+
+  /**
+   * @brief Check if the tasks need to re-assigned.
+   * 
+   * Will not overrite tasks once they have been assigned manually via 
+   * `SetTaskAssignment()`.
+   * 
+   */
+  bool ShouldRedoTaskAssignment() const {
+    bool is_custom = custom_work_assignment_;
+    int tasks_per_thread = GetOptions().tasks_per_thread;
+    bool has_expected_number_of_tasks =
+        NumTasks() == GetOptions().NumThreads() * tasks_per_thread;
+    bool keep_assignment = is_custom || has_expected_number_of_tasks;
+    return !keep_assignment;
+  }
+
+  void LaunchThreads() {
+    size_t nthreads = GetOptions().NumThreads();
+
+    // Reset the thread pool if the requested number of threads changes
+    if ((nthreads != NumThreads()) || ShouldRedoTaskAssignment()) {
+      if (pool_.IsRunning()) {
+        pool_.StopThreads();
+      }
+      tasks_.clear();
+
+      // Create tasks
+      int ntasks = NumTasks();
+      std::vector<int>& work_inds = GetTaskAssignment();
+      for (int i = 0; i < ntasks; ++i) {
+        int start = work_inds[i];
+        int stop = work_inds[i + 1];
+        auto expansion_block = [this, start, stop]() { UpdateExpansionsBlock(start, stop); };
+        tasks_.emplace_back(std::move(expansion_block));
+      }
+
+      // Start the pool
+      pool_.LaunchThreads(nthreads);
+    }
+  }
+
+  void DefaultTaskAssignment() {
+    int nthreads = GetOptions().NumThreads();
+    int ntasks = nthreads * GetOptions().tasks_per_thread;
+    double step = NumSegments() / static_cast<double>(ntasks);
+    work_inds_.clear();
+    for (double val = 0.0; val <= NumSegments(); val += step) {
+      work_inds_.emplace_back(static_cast<int>(round(val)));
+    }
+    ALTRO_ASSERT(work_inds_.back() == NumSegments(),
+                 "Work inds should include the terminal index.");
+    work_inds_.back() += 1;  // Increment the last index to include the terminal index.
   }
 
   /**
@@ -547,15 +707,19 @@ class iLQR {
 
   SolverStatus status_ = SolverStatus::kUnsolved;
 
-  VectorXd costs_;                 // costs at each knot point
-  VectorXd grad_;                  // gradient at each knot point
-  double rho_ = 0.0;               // regularization
-  double drho_ = 0.0;              // regularization derivative (damping)
+  VectorXd costs_;     // costs at each knot point
+  VectorXd grad_;      // gradient at each knot point
+  double rho_ = 0.0;   // regularization
+  double drho_ = 0.0;  // regularization derivative (damping)
   std::array<double, 2> deltaV_;
 
   bool initial_state_is_set = false;
+  bool custom_work_assignment_ = false;  // Has user assigned a custom task assignment
 
   std::function<double()> max_violation_callback_ = []() { return 0.0; };
+  std::vector<std::function<void()>> tasks_;
+  std::vector<int> work_inds_;
+  ThreadPool pool_;
 };
 
 }  // namespace ilqr
