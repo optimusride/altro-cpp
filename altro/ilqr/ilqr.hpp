@@ -216,7 +216,7 @@ class iLQR {
         is_sorted = false;
       }
     }
-    ALTRO_ASSERT(issorted, "Work inds must be a set of strictly increasing integers.");
+    ALTRO_ASSERT(is_sorted, "Work inds must be a set of strictly increasing integers.");
     work_inds_ = std::move(inds);
     custom_work_assignment_ = true;
   }

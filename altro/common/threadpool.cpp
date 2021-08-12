@@ -5,12 +5,14 @@
 
 namespace altro {
 
+constexpr int ThreadPool::kTaskTimeout;
+
 ThreadPool::ThreadPool(ThreadPool&& other) noexcept
     : is_running_(static_cast<bool>(other.is_running_)),
       threads_(std::move(other.threads_)),
       futures_(std::move(other.futures_)),
       queue_(std::move(other.queue_)),
-      timeout_(std::move(other.timeout_)) {
+      timeout_(other.timeout_) {
   ALTRO_ASSERT(!is_running_, "Cannot move a pool while it's running");
 }
 
@@ -20,7 +22,7 @@ ThreadPool& ThreadPool::operator=(ThreadPool&& other) noexcept {
   threads_ = std::move(other.threads_);
   futures_ = std::move(other.futures_);
   queue_ = std::move(other.queue_);
-  timeout_ = std::move(other.timeout_);
+  timeout_ = other.timeout_;
   return *this;
 }
 
@@ -55,9 +57,9 @@ void ThreadPool::LaunchThreads(int nthreads) {
 
 void ThreadPool::StopThreads() {
   is_running_ = false;
-  for (size_t i = 0; i < threads_.size(); ++i) {
-    if (threads_[i].joinable()) {
-      threads_[i].join();
+  for (std::thread& thread : threads_) {
+    if (thread.joinable()) {
+      thread.join();
     }
   }
 }
@@ -74,4 +76,4 @@ void ThreadPool::WorkerThread(int id) {
   }
 }
 
-}
+}  // namespace altro

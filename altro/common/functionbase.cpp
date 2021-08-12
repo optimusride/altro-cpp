@@ -28,6 +28,8 @@ bool MatrixComparison(const MatA& expected, const MatB& actual, const double eps
 
 }  // namespace
 
+constexpr double FunctionBase::kDefaultTolerance;
+
 bool FunctionBase::CheckJacobian(const double eps, const bool verbose) {
   const int n = StateDimension();
   const int m = ControlDimension();
