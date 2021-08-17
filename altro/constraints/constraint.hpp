@@ -143,6 +143,8 @@ using Inequality = NegativeOrthant;
 template <class ConType>
 class Constraint : public FunctionBase {
  public:
+  using ConstraintType = ConType;
+
   // These aren't used right now, but they need to be defined.
   int StateDimension() const override {
     ALTRO_ASSERT(false, "StateDimension hasn't been defined for this constraint.");

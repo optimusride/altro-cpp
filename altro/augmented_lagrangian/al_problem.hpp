@@ -28,7 +28,7 @@ template <int n, int m>
 problem::Problem BuildAugLagProblem(const problem::Problem& prob,
                                     std::vector<std::shared_ptr<ALCost<n, m>>>* costs = nullptr) {
   const int N = prob.NumSegments();
-  problem::Problem prob_al(N);
+  problem::Problem prob_al(N, prob.GetInitialStatePointer());
 
   // Copy initial state and dynamics
   prob_al.SetInitialState(prob.GetInitialState());

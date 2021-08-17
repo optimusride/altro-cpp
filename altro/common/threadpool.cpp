@@ -62,6 +62,7 @@ void ThreadPool::StopThreads() {
       thread.join();
     }
   }
+  threads_.clear();
 }
 
 void ThreadPool::WorkerThread(int id) {

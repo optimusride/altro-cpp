@@ -238,6 +238,10 @@ class ConstraintValues : public Constraint<ConType> {
     con_->Jacobian(x, u, jac_);
   }
 
+  void ResetDualVariables() {
+    lambda_.setZero();
+  }
+
  private:
   const int n_;  // state dimension
   const int m_;  // control dimension

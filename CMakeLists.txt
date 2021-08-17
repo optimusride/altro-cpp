@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.12.1)
-project(altro VERSION 0.2.1)
+project(altro VERSION 0.3.0)
 
 set(CMAKE_CXX_STANDARD 14)
 
@@ -83,6 +83,7 @@ include(FindDoxygen)
 set(DOXYGEN_USE_MATHJAX YES)
 doxygen_add_docs(doxygen 
   ${PROJECT_SOURCE_DIR}/altro
+  ${PROJECT_SOURCE_DIR}/examples
 )
 
 ################################################################################

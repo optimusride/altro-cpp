@@ -72,6 +72,25 @@ TEST(iLQRClassTest, CopyFromProblem) {
   int N = prob.NumSegments();
   iLQR<HEAP,HEAP> ilqr(N);
   ilqr.CopyFromProblem(prob, 0, N + 1);
+  EXPECT_EQ(ilqr.NumSegments(), N);
+
+  iLQR<6,2> ilqr2(N);
+  ilqr2.InitializeFromProblem(prob);
+  EXPECT_EQ(ilqr2.NumSegments(), N);
+}
+
+TEST(iLQRClassTest, InitialCondition) {
+  problem::Problem prob = MakeProblem();
+  iLQR<6,2> ilqr(prob.NumSegments());
+  VectorXd x0(6);
+  x0 << 1,2,3,4,5,6;
+  prob.SetInitialState(x0);
+  ilqr.InitializeFromProblem(prob);
+  EXPECT_TRUE(ilqr.GetInitialState()->isApprox(x0));
+  
+  // Check that calling SetInitialState on the problem changes the solver
+  prob.SetInitialState(2 * x0);
+  EXPECT_TRUE(ilqr.GetInitialState()->isApprox(2 * x0));
 }
 
 TEST(iLQRClassTest, DeathTests) {
@@ -85,13 +104,24 @@ TEST(iLQRClassTest, DeathTests) {
                  "Assert.*fully defined");
   }
 
-	// Must set the initial state and trajectory before solving
-	iLQR<HEAP, HEAP> ilqr2(N);
-	ilqr2.CopyFromProblem(prob, 0, N + 1);
   if (utils::AssertionsActive()) {
-    EXPECT_DEATH(ilqr2.Solve(), "Assert.*Initial state must be set");
-    ilqr2.SetInitialState(VectorXd::Zero(prob.GetDynamics(0)->StateDimension()));
+    // Must set the initial state and trajectory before solving
+    iLQR<HEAP, HEAP> ilqr2(N);
+    ilqr2.CopyFromProblem(prob, 0, N + 1);
     EXPECT_DEATH(ilqr2.Solve(), "Assert.*Invalid trajectory pointer");
+
+    // Check dimensions
+    iLQR<7,2> ilqr3(N);
+    EXPECT_DEATH(ilqr3.InitializeFromProblem(prob), "Assert.*Inconsistent state dimension");
+    iLQR<6,3> ilqr4(N);
+    EXPECT_DEATH(ilqr4.InitializeFromProblem(prob), "Assert.*Inconsistent control dimension");
+
+    // Copy a problem of different length
+    problem::Problem prob2 = MakeProblem(2, 20);
+    iLQR<6,2> ilqr5(20);
+    ilqr5.InitializeFromProblem(prob2);
+    EXPECT_EQ(ilqr5.NumSegments(), 20);
+    EXPECT_DEATH(ilqr5.InitializeFromProblem(prob), "Assert.*Number of segments");
   }
 }
 
@@ -115,7 +145,7 @@ TEST(iLQRClassTest, ParallelExpansion) {
 
   solver.GetStats().GetTimer()->Activate();
   solver.GetOptions().nthreads = altro::kPickHardwareThreads; 
-  solver.Initialize();
+  solver.SolveSetup();
   {
     for (int i = 0; i < Nruns; ++i) {
       solver.UpdateExpansions();

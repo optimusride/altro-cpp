@@ -22,7 +22,7 @@ void RunTest(ilqr::iLQR<Nx, Nu>& solver, Time tserial, int Nruns, int nthreads,
              int tasks_per_thread = 1, FILE* io = stdout) {
   solver.GetOptions().nthreads = nthreads;
   solver.GetOptions().tasks_per_thread = tasks_per_thread;
-  solver.Initialize();
+  solver.SolveSetup();
   std::chrono::duration<double, std::micro> tparallel;
   {
     auto start = std::chrono::high_resolution_clock::now();

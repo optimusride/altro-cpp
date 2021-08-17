@@ -17,8 +17,8 @@ bool Problem::IsFullyDefined(const bool verbose) const {
     bool has_initial_state = true;
     bool good_state_dim = true;
     if (k == 0) {
-      has_initial_state = initial_state_.size() > 0;
-      good_state_dim = has_initial_state && (models_[k]->StateDimension() == initial_state_.size());
+      has_initial_state = initial_state_->size() > 0;
+      good_state_dim = has_initial_state && (models_[k]->StateDimension() == initial_state_->size());
       valid_k = valid_k && has_initial_state && good_state_dim;
     }
     valid = valid && valid_k;

@@ -24,6 +24,11 @@ namespace ilqr {
  * @brief Solve an unconstrained trajectory optimization problem using
  * iterative LQR.
  *
+ * The class can be default constructed or initialized for a given number of
+ * knot points. Currently, once set, the number of knot points cannot be changed.
+ * If default-initialized, the number of knot points is pulled from the problem
+ * in the first call to `CopyFromProblem`.
+ *
  * The iLQR algorithm works taking a second-order approximation of the cost
  * function and a first-order expansion of the dynamics. A locally-optimal
  * feedback control policy is then constructed around the current estimate
@@ -40,31 +45,28 @@ namespace ilqr {
 template <int n = Eigen::Dynamic, int m = Eigen::Dynamic>
 class iLQR {
  public:
-  explicit iLQR(int N) : N_(N), knotpoints_() { Init(); }
+  explicit iLQR(int N) : N_(N), knotpoints_() { ResetInternalVariables(); }
   explicit iLQR(const problem::Problem& prob)
-      : N_(prob.NumSegments()), initial_state_(prob.GetInitialState()) {
-    CopyFromProblem(prob, 0, N_ + 1);
-    initial_state_is_set = true;
-    Init();
+      : N_(prob.NumSegments()), initial_state_(std::move(prob.GetInitialStatePointer())) {
+    InitializeFromProblem(prob);
   }
 
   iLQR(const iLQR& other) = delete;
   iLQR& operator=(const iLQR& other) = delete;
-  iLQR(iLQR&& other) noexcept
-      : N_(other.N_),
-        initial_state_(std::move(other.initial_state_)),
-        stats_(std::move(other.stats_)),
-        knotpoints_(std::move(other.knotpoints_)),
-        Z_(std::move(other.Z_)),
-        Zbar_(std::move(other.Zbar_)),
-        status_(other.status_),
-        costs_(std::move(other.costs_)),
-        grad_(std::move(other.grad_)),
-        rho_(other.rho_),
-        drho_(other.drho_),
-        deltaV_(std::move(other.deltaV_)),
-        initial_state_is_set(other.initial_state_is_set),
-        max_violation_callback_(std::move(other.max_violation_callback_)) {}
+  iLQR(iLQR&& other) noexcept : N_(other.N_),
+                                initial_state_(std::move(other.initial_state_)),
+                                stats_(std::move(other.stats_)),
+                                knotpoints_(std::move(other.knotpoints_)),
+                                Z_(std::move(other.Z_)),
+                                Zbar_(std::move(other.Zbar_)),
+                                status_(other.status_),
+                                costs_(std::move(other.costs_)),
+                                grad_(std::move(other.grad_)),
+                                rho_(other.rho_),
+                                drho_(other.drho_),
+                                deltaV_(std::move(other.deltaV_)),
+                                is_initial_state_set(other.is_initial_state_set),
+                                max_violation_callback_(std::move(other.max_violation_callback_)) {}
 
   /**
    * @brief Copy the data from a Problem class into the iLQR solver
@@ -78,6 +80,12 @@ class iLQR {
    * this method might be used to specify compile-time sizes for hybrid /
    * switched dynamics.
    *
+   * Appends the knotpoints to those currently in the solver.
+   * 
+   * Captures the initial state from the problem as a shared pointer, so the 
+   * initial state of the solver is changed by modifying the initial state of 
+   * the original problem.
+   *
    * @tparam n2 Compile-time state dimension. Can be Eigen::Dynamic (-1)
    * @tparam m2 Compile-time control dimension. Can be Eigen::Dynamic (-1)
    * @param prob Trajectory optimization problem
@@ -86,12 +94,40 @@ class iLQR {
    */
   template <int n2 = n, int m2 = m>
   void CopyFromProblem(const problem::Problem& prob, int k_start, int k_stop) {
+    ALTRO_ASSERT(0 <= k_start && k_start <= N_,
+                 fmt::format("Start index must be in the interval [0,{}]", N_));
+    ALTRO_ASSERT(0 <= k_stop && k_stop <= N_ + 1,
+                 fmt::format("Start index must be in the interval [0,{}]", N_ + 1));
     ALTRO_ASSERT(prob.IsFullyDefined(), "Expected problem to be fully defined.");
     for (int k = k_start; k < k_stop; ++k) {
+      if (n != Eigen::Dynamic) {
+        ALTRO_ASSERT(
+            prob.GetDynamics(k)->StateDimension() == n,
+            fmt::format("Inconsistent state dimension at knot point {}. Expected {}, got {}", k, n,
+                        prob.GetDynamics(k)->StateDimension()));
+      }
+      if (m != Eigen::Dynamic) {
+        ALTRO_ASSERT(
+            prob.GetDynamics(k)->ControlDimension() == m,
+            fmt::format("Inconsistent control dimension at knot point {}. Expected {}, got {}", k, m,
+                        prob.GetDynamics(k)->ControlDimension()));
+      }
       std::shared_ptr<problem::DiscreteDynamics> model = prob.GetDynamics(k);
       std::shared_ptr<problem::CostFunction> costfun = prob.GetCostFunction(k);
       knotpoints_.emplace_back(std::make_unique<ilqr::KnotPointFunctions<n2, m2>>(model, costfun));
     }
+    initial_state_ = prob.GetInitialStatePointer();
+    is_initial_state_set = true;
+  }
+
+  template <int n2 = n, int m2 = m>
+  void InitializeFromProblem(const problem::Problem& prob) {
+    ALTRO_ASSERT(prob.NumSegments() == N_,
+                  fmt::format("Number of segments in problem {}, should be equal to the number of "
+                              "segments in the solver, {}",
+                              prob.NumSegments(), N_));
+    CopyFromProblem<n2, m2>(prob, 0, N_ + 1);
+    ResetInternalVariables();
   }
 
   /***************************** Getters **************************************/
@@ -124,23 +160,23 @@ class iLQR {
   const SolverOptions& GetOptions() const { return stats_.GetOptions(); }
   VectorXd& GetCosts() { return costs_; }
   SolverStatus GetStatus() const { return status_; }
-  VectorNd<n>& GetInitialState() { return initial_state_; }
+  std::shared_ptr<VectorXd> GetInitialState() { return initial_state_; }
   double GetRegularization() { return rho_; }
 
   /**
    * @brief Get the assignment of the trajectory into tasks.
-   * 
-   * A task is defined by a set of consecutive knot point indices whose 
+   *
+   * A task is defined by a set of consecutive knot point indices whose
    * expansions will be processed serially. Although all knot points can be
    * processed in parallel, it's usually better to "chunk" the trajectory into
    * the number of available parallel processors.
-   * 
+   *
    * Most users will not need to consume this information.
-   * 
+   *
    * @return std::vector<int>& A vector of strictly increasing knot point indices.
    * Each tasks processes knotpoints in the interval [`inds[k]`, `inds[k+1]`),
    * where `inds[0] = 0` and inds.back() = N+1`.
-   * 
+   *
    */
   std::vector<int>& GetTaskAssignment() {
     if (ShouldRedoTaskAssignment()) {
@@ -163,6 +199,23 @@ class iLQR {
    *
    */
   int NumTasks() const { return work_inds_.size() - 1; }
+  
+  /**
+   * @brief Create a new zero-initialized trajectory.
+   * 
+   * Assumes a uniform time step.
+   * The trajectory is automatically linked to the solver and is used 
+   * both as the initial guess and as the storage location for the optimized
+   * solution during and after the solve.
+   * 
+   * @param dt Time step used in the trajectory.
+   * @return std::shared_ptr<Trajectory<n, m>> A new zero-initialized trajectory.
+   */
+  std::shared_ptr<Trajectory<n, m>> MakeTrajectory(float dt) {
+    Z_ = std::make_shared<Trajectory<n, m>>(NumSegments());
+    Z_->SetUniformStep(dt);
+    return Z_;
+  }
 
   /***************************** Setters **************************************/
   /**
@@ -179,28 +232,23 @@ class iLQR {
     Zbar_->SetZero();
   }
 
-  void SetInitialState(const VectorXdRef& x0) {
-    initial_state_is_set = true;
-    initial_state_ = x0;
-  }
-
   void SetConstraintCallback(const std::function<double()>& max_violation) {
     max_violation_callback_ = max_violation;
   }
 
   /**
    * @brief Set the division of knot points indices into parallelizable tasks.
-   * 
+   *
    * Defines groups of consecutive knotpoints that should be processed in series
    * as a single task. Each group can then be run independently and in parallel.
-   * For best performance, the number of tasks should be equal to the number of 
+   * For best performance, the number of tasks should be equal to the number of
    * available cores.
-   * 
-   * Once this is set, the solver will no longer automatically adjust the 
+   *
+   * Once this is set, the solver will no longer automatically adjust the
    * number of tasks if the number of requested threads (via `GetOptions().nthreads`)
    * or tasks per thread (via `GetOptions().tasks_per_thread`) changes.
    * changes. Is is the user's responsibility to modify this as needed once set.
-   * 
+   *
    * @param inds A strictly increasing vector of knot point indices. For a vector
    * of length N, it defines N-1 tasks, where each task processes indices in the
    * interval [`inds[i]`, `inds[i+1]`).
@@ -232,14 +280,17 @@ class iLQR {
    *
    */
   void Solve() {
-    ALTRO_ASSERT(initial_state_is_set,
-                 "Initial state must be set before solving. HINT: Calling CopyFromProblem does NOT "
-                 "set the initial state.");
+    ALTRO_ASSERT(is_initial_state_set, "Initial state must be set before solving.");
     ALTRO_ASSERT(Z_ != nullptr, "Invalid trajectory pointer. May be uninitialized.");
+
+    // TODO(bjackson): Allow the solver to optimize a portion of a longer trajectory?
+    ALTRO_ASSERT(Z_->NumSegments() == N_, fmt::format("Initial trajectory must have length {}", N_));
+
+    // Start profiler
     GetOptions().profiler_enable ? stats_.GetTimer()->Activate() : stats_.GetTimer()->Deactivate();
     Stopwatch sw = stats_.GetTimer()->Start("ilqr");
 
-    Initialize();  // reset any internal variables
+    SolveSetup();  // reset any internal variables
     Rollout();     // simulate the system forward using initial controls
     stats_.initial_cost = Cost();
 
@@ -298,7 +349,7 @@ class iLQR {
     ALTRO_ASSERT(Z_ != nullptr, "Trajectory pointer must be set before updating the expansions.");
 
     int nthreads = NumThreads();
-    if (nthreads == 1) {
+    if (nthreads <= 1) {
       UpdateExpansionsBlock(0, NumSegments() + 1);
     } else {
       {
@@ -384,7 +435,7 @@ class iLQR {
    *
    */
   void Rollout() {
-    Z_->State(0) = initial_state_;
+    Z_->State(0) = *initial_state_;
     for (int k = 0; k < N_; ++k) {
       knotpoints_[k]->Dynamics(Z_->State(k), Z_->Control(k), Z_->GetTime(k), Z_->GetStep(k),
                                Z_->State(k + 1));
@@ -401,7 +452,7 @@ class iLQR {
   bool RolloutClosedLoop(const double alpha) {
     Stopwatch sw = stats_.GetTimer()->Start("rollout");
 
-    Zbar_->State(0) = initial_state_;
+    Zbar_->State(0) = *initial_state_;
     for (int k = 0; k < N_; ++k) {
       MatrixNxMd<m, n>& K = GetKnotPointFunction(k).GetFeedbackGain();
       VectorNd<m>& d = GetKnotPointFunction(k).GetFeedforwardGain();
@@ -556,11 +607,22 @@ class iLQR {
    * to each solve, so that the `Solve()` method can be called multiple times.
    *
    */
-  void Initialize() {
+  void SolveSetup() {
     Stopwatch sw = stats_.GetTimer()->Start("init");
     stats_.iterations_inner = 0;
     stats_.SetVerbosity(GetOptions().verbose);
-    Init();
+
+    // Make sure Zbar has the same times as the initial trajectory
+    if (Z_ != nullptr) {
+      int k;
+      for (k = 0; k < N_; ++k) {
+        Zbar_->SetStep(k, Z_->GetStep(k));
+        Zbar_->SetTime(k, Z_->GetTime(k));
+      }
+      Zbar_->SetTime(N_, Z_->GetTime(N_));
+    }
+
+    ResetInternalVariables();
   }
 
   /**
@@ -596,7 +658,7 @@ class iLQR {
   }
 
  private:
-  void Init() {
+  void ResetInternalVariables() {
     status_ = SolverStatus::kUnsolved;
     costs_ = VectorXd::Zero(N_ + 1);
     grad_ = VectorXd::Zero(N_);
@@ -610,16 +672,15 @@ class iLQR {
 
   /**
    * @brief Check if the tasks need to re-assigned.
-   * 
-   * Will not overrite tasks once they have been assigned manually via 
+   *
+   * Will not overrite tasks once they have been assigned manually via
    * `SetTaskAssignment()`.
-   * 
+   *
    */
   bool ShouldRedoTaskAssignment() const {
     bool is_custom = custom_work_assignment_;
     int tasks_per_thread = GetOptions().tasks_per_thread;
-    bool has_expected_number_of_tasks =
-        NumTasks() == GetOptions().NumThreads() * tasks_per_thread;
+    bool has_expected_number_of_tasks = NumTasks() == GetOptions().NumThreads() * tasks_per_thread;
     bool keep_assignment = is_custom || has_expected_number_of_tasks;
     return !keep_assignment;
   }
@@ -628,24 +689,34 @@ class iLQR {
     size_t nthreads = GetOptions().NumThreads();
 
     // Reset the thread pool if the requested number of threads changes
-    if ((nthreads != NumThreads()) || ShouldRedoTaskAssignment()) {
+    int threadpool_size = NumThreads();
+    bool single_threaded = threadpool_size == 0 && nthreads == 1;
+    if (single_threaded) {
+      return;
+    }
+    bool num_threads_changed = nthreads != NumThreads();
+    if (N_ > 0 && (num_threads_changed || ShouldRedoTaskAssignment())) {
       if (pool_.IsRunning()) {
         pool_.StopThreads();
       }
       tasks_.clear();
 
       // Create tasks
-      int ntasks = NumTasks();
       std::vector<int>& work_inds = GetTaskAssignment();
+      int ntasks = NumTasks();
       for (int i = 0; i < ntasks; ++i) {
         int start = work_inds[i];
         int stop = work_inds[i + 1];
-        auto expansion_block = [this, start, stop]() { UpdateExpansionsBlock(start, stop); };
+        auto expansion_block = [this, start, stop]() { 
+          UpdateExpansionsBlock(start, stop); 
+        };
         tasks_.emplace_back(std::move(expansion_block));
       }
 
       // Start the pool
-      pool_.LaunchThreads(nthreads);
+      if (nthreads > 1) {
+        pool_.LaunchThreads(nthreads);
+      }
     }
   }
 
@@ -698,8 +769,10 @@ class iLQR {
   }
 
   int N_;  // number of segments
-  VectorNd<n> initial_state_;
+  std::shared_ptr<VectorXd> initial_state_;
   SolverStats stats_;  // solver statistics (iterations, cost at each iteration, etc.)
+
+  // TODO(bjackson): Create a non-templated base class to allow different dimensions.
   std::vector<std::unique_ptr<KnotPointFunctions<n, m>>>
       knotpoints_;                          // problem description and data
   std::shared_ptr<Trajectory<n, m>> Z_;     // current guess for the trajectory
@@ -713,7 +786,7 @@ class iLQR {
   double drho_ = 0.0;  // regularization derivative (damping)
   std::array<double, 2> deltaV_;
 
-  bool initial_state_is_set = false;
+  bool is_initial_state_set = false;
   bool custom_work_assignment_ = false;  // Has user assigned a custom task assignment
 
   std::function<double()> max_violation_callback_ = []() { return 0.0; };

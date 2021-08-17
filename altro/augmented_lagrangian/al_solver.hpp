@@ -2,8 +2,8 @@
 
 #include <fmt/format.h>
 #include <fmt/ostream.h>
-#include <type_traits>
 #include <limits>
+#include <type_traits>
 
 #include "altro/augmented_lagrangian/al_problem.hpp"
 #include "altro/constraints/constraint.hpp"
@@ -13,7 +13,6 @@
 
 namespace altro {
 namespace augmented_lagrangian {
-
 
 /**
  * @brief Trajectory optimization solver that uses augmented Lagrangian to
@@ -30,7 +29,10 @@ class AugmentedLagrangianiLQR {
       std::vector<std::shared_ptr<constraints::ConstraintValues<n, m, ConType>>>;
 
  public:
+  explicit AugmentedLagrangianiLQR(int N) : ilqr_solver_(N), costs_(), max_violation_(N + 1) {}
   explicit AugmentedLagrangianiLQR(const problem::Problem& prob);
+
+  void InitializeFromProblem(const problem::Problem& prob);
 
   /***************************** Getters **************************************/
 
@@ -155,6 +157,8 @@ class AugmentedLagrangianiLQR {
    */
   double GetMaxPenalty() const;
 
+  void ResetDualVariables();
+
  private:
   Stopwatch CreateTimer(const std::string& name) { return GetStats().GetTimer()->Start(name); }
 
@@ -173,11 +177,17 @@ AugmentedLagrangianiLQR<n, m>::AugmentedLagrangianiLQR(const problem::Problem& p
     : ilqr_solver_(prob.NumSegments()),
       costs_(),
       max_violation_(VectorXd::Zero(prob.NumSegments() + 1)) {
+  InitializeFromProblem(prob);
+}
+
+template <int n, int m>
+void AugmentedLagrangianiLQR<n, m>::InitializeFromProblem(const problem::Problem& prob) {
+  max_violation_.setZero(prob.NumSegments() + 1);
   problem::Problem prob_al = BuildAugLagProblem<n, m>(prob, &costs_);
   ALTRO_ASSERT(static_cast<int>(costs_.size()) == prob.NumSegments() + 1,
                fmt::format("Got an incorrect number of cost functions. Expected {}, got {}",
                            prob.NumSegments(), costs_.size()));
-  ilqr_solver_.SetInitialState(prob.GetInitialState());
+  // ilqr_solver_.InitializeFromProblem(prob_al);
   ilqr_solver_.CopyFromProblem(prob_al, 0, prob.NumSegments() + 1);
   auto max_violation_callback = [this]() -> double { return this->GetMaxViolation(); };
   ilqr_solver_.SetConstraintCallback(max_violation_callback);
@@ -188,6 +198,9 @@ int AugmentedLagrangianiLQR<n, m>::NumConstraints(const int& k) const {
   ALTRO_ASSERT(0 <= k && k <= NumSegments(),
                fmt::format("Invalid knot point index. Got {}, expected to be in range [{},{}]", k,
                            0, NumSegments()));
+  ALTRO_ASSERT(
+      static_cast<int>(costs_.size()) == NumSegments() + 1,
+      "Cannot query the number of constraints before initializing the solver with a problem.");
   return costs_.at(k)->NumConstraints();
 }
 
@@ -221,6 +234,12 @@ void AugmentedLagrangianiLQR<n, m>::Init() {
   Stopwatch sw = CreateTimer("init");
 
   SolverStats& stats = GetStats();
+  if (GetOptions().reset_duals) {
+    ResetDualVariables();
+  }
+  if (GetOptions().initial_penalty > 0) {
+    SetPenalty(GetOptions().initial_penalty);
+  }
   stats.Reset();
   stats.Log("iter_al", 0);
   stats.Log("viol", MaxViolation());
@@ -230,7 +249,8 @@ void AugmentedLagrangianiLQR<n, m>::Init() {
 template <int n, int m>
 void AugmentedLagrangianiLQR<n, m>::Solve() {
   // This check needs to happen before creating the first stopwatch
-  GetOptions().profiler_enable ? GetStats().GetTimer()->Activate() : GetStats().GetTimer()->Deactivate();
+  GetOptions().profiler_enable ? GetStats().GetTimer()->Activate()
+                               : GetStats().GetTimer()->Deactivate();
   Stopwatch sw = CreateTimer("al");
 
   Init();
@@ -346,12 +366,19 @@ double AugmentedLagrangianiLQR<n, m>::GetMaxViolation() {
 
 template <int n, int m>
 double AugmentedLagrangianiLQR<n, m>::GetMaxPenalty() const {
-  double max_penalty= 0.0; 
+  double max_penalty = 0.0;
 
   for (int k = 0; k <= NumSegments(); ++k) {
     max_penalty = std::max(max_penalty, costs_[k]->MaxPenalty());
   }
   return max_penalty;
+}
+
+template <int n, int m>
+void AugmentedLagrangianiLQR<n, m>::ResetDualVariables() {
+  for (auto& alcost : costs_) {
+    alcost->ResetDualVariables();
+  }
 }
 
 }  // namespace augmented_lagrangian

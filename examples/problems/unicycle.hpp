@@ -37,7 +37,7 @@ class UnicycleProblem {
   const int m = NControls;
 
   int N = 100;
-  std::shared_ptr<problem::DiscretizedModel<examples::Unicycle>> model;
+  ModelType model = ModelType(altro::examples::Unicycle());
 
   Eigen::Matrix3d Q = Eigen::Vector3d::Constant(NStates, 1e-2).asDiagonal();
   Eigen::Matrix2d R = Eigen::Vector2d::Constant(NControls, 1e-2).asDiagonal();
@@ -54,9 +54,9 @@ class UnicycleProblem {
   Eigen::VectorXd cx;  // x-coordinates of obstacles
   Eigen::VectorXd cy;  // y-coordinates of obstacles
   Eigen::VectorXd cr;  // radii of obstacles
-  altro::constraints::ConstraintPtr<altro::constraints::Inequality> ubnd;
-  altro::constraints::ConstraintPtr<altro::constraints::Equality> goal;
-  altro::constraints::ConstraintPtr<altro::constraints::Inequality> obstacles;
+  std::vector<double> lb;
+  std::vector<double> ub;
+  altro::examples::CircleConstraint obstacles;
 
   altro::problem::Problem MakeProblem(const bool add_constraints = true);
 
@@ -71,10 +71,11 @@ class UnicycleProblem {
 
   void SetScenario(Scenario scenario) { scenario_ = scenario; }
 
+  float GetTimeStep() const { return tf / N; }
+
  private:
   bool scenario_ = kTurn90;
   float tf = 3.0;
-  float h = 0.03;
 };
 
 template <int n_size, int m_size>
@@ -83,6 +84,7 @@ altro::Trajectory<n_size, m_size> UnicycleProblem::InitialTrajectory() {
   for (int k = 0; k < N; ++k) {
     Z.Control(k) = u0;
   }
+  float h = GetTimeStep(); 
   Z.SetUniformStep(h);
   return Z;
 }

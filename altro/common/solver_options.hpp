@@ -44,6 +44,8 @@ struct SolverOptions {
 
   double constraint_tolerance = 1e-4;     // NOLINT Maximum constraint violation theshold
   double maximum_penalty = 1e8;           // NOLINT Maximum penalty parameter allowed
+  double initial_penalty = 1.0;           // NOLINT Initial penalty for all constraints. Will always reset all penalties to this value before every solve. Set to 0 to disable.
+  bool reset_duals = true;                // NOLINT Reset the dual variables before each solve
   int header_frequency = 10;              // NOLINT Frequency at which the header is printed for AL iterations (for levels < kInner)
   LogLevel verbose = LogLevel::kSilent;   // Output verbosity level
   bool profiler_enable = false;                  // Enable internal profiler

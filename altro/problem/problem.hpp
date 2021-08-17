@@ -1,8 +1,8 @@
 #pragma once
 
+#include <fmt/format.h>
 #include <memory>
 #include <vector>
-#include <fmt/format.h>
 
 #include "altro/constraints/constraint.hpp"
 #include "altro/constraints/constraint_values.hpp"
@@ -15,10 +15,10 @@ namespace problem {
 
 /**
  * @brief Dummy discrete dynamics that don't do anything.
- * 
+ *
  * These dynamics are used at the last time step to provide the state dimension
  * to the downstream processes.
- * 
+ *
  */
 class IdentityDynamics : public DiscreteDynamics {
  public:
@@ -32,7 +32,7 @@ class IdentityDynamics : public DiscreteDynamics {
   int ControlDimension() const override { return m_; }
 
   void Evaluate(const VectorXdRef& x, const VectorXdRef& /*u*/, const float /*t*/,
-                       const float /*h*/, Eigen::Ref<VectorXd> xnext) override {
+                const float /*h*/, Eigen::Ref<VectorXd> xnext) override {
     xnext = x;
   }
   void Jacobian(const VectorXdRef& /*x*/, const VectorXdRef& /*u*/, const float /*t*/,
@@ -40,8 +40,7 @@ class IdentityDynamics : public DiscreteDynamics {
     jac.setIdentity();
   }
   void Hessian(const VectorXdRef& /*x*/, const VectorXdRef& /*u*/, const float /*t*/,
-               const float /*h*/, const VectorXdRef& /*b*/,
-               Eigen::Ref<MatrixXd> hess) override {
+               const float /*h*/, const VectorXdRef& /*b*/, Eigen::Ref<MatrixXd> hess) override {
     hess.setZero();
   }
   bool HasHessian() const override { return true; }
@@ -72,15 +71,44 @@ class Problem {
    * @param N number of trajectory segments (1 less than the number of knot
    * points)
    */
-  explicit Problem(const int N)
-      : N_(N), costfuns_(N + 1, nullptr), models_(N + 1, nullptr), eq_(N + 1), ineq_(N + 1) {}
+  explicit Problem(const int N, std::shared_ptr<VectorXd> initial_state = std::make_shared<VectorXd>(0))
+      : N_(N), initial_state_(initial_state), costfuns_(N + 1, nullptr), models_(N + 1, nullptr), eq_(N + 1), ineq_(N + 1) {}
 
+  Problem& operator=(const Problem& other) {
+    *initial_state_ = *(other.initial_state_);
+    costfuns_ = other.costfuns_;
+    models_ = other.models_;
+    eq_ = other.eq_;
+    ineq_ = other.ineq_;
+    return *this;
+  }
+
+  Problem(const Problem& other)
+      : costfuns_(other.costfuns_), models_(other.models_), eq_(other.eq_), ineq_(other.ineq_) {
+    *initial_state_ = *(other.initial_state_);
+  }
+
+  Problem& operator=(Problem&& other) {
+    *initial_state_ = *(other.initial_state_);
+    costfuns_ = std::move(other.costfuns_);
+    models_ = std::move(other.models_);
+    eq_ = std::move(other.eq_);
+    ineq_ = std::move(other.ineq_);
+    return *this;
+  }
+
+  Problem(Problem&& other)
+      : initial_state_(other.initial_state_),
+        costfuns_(std::move(other.costfuns_)),
+        models_(std::move(other.models_)),
+        eq_(std::move(other.eq_)),
+        ineq_(std::move(other.ineq_)) {}
   /**
    * @brief Set the initial state for the problem
    *
    * @param x0 the initial state
    */
-  void SetInitialState(const VectorXdRef& x0) { initial_state_ = x0; }
+  void SetInitialState(const VectorXdRef& x0) { *initial_state_ = x0; }
 
   /**
    * @brief Set the cost function at knot point k
@@ -95,15 +123,15 @@ class Problem {
 
   /**
    * @brief Set the cost function for an interval of consecutive knot points
-   * 
-   * Generally, each element of the input vector should be unique to ensure 
+   *
+   * Generally, each element of the input vector should be unique to ensure
    * there are no race conditions when parallelizing over knot points.
-   * 
+   *
    * @tparam CostFun A class derived from CostFunction.
    * @param costfuns A vector of cost function pointers. These pointers will by
    * copied into the problem and solver directly. It is the user's responsibility
-   * to make sure that this operation does not result in race conditions when 
-   * parallelized. To make sure this doesn't happen, the user should generally 
+   * to make sure that this operation does not result in race conditions when
+   * parallelized. To make sure this doesn't happen, the user should generally
    * create a unique copy of the cost function for each knot point.
    * @param k_start Starting index (inclusive). All the pointers will be copied
    * starting from this knot point. Defaults to the start of the trajectory.
@@ -137,16 +165,16 @@ class Problem {
 
   /**
    * @brief Set the dynamics functions for an interval of consecutive knot points.
-   * 
-   * Generally, each element of the input vector should be unique to ensure 
+   *
+   * Generally, each element of the input vector should be unique to ensure
    * there are no race conditions when parallelizing over knot points.
-   * 
+   *
    * @tparam Dynamics A class derived from `problem::DiscreteDynamics`.
    * @param models A vector of dynamics function pointers. These pointers will by
    * copied into the problem and solver directly. It is the user's responsibility
-   * to make sure that this operation does not result in race conditions when 
-   * parallelized. To make sure this doesn't happen, the user should generally 
-   * create a unique copy of the dynamics for each knot point. This is 
+   * to make sure that this operation does not result in race conditions when
+   * parallelized. To make sure this doesn't happen, the user should generally
+   * create a unique copy of the dynamics for each knot point. This is
    * critically important for `DiscretizedModel`s, since these allocate temporary
    * storage for evaluating the numerical integration that cannot be used in a
    * thread-safe way without creating a new model for each knot point.
@@ -159,6 +187,13 @@ class Problem {
       int k = i + k_start;
       SetDynamics(models[i], k);
     }
+  }
+
+  template <class ConstraintObject>
+  void SetConstraint(std::shared_ptr<ConstraintObject> con, int k) {
+    using ConType = typename ConstraintObject::ConstraintType;
+    constraints::ConstraintPtr<ConType> ptr = con;
+    SetConstraint<ConType>(ptr, k);
   }
 
   template <class ConType>
@@ -203,8 +238,9 @@ class Problem {
    *
    * @return reference to the initial state vector
    */
-  const VectorXd& GetInitialState() const { return initial_state_; }
+  const VectorXd& GetInitialState() const { return *initial_state_; }
 
+  const std::shared_ptr<VectorXd> GetInitialStatePointer() const { return initial_state_; }
   /**
    * @brief Get the Cost Function object at time step k
    *
@@ -259,8 +295,8 @@ class Problem {
   bool IsFullyDefined(bool verbose = false) const;
 
  private:
-  int N_;                   // number of segments (# of knotpoints - 1)
-  VectorXd initial_state_;  // initial state
+  int N_;  // number of segments (# of knotpoints - 1)
+  const std::shared_ptr<VectorXd> initial_state_ = std::make_shared<VectorXd>(0);  // initial state
   std::vector<std::shared_ptr<CostFunction>> costfuns_;
   std::vector<std::shared_ptr<DiscreteDynamics>> models_;
 

@@ -122,7 +122,7 @@ TEST(ThreadPool, CheckRunning) {
   EXPECT_EQ(pool.NumThreads(), nthreads);
   pool.StopThreads();
   EXPECT_FALSE(pool.IsRunning());
-  EXPECT_EQ(pool.NumThreads(), nthreads);
+  EXPECT_EQ(pool.NumThreads(), 0);
 }
 
 TEST(ThreadPool, StopAndAdd) {

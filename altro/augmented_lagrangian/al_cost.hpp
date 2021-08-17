@@ -352,6 +352,15 @@ class ALCost : public problem::CostFunction {
     return max_penalty;
   }
 
+  void ResetDualVariables() {
+    for (auto& con: eq_) {
+      con->ResetDualVariables();
+    }
+    for (auto& con: ineq_) {
+      con->ResetDualVariables();
+    }
+  }
+
  private:
   /**
    * @brief Allocates a new ConstraintValue for an arbitrary constraint, storing

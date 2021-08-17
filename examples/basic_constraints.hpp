@@ -46,6 +46,7 @@ class ControlBound : public constraints::Constraint<constraints::NegativeOrthant
   ControlBound(const std::vector<double>& lb, const std::vector<double>& ub)
       : m_(lb.size()), lower_bound_(lb), upper_bound_(ub) {
     ALTRO_ASSERT(lb.size() == ub.size(), "Upper and lower bounds must have the same length.");
+    ALTRO_ASSERT(lb.size() > 0, "Cannot pass in empty bounds.");
     GetFiniteIndices(upper_bound_, &index_upper_bound_);
     GetFiniteIndices(lower_bound_, &index_lower_bound_);
     ValidateBounds();

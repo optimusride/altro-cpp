@@ -16,7 +16,6 @@
 #include "examples/quadratic_cost.hpp"
 #include "examples/triple_integrator.hpp"
 
-
 class TripleIntegratoriLQRTest : public ::testing::Test {
  protected:
   static constexpr int dof = 2;
@@ -157,20 +156,20 @@ TEST_F(TripleIntegratoriLQRTest, DynamicsExpansion) {
 
   Eigen::MatrixXd A(n, n);
   Eigen::MatrixXd B(n, m);
-  // clang-autoformat off
-  A << 1, 0, 0.1,   0, 0.005,     0, 
-       0, 1,   0, 0.1,     0, 0.005, 
-       0, 0,   1,   0,   0.1,     0, 
-       0, 0,   0,   1,     0,    0.1, 
-       0, 0,   0,   0,     1,      0, 
-       0, 0,   0,   0,     0,      1;
+  // clang-format off
+  A << 1, 0, 0.1, 0,   0.005, 0, 
+       0, 1, 0,   0.1, 0, 0.005, 
+       0, 0, 1,   0,   0.1,   0, 
+       0, 0, 0,   1,   0,   0.1, 
+       0, 0, 0,   0,   1,     0, 
+       0, 0, 0,   0,   0,     1;
   B << 1 / 6e3, 0, 
        0, 1 / 6e3, 
        5e-3, 0, 
        0, 5e-3, 
        0.1, 0, 
        0, 0.1;
-  // clang-autoformat on
+  // clang-format on
 
   for (int k = 0; k < N; ++k) {
     kpf = solver.GetKnotPointFunction(k);
@@ -237,7 +236,7 @@ TEST_F(TripleIntegratoriLQRTest, Rollout) {
   EXPECT_TRUE(Z->State(N).isApprox(Eigen::VectorXd::Zero(n)));
   solver.Rollout();
   for (const auto& z : *Z) {
-    EXPECT_TRUE(z.State().isApprox(solver.GetInitialState()));
+    EXPECT_TRUE(z.State().isApprox(*(solver.GetInitialState())));
   }
 
   for (auto& z : *Z) {
@@ -317,6 +316,19 @@ TEST_F(TripleIntegratoriLQRTest, FullSolve) {
           0.0,    -63.9657,   0.0,    -42.7673,   0.0,    -11.5189;
   // clang-format on
   EXPECT_TRUE(solver.GetKnotPointFunction(0).GetFeedbackGain().isApprox(K0, 1e-3));
+
+  // Try with a default-initialized solver
+  altro::ilqr::iLQR<n_static, m_static> solver2(N);
+  altro::problem::Problem prob = MakeProblem();
+  std::shared_ptr<altro::Trajectory<n_static, m_static>> traj_ptr =
+      std::make_shared<altro::Trajectory<n_static, m_static>>(
+          InitialTrajectory<n_static, m_static>());
+  solver2.InitializeFromProblem(prob);
+  solver2.SetTrajectory(traj_ptr);
+  solver2.Solve();
+  EXPECT_EQ(solver2.GetStatus(), altro::SolverStatus::kSolved);
+  EXPECT_EQ(solver2.GetStats().iterations_inner, 2);
+  EXPECT_TRUE(solver2.GetKnotPointFunction(0).GetFeedbackGain().isApprox(K0, 1e-3));
 }
 
 TEST_F(TripleIntegratoriLQRTest, AugLagCost) {
@@ -393,7 +405,7 @@ TEST_F(TripleIntegratoriLQRTest, AugLagForwardPass) {
   solver.ForwardPass();
   double J = solver.Cost();
   EXPECT_LT(J, J0);
-  const double J_expected = 1945.232957449998; // from Altro.jl
+  const double J_expected = 1945.232957449998;  // from Altro.jl
   EXPECT_LT(std::abs(J - J_expected), 1e-3);
 }
 
@@ -418,7 +430,6 @@ TEST_F(TripleIntegratoriLQRTest, AugLagTwoSteps) {
 
   // Test converges on first iteration
   EXPECT_LT(costs[1] - costs[2], 1e-4);
-
 
   // Test that the constraint violation decreased
   EXPECT_LT(goal_violation, initial_goal_violation);

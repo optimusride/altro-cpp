@@ -148,7 +148,7 @@ TEST_F(AugLagTest, ALCostHessian) {
 TEST_F(AugLagTest, SetALCostPenalty) {
   ALCost<NStates, NControls> alcost0 = MakeALCost<NStates, NControls>();
   std::vector<constraints::ConstraintPtr<constraints::Equality>> eq;
-  eq.emplace_back(goal);
+  eq.emplace_back(std::make_shared<examples::GoalConstraint>(xf));
   alcost0.SetEqualityConstraints(eq.begin(), eq.end());
 
   // Set the penalties
@@ -316,6 +316,63 @@ TEST_F(AugLagTest, FullSolve) {
   double viol = alsolver.GetMaxViolation();
   double pen = alsolver.GetMaxPenalty();
   fmt::print("Final cost / viol / penalty: {} / {} / {}\n", J, viol, pen);
+  EXPECT_EQ(alsolver.GetStatus(), SolverStatus::kSolved);
+  EXPECT_LT(viol, alsolver.GetOptions().constraint_tolerance);
+}
+
+TEST_F(AugLagTest, InitializeAndSolve) {
+  problem::Problem prob = MakeProblem();
+  AugmentedLagrangianiLQR<NStates, NControls> alsolver(N);
+  if (utils::AssertionsActive()) {
+    EXPECT_DEATH(alsolver.NumConstraints(), "Assert.*initializing the solver with a problem");
+  }
+  alsolver.InitializeFromProblem(prob);
+  std::shared_ptr<altro::Trajectory<NStates, NControls>> Z =
+      std::make_shared<altro::Trajectory<NStates, NControls>>(
+          InitialTrajectory<NStates, NControls>());
+  alsolver.SetTrajectory(Z);
+
+  alsolver.GetOptions().constraint_tolerance = 1e-6;
+  alsolver.GetOptions().verbose = LogLevel::kDebug;
+  alsolver.Solve();
+  fmt::print("Total / Outer Iterations: {} / {}\n", alsolver.GetStats().iterations_total,
+             alsolver.GetStats().iterations_outer);
+  double J = alsolver.GetiLQRSolver().Cost();
+  double viol = alsolver.GetMaxViolation();
+  double pen = alsolver.GetMaxPenalty();
+  fmt::print("Final cost / viol / penalty: {} / {} / {}\n", J, viol, pen);
+  EXPECT_EQ(alsolver.GetStats().iterations_total, 14);
+  EXPECT_EQ(alsolver.GetStats().iterations_outer, 5);
+  EXPECT_DOUBLE_EQ(alsolver.GetiLQRSolver().Cost(), 0.03893465058924039);
+  EXPECT_EQ(alsolver.GetStatus(), SolverStatus::kSolved);
+  EXPECT_LT(viol, alsolver.GetOptions().constraint_tolerance);
+}
+
+TEST_F(AugLagTest, SolveTwice) {
+  problem::Problem prob = MakeProblem();
+  AugmentedLagrangianiLQR<NStates, NControls> alsolver(N);
+  alsolver.InitializeFromProblem(prob);
+  std::shared_ptr<altro::Trajectory<NStates, NControls>> Z =
+      std::make_shared<altro::Trajectory<NStates, NControls>>(
+          InitialTrajectory<NStates, NControls>());
+  alsolver.SetTrajectory(Z);
+
+  alsolver.GetOptions().constraint_tolerance = 1e-6;
+  alsolver.GetOptions().verbose = LogLevel::kDebug;
+  alsolver.Solve();
+
+  *Z = InitialTrajectory<NStates, NControls>();
+  alsolver.Solve();
+
+  fmt::print("Total / Outer Iterations: {} / {}\n", alsolver.GetStats().iterations_total,
+             alsolver.GetStats().iterations_outer);
+  double J = alsolver.GetiLQRSolver().Cost();
+  double viol = alsolver.GetMaxViolation();
+  double pen = alsolver.GetMaxPenalty();
+  fmt::print("Final cost / viol / penalty: {} / {} / {}\n", J, viol, pen);
+  EXPECT_EQ(alsolver.GetStats().iterations_total, 14);
+  EXPECT_EQ(alsolver.GetStats().iterations_outer, 5);
+  EXPECT_DOUBLE_EQ(alsolver.GetiLQRSolver().Cost(), 0.03893465058924039);
   EXPECT_EQ(alsolver.GetStatus(), SolverStatus::kSolved);
   EXPECT_LT(viol, alsolver.GetOptions().constraint_tolerance);
 }
