@@ -1,5 +1,10 @@
-#include <gtest/gtest.h>
 #include <iostream>
+#include <iomanip>
+
+#include <gtest/gtest.h>
+#include <fmt/format.h>
+#include <fmt/ostream.h>
+#include <eigen3/Eigen/Dense>
 
 #include "altro/common/knotpoint.hpp"
 #include "altro/utils/assert.hpp"
@@ -73,6 +78,11 @@ TEST(KnotPointTest, Printing) {
 	float h = 0.1;
 	KnotPoint<3,2> z(x,u,t,h);
 	EXPECT_NO_THROW(std::cout << z << std::endl);
+  z.State().setRandom();
+  z.State() *= 100;
+
+  Eigen::IOFormat prec(2, 0, ", ", "\n", "", "", "", "");
+  fmt::print("{}\n", z.ToString());
 }
 
 TEST(KnotPointTest, Random) {

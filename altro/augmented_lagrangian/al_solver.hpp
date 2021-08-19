@@ -320,6 +320,10 @@ bool AugmentedLagrangianiLQR<n, m>::IsDone() {
   const bool is_max_penalty_exceeded = stats.max_penalty.back() > opts.maximum_penalty;
   const bool is_max_outer_iterations_exceeded = stats.iterations_outer >= opts.max_iterations_outer;
   const bool is_max_total_iterations_exeeded = stats.iterations_total >= opts.max_iterations_total;
+  if (ilqr_solver_.GetStatus() != SolverStatus::kSolved) {
+    status_ = ilqr_solver_.GetStatus();
+    return true;
+  }
   if (are_constraints_satisfied) {
     if (ilqr_solver_.GetStatus() == SolverStatus::kSolved) {
       status_ = SolverStatus::kSolved;

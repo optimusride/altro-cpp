@@ -1,5 +1,9 @@
 #pragma once
 
+#include <string>
+
+#include <fmt/format.h>
+
 #include "altro/common/state_control_sized.hpp"
 #include "altro/eigentypes.hpp"
 #include "altro/utils/assert.hpp"
@@ -139,9 +143,28 @@ class KnotPoint : public StateControlSized<n, m> {
 
   friend std::ostream& operator<<(std::ostream& os,
                                   const KnotPoint<n, m, T>& z) {
-    return os << "x: [" << z.State().transpose() << "], u: ["
-              << z.Control().transpose() << "], t=" << z.GetTime()
-              << ", h=" << z.GetStep();
+    return os << z.ToString();
+  }
+
+  /**
+   * @brief Create a string containing a print out of all the states and controls
+   * in a single line.
+   * 
+   * @param width Controls the width of each numerical field
+   * @return std::string 
+   */
+  std::string ToString(int width = 9) const {
+    std::string out;
+    out += fmt::format("x: [");
+    for (int i = 0; i < this->n_; ++i) {
+      out += fmt::format("{1: > {0}.3g} ", width, State()(i));
+    }
+    out += fmt::format("] u: [");
+    for (int i = 0; i < this->m_; ++i) {
+      out += fmt::format("{1: > {0}.3g} ", width, Control()(i));
+    }
+    out += fmt::format("] t={:4.2}, h={:4.2}", GetTime(), GetStep());
+    return out;
   }
 
  private:

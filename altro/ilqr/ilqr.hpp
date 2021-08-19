@@ -81,9 +81,9 @@ class iLQR {
    * switched dynamics.
    *
    * Appends the knotpoints to those currently in the solver.
-   * 
-   * Captures the initial state from the problem as a shared pointer, so the 
-   * initial state of the solver is changed by modifying the initial state of 
+   *
+   * Captures the initial state from the problem as a shared pointer, so the
+   * initial state of the solver is changed by modifying the initial state of
    * the original problem.
    *
    * @tparam n2 Compile-time state dimension. Can be Eigen::Dynamic (-1)
@@ -109,8 +109,8 @@ class iLQR {
       if (m != Eigen::Dynamic) {
         ALTRO_ASSERT(
             prob.GetDynamics(k)->ControlDimension() == m,
-            fmt::format("Inconsistent control dimension at knot point {}. Expected {}, got {}", k, m,
-                        prob.GetDynamics(k)->ControlDimension()));
+            fmt::format("Inconsistent control dimension at knot point {}. Expected {}, got {}", k,
+                        m, prob.GetDynamics(k)->ControlDimension()));
       }
       std::shared_ptr<problem::DiscreteDynamics> model = prob.GetDynamics(k);
       std::shared_ptr<problem::CostFunction> costfun = prob.GetCostFunction(k);
@@ -123,9 +123,9 @@ class iLQR {
   template <int n2 = n, int m2 = m>
   void InitializeFromProblem(const problem::Problem& prob) {
     ALTRO_ASSERT(prob.NumSegments() == N_,
-                  fmt::format("Number of segments in problem {}, should be equal to the number of "
-                              "segments in the solver, {}",
-                              prob.NumSegments(), N_));
+                 fmt::format("Number of segments in problem {}, should be equal to the number of "
+                             "segments in the solver, {}",
+                             prob.NumSegments(), N_));
     CopyFromProblem<n2, m2>(prob, 0, N_ + 1);
     ResetInternalVariables();
   }
@@ -199,15 +199,15 @@ class iLQR {
    *
    */
   int NumTasks() const { return work_inds_.size() - 1; }
-  
+
   /**
    * @brief Create a new zero-initialized trajectory.
-   * 
+   *
    * Assumes a uniform time step.
-   * The trajectory is automatically linked to the solver and is used 
+   * The trajectory is automatically linked to the solver and is used
    * both as the initial guess and as the storage location for the optimized
    * solution during and after the solve.
-   * 
+   *
    * @param dt Time step used in the trajectory.
    * @return std::shared_ptr<Trajectory<n, m>> A new zero-initialized trajectory.
    */
@@ -284,7 +284,8 @@ class iLQR {
     ALTRO_ASSERT(Z_ != nullptr, "Invalid trajectory pointer. May be uninitialized.");
 
     // TODO(bjackson): Allow the solver to optimize a portion of a longer trajectory?
-    ALTRO_ASSERT(Z_->NumSegments() == N_, fmt::format("Initial trajectory must have length {}", N_));
+    ALTRO_ASSERT(Z_->NumSegments() == N_,
+                 fmt::format("Initial trajectory must have length {}", N_));
 
     // Start profiler
     GetOptions().profiler_enable ? stats_.GetTimer()->Activate() : stats_.GetTimer()->Deactivate();
@@ -393,37 +394,50 @@ class iLQR {
     int max_reg_count = 0;
     deltaV_[0] = 0.0;
     deltaV_[1] = 0.0;
-    for (int k = N_ - 1; k >= 0; --k) {
-      knotpoints_[k]->CalcActionValueExpansion(*Sxx_prev, *Sx_prev);
-      knotpoints_[k]->RegularizeActionValue(rho_);
-      info = knotpoints_[k]->CalcGains();
 
-      // Handle solve failure
-      if (info != Eigen::Success) {
-        std::cout << "Failed solve at knot point" << k << std::endl;
-        IncreaseRegularization();
-        k = N_ - 1;  // Start at the beginning of the trajectory again
+    bool repeat_backwardpass = true;
+    while (repeat_backwardpass) {
+      for (int k = N_ - 1; k >= 0; --k) {
+        // TODO(bjackson)[SW-16103] Create a test that checks this
+        knotpoints_[k]->CalcActionValueExpansion(*Sxx_prev, *Sx_prev);
+        knotpoints_[k]->RegularizeActionValue(rho_);
+        info = knotpoints_[k]->CalcGains();
 
-        // Check if we're at max regularization
-        if (rho_ >= GetOptions().bp_reg_max) {
-          max_reg_count++;
+        // Handle solve failure
+        if (info != Eigen::Success) {
+
+          IncreaseRegularization();
+
+          // Reset the cost-to-go pointers to the terminal expansion
+          Sxx_prev = &(knotpoints_[N_]->GetCostToGoHessian());
+          Sx_prev = &(knotpoints_[N_]->GetCostToGoGradient());
+
+          // Check if we're at max regularization
+          if (rho_ >= GetOptions().bp_reg_max) {
+            max_reg_count++;
+          }
+
+          if (max_reg_count >= GetOptions().bp_reg_fail_threshold) {
+            status_ = SolverStatus::kBackwardPassRegularizationFailed;
+            repeat_backwardpass = false;
+          }
+          break;
         }
 
-        // Throw an error if we keep failing, even at max regularization
-        // TODO(bjackson): Look at better ways of doing this
-        if (max_reg_count >= GetOptions().bp_reg_fail_threshold) {
-          throw std::runtime_error("Backward pass regularization increased too many times.");
+        // Update Cost-To-Go
+        knotpoints_[k]->CalcCostToGo();
+        knotpoints_[k]->AddCostToGo(&deltaV_);
+
+        Sxx_prev = &(knotpoints_[k]->GetCostToGoHessian());
+        Sx_prev = &(knotpoints_[k]->GetCostToGoGradient());
+
+        // Backward pass successful if it calculates the cost to go at
+        // the first knot point.
+        if (k == 0) {
+          repeat_backwardpass = false;
         }
-        continue;
-      }
-
-      // Update Cost-To-Go
-      knotpoints_[k]->CalcCostToGo();
-      knotpoints_[k]->AddCostToGo(&deltaV_);
-
-      Sxx_prev = &(knotpoints_[k]->GetCostToGoHessian());
-      Sx_prev = &(knotpoints_[k]->GetCostToGoGradient());
-    }
+      } // end for
+    } // end while
     stats_.Log("reg", rho_);
     DecreaseRegularization();
   }
@@ -707,9 +721,7 @@ class iLQR {
       for (int i = 0; i < ntasks; ++i) {
         int start = work_inds[i];
         int stop = work_inds[i + 1];
-        auto expansion_block = [this, start, stop]() { 
-          UpdateExpansionsBlock(start, stop); 
-        };
+        auto expansion_block = [this, start, stop]() { UpdateExpansionsBlock(start, stop); };
         tasks_.emplace_back(std::move(expansion_block));
       }
 
