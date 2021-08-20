@@ -18,6 +18,7 @@ class GoalConstraint : public constraints::Constraint<constraints::Equality> {
     return std::make_shared<GoalConstraint>(xf);
   }
 
+  std::string GetLabel() const override { return "Goal Constraint"; }
   int StateDimension() const override { return xf_.size(); }
   int OutputDimension() const override { return xf_.size(); }
 
@@ -83,6 +84,8 @@ class ControlBound : public constraints::Constraint<constraints::NegativeOrthant
     GetFiniteIndices(lower_bound_, &index_lower_bound_);
     ValidateBounds();
   }
+
+  std::string GetLabel() const override { return "Control Bound";}
 
   int ControlDimension() const override { return m_; }
 

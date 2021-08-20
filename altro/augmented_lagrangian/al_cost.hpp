@@ -87,6 +87,21 @@ class ALCost : public problem::CostFunction {
 
   std::shared_ptr<problem::CostFunction> GetCostFunction() { return costfun_; }
 
+  /**
+   * @brief Append the constraint info for all the constraints in the cost.
+   * 
+   * @param coninfo A vector of constraint info. The constraint info for the
+   * current cost is appended on to the end of the vector.
+   */
+  void GetConstraintInfo(std::vector<constraints::ConstraintInfo>* coninfo) {
+    for (const auto& conval : eq_) {
+      coninfo->emplace_back(conval->GetConstraintInfo());
+    }
+    for (const auto& conval : ineq_) {
+      coninfo->emplace_back(conval->GetConstraintInfo());
+    }
+  }
+
   /***************************** Setters **************************************/
 
   /**

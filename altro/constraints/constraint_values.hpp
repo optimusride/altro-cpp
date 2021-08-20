@@ -52,10 +52,21 @@ class ConstraintValues : public Constraint<ConType> {
   int StateDimension() const override { return n_; }
   int ControlDimension() const override { return m_; }
 
+  ConstraintPtr<ConType> GetConstraint() { return con_; }
   VectorNd<p>& GetDuals() { return lambda_; }
   VectorNd<p>& GetPenalty() { return penalty_; }
   VectorNd<p>& GetConstraintValue() { return c_; }
 	double GetPenaltyScaling() const { return penalty_scaling_; }
+
+  VectorNd<p>& GetViolation() {
+    ConType::Projection(c_, c_proj_);
+    c_proj_ = c_ - c_proj_;
+    return c_proj_;
+  }
+
+  ConstraintInfo GetConstraintInfo() {
+    return ConstraintInfo{con_->GetLabel(), 0, GetViolation(), con_->GetConstraintType()};
+  }
 
   /***************************** Setters **************************************/
   /**

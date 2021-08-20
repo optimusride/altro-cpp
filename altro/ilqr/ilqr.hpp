@@ -604,6 +604,9 @@ class iLQR {
       status_ = SolverStatus::kSolved;
       is_done = true;
     } else if (stats_.iterations_inner >= opts.max_iterations_inner) {
+      status_ = SolverStatus::kMaxInnerIterations;
+      is_done = true;
+    } else if (stats_.iterations_total >= opts.max_iterations_total) {
       status_ = SolverStatus::kMaxIterations;
       is_done = true;
     } else if (status_ != SolverStatus::kUnsolved) {

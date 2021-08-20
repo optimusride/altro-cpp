@@ -377,5 +377,24 @@ TEST_F(AugLagTest, SolveTwice) {
   EXPECT_LT(viol, alsolver.GetOptions().constraint_tolerance);
 }
 
+TEST_F(AugLagTest, PrintViolations) {
+  problem::Problem prob = MakeProblem();
+  AugmentedLagrangianiLQR<NStates, NControls> alsolver(N);
+  alsolver.InitializeFromProblem(prob);
+  std::shared_ptr<altro::Trajectory<NStates, NControls>> Z =
+      std::make_shared<altro::Trajectory<NStates, NControls>>(
+          InitialTrajectory<NStates, NControls>());
+  alsolver.SetTrajectory(Z);
+  alsolver.Solve();
+
+  std::vector<constraints::ConstraintInfo> coninfo = alsolver.GetConstraintInfo();
+  EXPECT_EQ(coninfo[0].index, 0);
+  EXPECT_EQ(coninfo[0].label, "Control Bound");
+  coninfo = alsolver.GetConstraintInfo(/*sort=*/true);
+  EXPECT_EQ(coninfo[0].index, alsolver.NumSegments());
+  EXPECT_EQ(coninfo[0].label, "Goal Constraint");
+  EXPECT_NO_THROW(alsolver.PrintViolations(true));
+}
+
 }  // namespace augmented_lagrangian
 }  // namespace altro

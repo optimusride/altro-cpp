@@ -1,6 +1,8 @@
 #pragma once
 
+#include <iostream>
 #include <memory>
+#include <string>
 
 #include "altro/common/functionbase.hpp"
 #include "altro/eigentypes.hpp"
@@ -113,6 +115,21 @@ class NegativeOrthant {
 };
 using Inequality = NegativeOrthant;
 
+/**
+ * @brief Contains basic information about a single constraint
+ * 
+ */
+struct ConstraintInfo {
+  std::string label;
+  int index;
+  VectorXd violation;
+  std::string type;
+
+  std::string ToString(int precision = 4) const;
+};
+
+std::ostream& operator<<(std::ostream& os, const ConstraintInfo& coninfo);
+
 // clang-format off
 /**
  * @brief An abstract constraint of the form:
@@ -126,6 +143,7 @@ using Inequality = NegativeOrthant;
  * - `int OutputDimension() const` - size of output (length of constraint).
  * - `void Evaluate(const VectorXdRef& x, const VectorXdRef& u, Eigen::Ref<Eigen::VectorXd> out)`
  * - `void Jacobian(const VectorXdRef& x, const VectorXdRef& u, Eigen::Ref<MatrixXd> out)`
+ * - `std::string GetLabel() const` - A brief description of the constraint for printing.
  *
  * Where we use the following Eigen type alias:
  * 
@@ -157,6 +175,18 @@ class Constraint : public FunctionBase {
 
   // TODO(bjackson) [SW-14476] add 2nd order terms when implementing DDP
   bool HasHessian() const override { return false; }
+
+  virtual std::string GetLabel() const { return GetConstraintType(); }
+
+  std::string GetConstraintType() const {
+    if (std::is_same<ConType, Equality>::value) {
+      return "Equality Constraint";
+    } else if (std::is_same<ConType, Inequality>::value) {
+      return "Inequality Constraint";
+    } else {
+      return "Undefined Constraint Type";
+    }
+  }
 };
 
 template <class ConType>

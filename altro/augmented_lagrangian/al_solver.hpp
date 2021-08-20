@@ -2,6 +2,7 @@
 
 #include <fmt/format.h>
 #include <fmt/ostream.h>
+#include <algorithm>
 #include <limits>
 #include <type_traits>
 
@@ -47,6 +48,58 @@ class AugmentedLagrangianiLQR {
 
   int NumConstraints(const int& k) const;
   int NumConstraints() const;
+
+  /**
+   * @brief Print a summary of all of the constraints in the problem.
+   * 
+   * Prints the label of each constraint, it's knot point index, and a vector 
+   * of it's violations.
+   * 
+   * Each element contains a basic description of the constraint, the knot
+   * point index at which it's located, and a vector of it's current violations.
+   * 
+   * @param[in] should_sort Sorts the constraints by the infinity norm of their 
+   *                        constraint. Default is false (no sorting), where 
+   *                        they are sorted by knot point index.
+   * @param[in] precision   Controls the precision of the numerical output.
+   */
+  void PrintViolations(bool should_sort = false, int precision = 4) {
+    std::vector<constraints::ConstraintInfo> coninfo = GetConstraintInfo(should_sort);
+    fmt::print("Got {} constraints\n", coninfo.size());
+    for (const constraints::ConstraintInfo& info : coninfo) {
+      fmt::print("{}\n", info.ToString(precision));
+    }
+  }
+
+  /**
+   * @brief Get a list of the constraints.
+   * 
+   * Each element contains a basic description of the constraint, the knot
+   * point index at which it's located, and a vector of it's current violations.
+   * 
+   * @param should_sort Sorts the constraints by the infinity norm of their constraint 
+   * violations.
+   * @return std::vector<constraints::ConstraintInfo>
+   */
+  std::vector<constraints::ConstraintInfo> GetConstraintInfo(bool should_sort = false) const {
+    std::vector<constraints::ConstraintInfo> coninfo;
+    int i_last = 0;
+    for (int k = 0; k <= NumSegments(); ++k) {
+      costs_[k]->GetConstraintInfo(&coninfo);
+      for (int i = i_last; i < static_cast<int>(coninfo.size()); ++i) {
+        coninfo[i].index = k;
+      }
+      i_last = coninfo.size();
+    }
+    if (should_sort) {
+      auto comp = [](const constraints::ConstraintInfo& info1,
+                     const constraints::ConstraintInfo& info2) {
+        return info1.violation.lpNorm<Eigen::Infinity>() > info2.violation.lpNorm<Eigen::Infinity>();
+      };
+      std::sort(coninfo.begin(), coninfo.end(), comp);
+    }
+    return coninfo;
+  }
 
   /***************************** Setters **************************************/
 

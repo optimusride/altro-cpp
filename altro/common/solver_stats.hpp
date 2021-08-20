@@ -21,13 +21,14 @@ namespace altro {
 enum class SolverStatus {
   kSolved = 0,
   kUnsolved = 1,
-  kStateLimit,
-  kControlLimit,
-  kCostIncrease,
-  kMaxIterations,
-  kMaxOuterIterations,
-  kMaxPenalty,
-  kBackwardPassRegularizationFailed,
+  kStateLimit = 2,
+  kControlLimit = 3,
+  kCostIncrease = 4,
+  kMaxIterations = 5,
+  kMaxOuterIterations = 6,
+  kMaxInnerIterations = 7,
+  kMaxPenalty = 8,
+  kBackwardPassRegularizationFailed = 9,
 };
 
 /**
