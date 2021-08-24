@@ -12,7 +12,11 @@ add_library(problem
 )
 target_link_libraries(problem
   PUBLIC
+  Eigen3::Eigen
+  fmt::fmt
+
+  PRIVATE 
   common
   constraints
 )
-export_library(problem altroTargets "costfunction.hpp;discretized_model.hpp;dynamics.hpp;integration.hpp;problem.hpp" altro/problem)
+export_library(problem altroTargets)

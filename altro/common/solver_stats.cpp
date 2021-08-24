@@ -1,5 +1,7 @@
 #include "altro/common/solver_stats.hpp"
 
+#include <fmt/format.h>
+#include <fmt/ostream.h>
 #include <fmt/color.h>
 
 namespace altro {

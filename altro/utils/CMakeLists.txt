@@ -6,4 +6,8 @@ add_library(utils
   utils.hpp
   benchmarking.hpp
 )
-export_library(utils altroTargets "assert.hpp;derivative_checker.hpp;utils.hpp" altro/utils)
+target_link_libraries(utils
+  PRIVATE
+  fmt::fmt
+)
+export_library(utils altroTargets)

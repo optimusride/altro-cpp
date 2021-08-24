@@ -3,6 +3,7 @@ add_executable(trajectory_test
   trajectory_test.cpp
 )
 target_link_libraries(trajectory_test
+  PRIVATE
   gtest_main
   common
 )
@@ -13,6 +14,7 @@ add_executable(knotpoint_test
   knotpoint_test.cpp
 )
 target_link_libraries(knotpoint_test
+  PRIVATE
   gtest_main
   common
 )
@@ -23,6 +25,7 @@ add_executable(solver_options_test
   solver_options_test.cpp
 )
 target_link_libraries(solver_options_test
+  PRIVATE
   gtest_main
   common
 )
@@ -32,6 +35,7 @@ add_executable(solver_logging_test
   solver_logging_test.cpp
 )
 target_link_libraries(solver_logging_test
+  PRIVATE
   gtest_main
   common
 )
@@ -42,6 +46,7 @@ add_executable(timer_test
   timer_test.cpp
 )
 target_link_libraries(timer_test
+  PRIVATE
   gtest_main
   common
 )
@@ -52,6 +57,7 @@ add_executable(functionbase_test
   functionbase_test.cpp
 )
 target_link_libraries(functionbase_test
+  PRIVATE
   gtest_main
   common
 )

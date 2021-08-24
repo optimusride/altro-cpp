@@ -9,4 +9,4 @@ target_link_libraries(constraints
   common
   utils
 )
-export_library(constraints altroTargets "constraint.hpp;constraint_values.hpp" altro/constraints)
+export_library(constraints altroTargets)

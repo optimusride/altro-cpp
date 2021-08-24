@@ -4,6 +4,7 @@ add_executable(benchmark_triple_integrator
   benchmark_triple_integrator.cpp
 )
 target_link_libraries(benchmark_triple_integrator
+  PRIVATE
   example_problems
 )
 target_compile_definitions(benchmark_triple_integrator
@@ -15,6 +16,7 @@ add_executable(benchmark_unicycle
   benchmark_unicycle.cpp
 )
 target_link_libraries(benchmark_unicycle
+  PRIVATE
   example_problems
 )
 target_compile_definitions(benchmark_unicycle 

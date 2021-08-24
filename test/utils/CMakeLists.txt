@@ -15,6 +15,7 @@ add_executable(derivative_checker_test
   derivative_checker_test.cpp
 )
 target_link_libraries(derivative_checker_test
+  PRIVATE
   gtest_main
   util
 )

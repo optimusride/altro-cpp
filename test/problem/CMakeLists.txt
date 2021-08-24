@@ -43,8 +43,10 @@ add_executable(unicycle_test
   unicycle_test.cpp
 )
 target_link_libraries(unicycle_test
+  PRIVATE
   gtest_main
   dynamics_examples
+  common
   utils
 )
 gtest_discover_tests(unicycle_test)
@@ -54,6 +56,7 @@ add_executable(problem_test
   problem_test.cpp
 )
 target_link_libraries(problem_test
+  PRIVATE
   constraints
   constraint_examples
   gtest_main
@@ -69,7 +72,9 @@ add_executable(quadratic_cost_test
   quadratic_cost_test.cpp
 )
 target_link_libraries(quadratic_cost_test
+  PRIVATE
   gtest_main
   cost_function_examples
+  common
 )
 gtest_discover_tests(quadratic_cost_test)

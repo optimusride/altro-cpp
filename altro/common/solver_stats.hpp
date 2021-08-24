@@ -1,8 +1,5 @@
 #pragma once
 
-#include <fmt/format.h>
-#include <fmt/ostream.h>
-
 #include "altro/common/solver_options.hpp"
 #include "altro/common/solver_logger.hpp"
 #include "altro/common/timer.hpp"

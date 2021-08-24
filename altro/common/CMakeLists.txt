@@ -21,15 +21,17 @@ add_library(common
 )
 target_link_libraries(common 
   PUBLIC
-  Eigen3::Eigen
-  fmt::fmt
+  Eigen3::Eigen # needs to be public since the interface uses Eigen
+  fmt::fmt      # needs to be public since solver_logger uses it in the interface
+
+  PRIVATE
   utils
 )
 target_compile_definitions(common 
   PRIVATE
   LOGDIR="${LOGDIR}"
 )
-export_library(common altroTargets "knotpoint.hpp;state_control_sized.hpp;trajectory.hpp;solver_options.hpp;solver_stats.hpp;log_entry.hpp;solver_logger.hpp;timer.hpp;profile_entry.hpp;functionbase.hpp" altro/common)
+export_library(common altroTargets)
 
 add_library(threadpool
   threadsafe_queue.hpp
@@ -44,4 +46,4 @@ target_link_libraries(threadpool
   fmt::fmt
   utils
 )
-export_library(threadpool altroTargets "threadpool.hpp;threadsafe_queue.hpp" altro/common)
+export_library(threadpool altroTargets)

@@ -2,6 +2,7 @@ add_executable(cost_expansion_test
   cost_expansion_test.cpp
 )
 target_link_libraries(cost_expansion_test
+  PRIVATE
   gtest_main
   ilqr
   cost_function_examples
@@ -12,6 +13,7 @@ add_executable(dynamics_expansion_test
   dynamics_expansion_test.cpp
 )
 target_link_libraries(dynamics_expansion_test
+  PRIVATE
   gtest_main
   ilqr
   dynamics_examples
@@ -22,6 +24,7 @@ add_executable(knot_point_functions_test
   knot_point_functions_test.cpp
 )
 target_link_libraries(knot_point_functions_test
+  PRIVATE
   gtest_main
   ilqr
   dynamics_examples
@@ -46,8 +49,10 @@ add_executable(ilqr_test
   ilqr_test.cpp
 )
 target_link_libraries(ilqr_test
+  PRIVATE
   gtest_main
   ilqr
+  common
   dynamics_examples
   cost_function_examples
   constraint_examples
@@ -60,6 +65,7 @@ add_executable(unicycle_ilqr_test
   unicycle_ilqr_test.cpp
 )
 target_link_libraries(unicycle_ilqr_test
+  PRIVATE
   gtest_main
   augmented_lagrangian
   common

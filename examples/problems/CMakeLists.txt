@@ -5,13 +5,9 @@ add_library(example_problems
   unicycle.cpp
 )
 target_link_libraries(example_problems
-  augmented_lagrangian
-  constraints
+  PUBLIC
+  altro
   constraint_examples
-  common
   cost_function_examples
   dynamics_examples
-  ilqr
-  problem
-  utils
 )

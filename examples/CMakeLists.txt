@@ -3,7 +3,10 @@ add_library(cost_function_examples
   quadratic_cost.hpp
 )
 target_link_libraries(cost_function_examples
+  PUBLIC
   problem
+
+  PRIVATE
   utils
 )
 
@@ -14,7 +17,10 @@ add_library(dynamics_examples
   triple_integrator.hpp
 )
 target_link_libraries(dynamics_examples
+  PUBLIC
   problem
+
+  PRIVATE
   utils
 )
 
@@ -25,7 +31,10 @@ add_library(constraint_examples
   obstacle_constraints.hpp
 )
 target_link_libraries(constraint_examples
+  PUBLIC
   constraints
+
+  PRIVATE
   utils
 )
 
