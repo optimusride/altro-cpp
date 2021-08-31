@@ -1,0 +1,69 @@
+namespace altro {
+/** \mainpage Welcome to AltroCpp
+
+Welcome to AltroCpp, the C++ version of the ALTRO algorithm developed by
+the Robotic Exploration Lab at Carnegie Mellon and Stanford Universities. 
+This version of the algorithm is hosted and maintained by Optimus Ride, Inc.
+
+# Objective
+This goal of this library is to provide a lightweight but powerful and performant
+algorithm for solving nonlinear trajectory optimization problems. With several 
+C++ implementations of DDP-based algorithms already available in mature 
+open-source packages, this package differentiates itself by providing an extremely
+lightweight implementation that can be run on system with limited computational 
+resources. This package, by design, has only 2 external dependencies:
+
+  - Eigen: A template library for linear algebra.
+  - fmt: A header-only library for performant and robust printing.
+
+We have also designed the library with the intent to make it understandable. 
+This documentation also provides a derivation of the entire algorithm with 
+frequent links to the actual implementation. We hope these efforts will 
+reduce the barrier to entry in the field of optimal control and provide a useful
+reference / launch point for those hoping to use these techniques in their
+applications.
+
+# Overview
+This package provides a fast method for solving optimization problems of
+the following form:
+\f{align*}{
+  \underset{x_{0:N},u_{0:N-1}}{\text{minimize}} \quad & 
+  \ell_N(x_N) + \sum_{k=0}^{N-1} \ell_k(x_k, u_k, dt) \\
+  \textrm{s.t.}            \quad & x_{k+1} = f(x_k, u_k), &&\; k \in [0,N) \\
+                                 & g_{k,i}(x_k,u_k) \leq_{K_i} 0, &&\; k \in [0,N] \\
+                                 & h_k(x_k,u_k) = 0, &&\; k \in [0, N].
+\f}
+where 
+ - \f$ x_k \in \mathbb{R}^n \f$ and \f$ u_k \mathbb{R}^m \f$ are the state and control vectors
+at time step \f$ k \f$, 
+ - \f$ f_k(\cdot) \f$ are the discrete dynamics, 
+ - \f$ \ell_k(\cdot) \f$ is a generic (possibly nonlinar) cost function,
+ - \f$ g_{k,i}(\cdot) \f$ are generalized inequality constraints with respect to 
+   the cone \f$ K_i \f$, and
+ - \f$ h_k(\cdot) \f$ are the equality constraints (e.g. goal constraints).
+
+The current implementation implements Augmented Lagrangian Iterative LQR 
+(AL-iLQR), which is the core component in the original ALTRO paper. The current 
+implementation is relatively naive but it suitable for many simple systems.
+This algorithm is particularly well-suited for systems with relatively few control
+inputs and dense system dynamics, and for situations where the solve is 
+initialized with a good initial guess (often from a previous solve), and the 
+applications doesn't require extremely tight optimality or constraint tolerances.
+This makes the solver particularly well-suited for robotics applications where
+the solver is used in a nonlinear model-predicted control (NMPC) or online 
+replanning framework.
+
+## Key Features
+As mentioned previously, the core objective of this library is to provide a 
+lightwight, understandable, and performant library for nonlinear trajectory
+optimization. As such, this package is purposefully light on features, favoring 
+instead to allow functionality such as automatic differentiation or numerical 
+integration to be implemented by the user. The key features of this 
+library include:
+ - Simple, function-based API
+ - Useful and actionable documentation and examples (WIP)
+ - Multithreading support for cost function, dynamics, and constraint expansions
+ - Fast performance
+ - Useful output and functions to debug solves that fail to converge
+*/
+}  // namespace altro

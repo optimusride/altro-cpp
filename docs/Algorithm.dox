@@ -1,0 +1,437 @@
+namespace altro {
+
+/** \page The ALTRO Algorithm
+This page aims to provide background information on the ALTRO algorithm 
+and make the source code approachable and understandable. We will purposefully
+interweave the algorithm derivation together with the motivation behind the 
+structure of the code.
+
+We start with an overview of trajectory optimization, borrowing heavily 
+from the original 
+[AL-iLQR tutorial](https://bjack205.github.io/papers/AL_iLQR_Tutorial.pdf) 
+written by [Brian Jackson](https://bjack205.github.io/). We then derive the
+AL-iLQR algorithm, pointing frequently to where the equations are implemented 
+in the source code.
+
+## Overview
+Trajectory optimization is a powerful framework for controlling complicated
+robotic systems. The value of trajectory optimization lies primarily in its
+generality, allowing it to be applied to a very broad class of dynamical
+systems. Importantly, trajectory optimization can be applied to any type of
+dynamical system whose dynamics are Markovian, i.e.
+\f{equation}{
+    \dot{x} = f(x,u)
+\f}
+where \f$\dot{x} \in \mathbb{R}^n \f$ is the time derivative of the state \f$ x
+\in \mathbb{R}^n \f$ and \f$u \in \mathbb{R}^m \f$ are the controls.
+
+Trajectory optimization can be succinctly summarized by the underlying
+optimization problem being solved:
+
+\f{align*}{
+\underset{x(t), u(t)}{\text{minimize}} 
+  \quad & \ell_T(x_T) + \int_{t=0}^{T} \ell(x(t), u(t)) dt \\
+  \text{subject to}        \quad & \dot{x} = f(x(t), u(t)) \\
+                                 & g_{i}(x(t), u(t)) \leq_{K_i} 0 \\ 
+                                 & h(x(t),u(t)) = 0
+\f}
+where \f$ x(t) \f$ and \f$ u(t) \f$ are the state and control trajectories from
+time \f$0\f$ to \f$T\f$. The dynamics constraint, which constrains derivatives
+of the optimization variables, is what sets trajectory optimization apart from
+other general nonlinear optimization problems. The field of trajectory
+optimization is dedicated to finding efficient ways to solve these
+nonlinear optimization problems. 
+
+The most common approach, and the one used by this software package, 
+is to discretize the problem in time, dividing the time period of
+length \f$ T \f$ seconds into \f$ N \f$ segments, typically of equal length of \f$ h \f$
+seconds. This results in \f$ N + 1 \f$ discretization points, also referred to as ``knot''
+points, including the initial and final times. There exist many methods for
+approximating the integrals in the above optimization problem with discrete sums, as well
+as transforming the ordinary differential equation for the dynamics
+into a discrete difference equation of the form:
+\f{equation}{
+    x_{k+1} = f(x_k, u_k, \Delta t).
+\f}
+The accuracy and convergence of the algorithm is often directly related to the 
+way in which the continuous-time problem is ``transcribed'' into a discrete 
+optimization problem. This software package assumes that the user has already 
+done the necessary work to arrive at a discrete optimization problem of the
+following form:
+
+\f{align*}{
+  \underset{x_{0:N},u_{0:N-1}}{\text{minimize}} \quad & 
+  \ell_N(x_N) + \sum_{k=0}^{N-1} \ell_k(x_k, u_k, dt) \\
+  \text{subject to}        \quad & x_{k+1} = f(x_k, u_k), &&\; k \in [0,N) \\
+                                 & g_{k,i}(x_k,u_k) \leq_{K_i} 0, &&\; k \in [0,N] \\
+                                 & h_k(x_k,u_k) = 0, &&\; k \in [0, N].
+\f}
+
+There exist many methods for solving problems of this form. 
+These methods are typically divided into two
+categories: "indirect" and "direct" methods. Direct methods treat both the
+states and controls as decision variables and use general-purpose nonlinear
+programming (NLP) solvers, such as SNOPT or IPOPT. These methods typically use
+implicit integration schemes which are more numerically stable than their 
+explicit counterparts.
+The most
+common method, direct collocation (DIRCOL), uses Hermite-Simpson integration to
+integrate both the cost and the dynamics, which is essentially a 3rd order
+implicit Runge-Kutta integrator for the states and first-order hold (i.e. linear
+interpolation) for the controls. These methods benefit directly from the
+robustness and generality of the NLP solvers on which they depend. However,
+direct methods also tend to be fairly slow and require dependencies on 
+large optimization packages, many of which are closed-source and behind expensive
+paywalls.
+
+Alternatively, indirect methods exploit the Markov structure in the trajectory
+optimization problem 
+and often impose strict Markovianity across the
+entire problem, including the cost functions and constraints. The dynamics
+constraints are then implicitly enforced by simulating forward the system's
+dynamics. Differential Dynamic Programming (DDP) and iterative LQR (iLQR) are
+closely related indirect methods that solve the discrete trajectory optimization 
+problem by
+breaking it into a sequence of smaller sub-problems. DDP methods improve on more
+naive "simple shooting" methods by incorporating a feedback policy during the
+forward simulation of the dynamics at each time step. Because of their strict
+enforcement of dynamic feasibility, it is often difficult to find a control
+sequence that produces a reasonable initialization for DDP methods. While they
+are fast and have a low memory footprint---making them amenable to embedded
+implementation---DDP methods have historically been considered less numerically
+robust and less well-suited to handling nonlinear state and input
+constraints. However, with recent advances in the underlying algorithms, 
+several high-quality open-source DDP-based optimal control solvers have been 
+released by the academic community, demonstrating impressive performance on a 
+wide range of robotic systems (see [OCS2](https://github.com/leggedrobotics/ocs2), 
+and [Crocoddyl](https://github.com/loco-3d/crocoddyl)).
+
+This package implements Augmented Lagrangian iLQR, the core algorithm behind 
+the original ALTRO algorithm (see the 
+[original paper](https://roboticexplorationlab.org/papers/altro-iros.pdf) and 
+[Julia implementation](https://github.com/RoboticExplorationLab/TrajectoryOptimization.jl)).
+This algorithm is derived in the following sections following some background 
+on the augmented Lagrangian method (ALM).
+
+
+
+## Notation
+Before we proceed with the mathematical derivation, we define a bit of useful
+mathematical notation. 
+
+Let
+\f[
+  \nabla_x f(\cdot) \in \mathbb{R}^n
+\f]
+be the partial derivative of \f$ f \f$ with respect to \f$ x \in \mathbb{R}^n \f$. 
+Note that this is defined to be a column vector.
+
+Likewise, let
+\f[
+  \nabla_{xx}^2 f(\cdot) \in \mathbb{R}^{n \times n}
+\f]
+if \f$ f(x) \in \mathbb{R} \f$. 
+
+If the output of the function \f$ f \f$ is a 
+vector in \f$ \mathbb{R}^m \f$, the second derivative is a rank-3 tensor. 
+To avoid dealing with the 
+complexity that arises with these terms, we assume that the term we want is 
+actually the Jacobian of a Jacobian-transpose-vector-product:
+\f[
+  \nabla_x f(\cdot)^T b
+\f]
+for some vector \f$ b \in \mathbb{R}^m \f$. We write this notationally as 
+\f[
+  \nabla_{xx}^2 f(\cdot, b) \in \mathbb{R}^{n \times n}.
+\f]
+
+
+
+
+## The Augmented Lagrangian Method
+The augmented Lagrangian Method is an optimization method for solving
+constrained optimization problems of the form
+
+\f{align*}{
+  \underset{x}{\text{minimize}} \quad & f(x) \\
+  \textrm{subject to}           \quad & g_i(x) \leq_{K_i} 0, \quad i = 0,\dots,n_K-1 \\
+\f}
+where
+ - \f$ f(x) \f$ is the objective, and
+ - \f$ g_i(x) \f$ is a generalized equality constraint with respect to the cone 
+   \f$ K_i \f$.
+
+One of the easiest methods for solving constrained optimization problems is to
+move the constraints into the cost function and iteratively increase the
+penalty for either getting close to or actually violating the constraint. However,
+simple quadratic penalty methods only converge to the optimal answer as the penalty terms are
+increased to infinity, which is impractical to implement in a numerical
+optimization routine with limited-precision arithmetic. Augmented Lagrangian
+methods improve on penalty methods by maintaining estimates of the Lagrange
+multipliers associated with the constraints. This is accomplished by forming the
+augmented Lagrangian:
+\f{equation}{
+  \mathcal{L}_\rho = f(x) + \sum_{i=0}^{n_K - 1} 
+      \lambda_i^T g_i(x) + \frac{1}{2 \rho} 
+      \left( || \Pi_{K_i^*} (\lambda_i - \rho g_i(x)) ||_2^2 - ||\lambda_i||_2^2 \right),
+\f}
+where
+ - \f$ \lambda_i \f$ are the Lagrangian multipliers (dual variables) for 
+   constraint \f$ g_i \f$,
+ - \f$ \rho \in \mathbb{R} \f$ is positive scalar penalty, and
+ - \f$ \Pi_{K_i^*} \f$ is the projection operator onto the dual cone 
+   \f$ K_i^* \f$.
+
+This value is computed in `augmented_lagrangian::ALCost::Evaluate`, which calls
+`constraints::ConstraintValues::AugLag` to evaluate the elements of the sum 
+in the equation above.
+
+Currently, the following cones are implemented:
+ - `constraints::ZeroCone` (an equality constraint)
+ - `constraints::NegativeOrthant` (an inequality constraint)
+
+By treating equality constraints as projections on the the zero or null cone,
+we can treat all constraints identically as long as we have a well-defined 
+projection operator for the corresponding dual cone. This leads to a clean, 
+well-structured code with minimal branching logic to handle different types 
+of constraints.
+
+If we only have equality constraints, we can re-arrange the augmented Lagrangian 
+equation into its more intuitive form that commonly appears in textbooks:
+\f{equation}{
+  \mathcal{L}_\rho = f(x) - \lambda^T g(x) + \frac{\rho}{2} g(x)^T g(x).
+\f}
+When writing the augmented Lagrangian in this form, we can easily see that the 
+augmented Lagrangian is simply the normal Lagrangian with an additional 
+quadratic penalty term. The simpler equation above can be derived from the 
+original, more general form by using the fact that for equality constraints
+projection onto the dual cone is just the identity map, i.e. \f$ \Pi_{K^*}(x) =
+x \f$, and then expanding the quadratic terms and simplifying.
+
+### Dual Update
+Once we have formed the augmented Lagrangian, we solve the original problem
+by iteratively minimizing the augmented Lagrangian using an unconstrained 
+nonlinear optimization method. Once we have found a local minima, we update 
+the Lagrange multipliers with the following "dual update:"
+\f{equation}{
+  \lambda_i = \Pi_{K_i^*} (\lambda_i - \rho g_i(x))
+\f}
+The motivation for the update can most easily be seen by rearranging the 
+simpler form for equality constraints as follows:
+\f{equation}{
+  \mathcal{L}_\rho = f(x) - \left(\lambda - \frac{\rho}{2} g(x) \right)^T g(x).
+\f}
+where the term in the parentheses (which closely matches the dual update), looks 
+just like Lagrange multiplier for the new, augmented problem.
+
+The dual update is applied on a per-constraint basis in 
+`constraints::ConstraintValues::UpdateDuals`, which is called via
+`augmented_lagrangian::AugmentedLagrangianiLQR::UpdateDuals` calling 
+`augmented_lagrangian::ALCost::UpdateDuals` for each of the knot points.
+
+### Penalty Update
+After each constrained solve, the outer loop also has the option of updating 
+the penalty parameter. According to the theory, superlinear convergence can be
+achieved as long as the penalty parameter is increased at a geometric rate, 
+and the solution can be found if the penalty is above some theoretical, unknown
+critical penalty parameter \f$ \rho_\text{crit} \f$. In practice, the penalty 
+is generally updated by a constant geometric factor:
+\f[
+  \rho = \phi \rho
+\f]
+where \f$ 2 \leq \phi \leq 10 \f$.
+
+
+
+
+
+
+## Augmented Lagrangian iLQR
+Now that we have a background on augmented Lagrangian, we can derive AL-DDP / 
+AL-iLQR. The difference between these two is minor, and will be made clear 
+during the derivation.
+
+The key idea of DDP is that at each iteration, all nonlinear constraints and 
+objectives are approximated using first or second-order Taylor series expansions
+so that the approximate functions, now operating on deviations about the nominal
+trajectory, can be solved using discrete LQR. The locally-optimal feedback 
+policy is omputed during the "backward pass," so named since LQR starts at the 
+end of the trajectory and moves backward in time along the trajectory. This 
+feedback policy is then used to simulate the system forward during the "forward
+pass," which modifies the policy as needed in order to ensure we make progress
+towards minimizing our actual nonlinear objective.
+
+To handle constraints, we simply "augment" the cost function with the multiplier
+and penalty terms ofthe augmented Lagrangian, treating the dual variables 
+\f$ \lambda \f$ and the penalty term \f$ \rho \f$ as constants. After a locally
+optimal solution is found, any constraint violation is used to update the dual 
+variables, the penalty is updated, and the process is repeated until the
+constraint violations get sufficiently small.
+
+### The Backward Pass
+We first form a new, unconstrained version of our original discrete optimization
+problem using the augmented Lagrangian:
+
+\f{align*}{
+  \underset{x_{0:N},u_{0:N-1}}{\text{minimize}} \quad & 
+  \mathcal{L}_N(x_N) + \sum_{k=0}^{N-1} \mathcal{L}_k(x_k, u_k, dt) \\
+  \text{subject to}        \quad & x_{k+1} = f(x_k, u_k), &&\; k \in [0,N) \\
+\f}
+where 
+\f[
+  \mathcal{L}_k = \ell_k(x_k, u_k) + \frac{1}{2\rho} \sum_{i=0}^{n_{K,k}} 
+      || \Pi_{K_i^*}\left(\lambda_{k,i} - \rho g_{k,i}(x_i, u_i)) ||_2^2 - 
+      || \lambda_{k,i} ||_2^2 \right).
+\f]
+Here we've abused notation slightly, incorporating the equality constraints 
+into the conic constraints following the same approach used in the background
+on augmented Lagrangian. Here each time step has \f$ n_{K,k} \f$ separate 
+constraint functions, each of which may be with respect to a different cone.
+
+This conversion happens transparently to the user in 
+`augmented_lagrangian::BuildAugLagProblem`, where the user-specified problem is
+converted into a problem with zero constraints and `augmented_lagrangian::ALCost`
+cost functions, which contain the original objective along with vectors of 
+`constraints::ConstraintValues`, one for each constraint at that knotpoint in 
+the original problem.
+
+We start our derivation by defining the cost-to-go function:
+\f{align}{
+  V_i(x) = 
+    \underset{u_{i:N-1}}{\text{minimize}} &&& 
+      \mathcal{L}_N + \sum_{k=i}^{N-1} \mathcal{L}_k(x_k, u_k) \\
+    \text{subject to} &&& x_{k+1} = f_k(x_k, u_k)
+\f}
+which intuitively is just the optimal cost can achieve from state \f$ x_k \f$
+if we apply the optimal controls, which is naturally subject to the discrete 
+dynamics \f$ x_{k+1} = f_k(x_k, u_k) \f$. From the Bellman equation and 
+principle of optimality we can re-define the cost-to-go function in a more
+convenience recursive form:
+\f[
+  V_k(x) = \min_{u} \{ \mathcal{L}_k(x, u) + V_{k+1}(f_k(x, u)) \}.
+\f]
+For convenience, we define the operand of the minimization to be the 
+action-value function \f$ Q_k(x, u) \f$:
+\f[
+  V_k(x) = \min_{u} Q(x, u).
+\f]
+
+In general, the true cost-to-go function for a nonlinear trajectory optimization
+problem is an arbitrarily complex nonlinear function. To make the computation 
+tractable, we are going to find a local approximation of the true cost-to-go in
+the space around our current nominal trajectory. In line with LQR, we assume 
+that the cost-to-go is locally quadratic:
+\f[
+  V_k(x) \approx V_k(x_k) + p_k^T \delta x_k + 
+    \frac{1}{2} \delta x_k^T P_k \delta x_k,
+\f]
+where \f$ x_k \f$ is from our nominal trajectory, and 
+\f$ \delta x_k = x - x_k \f$.
+
+We compute the cost-to-go recursively, starting at the tail where we know that
+\f{align}{
+  P_N &= \nabla_{xx}^2 \mathcal{L}_N(\bar{x}_N) \\
+  p_N &= \nabla_x \mathcal{L}_k(\bar{x}_N)
+\f}
+since there is no control over which to optimize. This is computed in 
+`ilqr::KnotPointFunctions::CalcTerminalCostToGo`.
+
+To find \f$ V_k(x) \f$ we need to optimize \f$ Q_k(x, u) \f$ with 
+respect to \f$ u_k \f$, which we can do by taking a second-order approximation 
+of \f$ Q_k(x, u) \f$:
+\f[
+  Q_k(x) \approx Q_k(\bar{x}_k) + 
+    \begin{bmatrix} \delta x_k \\ \delta u_k \end{bmatrix}^T
+    \begin{bmatrix} Q_{xx} & Q_{xu} \\ Q_{ux} & Q_{uu} \end{bmatrix}
+    \begin{bmatrix} \delta x_k \\ \delta u_k \end{bmatrix} + 
+    \begin{bmatrix} Q_x \\ Q_u \end{bmatrix}^T
+    \begin{bmatrix} \delta x_k \\ \delta u_k \end{bmatrix}
+\f]
+where
+\f{align}{
+  Q_{xx} &= \nabla_{xx}^2 \mathcal{L}_k(\cdot) 
+    + \nabla_x f(\cdot)^T P_{k+1} \nabla_x f(\cdot) 
+    + \nabla_{xx}^2 f(\cdot, p_{k+1}) \\
+  Q_{xu} &= \nabla_{xu}^2 \mathcal{L}_k(\cdot) 
+    + \nabla_x f(\cdot)^T P_{k+1} \nabla_u f(\cdot) 
+    + \nabla_{xu}^2 f(\cdot, p_{k+1}) \\
+  Q_{uu} &= \nabla_{uu}^2 \mathcal{L}_k(\cdot) 
+    + \nabla_u f(\cdot)^T P_{k+1} \nabla_u f(\cdot) 
+    + \nabla_{uu}^2 f(\cdot, p_{k+1}) \\
+  Q_{x} &= \nabla_{x} \mathcal{L}_k(\cdot) + \nabla_x f(\cdot)^T p_{k+1} \\
+  Q_{u} &= \nabla_{u} \mathcal{L}_k(\cdot) + \nabla_u f(\cdot)^T p_{k+1}.
+\f}
+Here the first term comes from the expansion of the augmented Lagrangian, which 
+is given below. The second terms come from the expansion of the 
+\f$ V_{k+1}(f_k(x_k, u_k)) \f$ term, where we use the values of \f$ P_k \f$
+and \f$ p_k \f$ from the next knot point (which we've already computed).
+The third term in the second-order terms is a tensor term that comes from the
+second-order expansion of the dynamics. Leaving this term off gives the Gauss
+Newton step instead of the full Newton step, which is the only difference 
+between DDP and iLQR. While leaving this term off decreases the convergence rate
+and therefore the solver has to take more iterations, each iteration is often 
+much cheaper computationally so iLQR often outperforms DDP in computation time.
+Another advantage of using iLQR is that as long as the Hessian of the cost 
+function is positive-definite, these second-order terms will also be 
+positive-definite, which is not the case for DDP, which therefore needs have 
+much more advanced safeguards for ensuring the system is positive definite 
+before solving for the optimal control. For these reasons, the library currently
+only implements iLQR, but may implement DDP in future releases. The expansion
+of the action-value function is computed in 
+`ilqr::KnotPointFunctions::CalcActionValueExpansion`.
+
+The expansion of the augmented Lagrangian slighly involved, thanks to the 
+projection operator. The full expansions are:
+\f{align}{
+  \nabla_{xx} \mathcal{L}_k &= \nabla_{xx} \ell_k(\cdot) - \sum_{i=0}^{n_{K,k}} 
+      - \rho \nabla_{x} g_{k,i}(\cdot)^T \nabla \Pi_{K_i^*}(\tilde{\lambda}_{k,i})^T \Pi_{K_i^*}(\tilde{\lambda}_{k,i}) \nabla_{x} g_{k,i}(\cdot) \\ &\quad
+      + \nabla_{xx}^2 g_{k,i}\left(\cdot, \nabla \Pi_{K_i^*}(\tilde{\lambda}_{k,i})^T \Pi_{K_i^*}(\tilde{\lambda}_{k,i}) \right)
+      - \rho \nabla_{x} g_{k,i}(\cdot)^T \nabla^2 \Pi_{K_i^*}\left(\tilde{\lambda}_{k,i}, \Pi_{K_i^*}(\tilde{\lambda}_{k,i}) \right) \nabla_{x} g_{k,i}(\cdot) \\
+  \nabla_{xu} \mathcal{L}_k &= \nabla_{xu} \ell_k(\cdot) - \sum_{i=0}^{n_{K,k}} 
+      - \rho \nabla_{x} g_{k,i}(\cdot)^T \nabla \Pi_{K_i^*}(\tilde{\lambda}_{k,i})^T \Pi_{K_i^*}(\tilde{\lambda}_{k,i}) \nabla_{u} g_{k,i}(\cdot) \\ &\quad
+      + \nabla_{xu}^2 g_{k,i}\left(\cdot, \nabla \Pi_{K_i^*}(\tilde{\lambda}_{k,i})^T \Pi_{K_i^*}(\tilde{\lambda}_{k,i}) \right)
+      - \rho \nabla_{x} g_{k,i}(\cdot)^T \nabla^2 \Pi_{K_i^*}\left(\tilde{\lambda}_{k,i}, \Pi_{K_i^*}(\tilde{\lambda}_{k,i}) \right) \nabla_{u} g_{k,i}(\cdot) \\
+  \nabla_{uu} \mathcal{L}_k &= \nabla_{uu} \ell_k(\cdot) - \sum_{i=0}^{n_{K,k}} 
+      - \rho \nabla_{u} g_{k,i}(\cdot)^T \nabla \Pi_{K_i^*}(\tilde{\lambda}_{k,i})^T \Pi_{K_i^*}(\tilde{\lambda}_{k,i}) \nabla_{u} g_{k,i}(\cdot) \\ &\quad
+      + \nabla_{uu}^2 g_{k,i}\left(\cdot, \nabla \Pi_{K_i^*}(\tilde{\lambda}_{k,i})^T \Pi_{K_i^*}(\tilde{\lambda}_{k,i}) \right)
+      - \rho \nabla_{u} g_{k,i}(\cdot)^T \nabla^2 \Pi_{K_i^*}\left(\tilde{\lambda}_{k,i}, \Pi_{K_i^*}(\tilde{\lambda}_{k,i}) \right) \nabla_{u} g_{k,i}(\cdot) \\
+  \nabla_{x} \mathcal{L}_k &= \nabla_{x} \ell_k(\cdot) - \sum_{i=0}^{n_{K,k}}
+      \nabla_{x} g_{k,i}(\cdot)^T \nabla \Pi_{K_i^*}(\tilde{\lambda}_{k,i})^T
+      \Pi_{K_i^*}(\tilde{\lambda}_{k,i}) \\
+  \nabla_{u} \mathcal{L}_k(\cdot) &= \nabla_{u} \ell_k(\cdot) - \sum_{i=0}^{n_{K,k}} 
+      \nabla_{u} g_{k,i}(\cdot)^T \nabla \Pi_{K_i^*}(\tilde{\lambda}_{k,i})^T
+      \Pi_{K_i^*}(\tilde{\lambda}_{k,i}) \\
+\f}
+As with the expansion of the action-value expansion, we drop the tensor terms 
+(the terms in the second row of each of the second-order terms) for computational
+efficiency. It's also worth noting that for inequality and equality constraints,
+the last term in these expansions is always zero since the dual-cone projection 
+operators are linear.
+
+With our approximation of the action-value expansion, we can now solve for 
+the optimal value of \f$ \delta u \f$ by taking the derivative of \f$ \delta Q_k \f$
+with respect to \f$ \delta u \f$, setting it to zero, and solving for \f$ \delta u \f$.
+This gives our locally-optimal control policy:
+\f[
+  \delta u_k^* = -(Q_{uu} + \mu I)^{-1}(Q_{ux} \delta x_k + Q_u) = K_k \delta x_k + d_k
+\f]
+where \f$ \mu \in \mathbb{R} \f$ is a positive scalar regularizer that is used 
+to keep the system positive-definite. The regularization is added to the 
+expansion in `ilqr::KnotPointFunctions::RegularizeActionValue`, and these values
+are then used to compute the gains in `ilqr::KnotPointFunctions::CalcGains`. The
+regularization is automatically updated during the solve. If the Cholesky 
+factorization of the regularized version of \f$ Q_{uu} \f$ fails, the 
+regularization is updated and the backward pass restarts from the beginning. 
+If the backward pass succeeds, the regularization is decreased. The 
+regularization can also be updated if the forward pass fails to find a solution 
+that make sufficient progress in decreasing the cost (more on that later).
+The regularization uses a simple first-order system to adaptively add and 
+decrease the regularization. This is handled via 
+`ilqr::iLQR::IncreaseRegularization` and `ilqr::iLQR::DecreaseRegularization`.
+
+// TODO(shivang): Export private member documentation
+
+
+*/
+
+}  // namespace altro

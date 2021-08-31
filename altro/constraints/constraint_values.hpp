@@ -142,7 +142,7 @@ class ConstraintValues : public Constraint<ConType> {
   /**
    * @brief The Hessian of the Augmented Lagrangian
    *
-   * Uses the Jacobian of the Jacobian-transpose-vector-proeduct of the projection operator for the
+   * Uses the Jacobian of the Jacobian-transpose-vector-product of the projection operator for the
    * dual cone and the constraint.
    *
    * @param[in] x State vector

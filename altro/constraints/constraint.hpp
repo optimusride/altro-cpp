@@ -45,6 +45,11 @@ class ZeroCone {
     hess.setZero();
   }
 };
+
+/**
+ * @brief An alias for the `ZeroCone` cone.
+ * 
+ */
 using Equality = ZeroCone;
 
 /**
@@ -113,6 +118,11 @@ class NegativeOrthant {
     hess.setZero();
   }
 };
+
+/**
+ * @brief A alias for the `NegativeOrthant` cone.
+ * 
+ */
 using Inequality = NegativeOrthant;
 
 /**
