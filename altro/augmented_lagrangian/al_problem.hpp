@@ -1,3 +1,5 @@
+// Copyright [2021] Optimus Ride Inc.
+
 #pragma once
 
 #include "altro/augmented_lagrangian/al_cost.hpp"

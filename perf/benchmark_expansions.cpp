@@ -1,3 +1,5 @@
+// Copyright [2021] Optimus Ride Inc.
+
 #include <fmt/chrono.h>
 #include <fmt/format.h>
 #include <fmt/ostream.h>

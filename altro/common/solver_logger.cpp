@@ -1,3 +1,5 @@
+// Copyright [2021] Optimus Ride Inc.
+
 #include "altro/common/solver_logger.hpp"
 
 namespace altro {

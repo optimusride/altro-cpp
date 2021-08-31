@@ -1,3 +1,5 @@
+// Copyright [2021] Optimus Ride Inc.
+
 #include <gtest/gtest.h>
 #include <iostream>
 #include <thread>

@@ -1,3 +1,5 @@
+// Copyright [2021] Optimus Ride Inc.
+
 #include <iostream>
 #include <fmt/format.h>
 #include <fmt/ostream.h>

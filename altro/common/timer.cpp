@@ -1,3 +1,5 @@
+// Copyright [2021] Optimus Ride Inc.
+
 #include "altro/common/timer.hpp"
 #include "altro/common/profile_entry.hpp"
 #include "altro/utils/assert.hpp"

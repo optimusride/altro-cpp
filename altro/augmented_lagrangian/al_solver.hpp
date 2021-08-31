@@ -1,3 +1,5 @@
+// Copyright [2021] Optimus Ride Inc.
+
 #pragma once
 
 #include <fmt/format.h>
@@ -63,7 +65,7 @@ class AugmentedLagrangianiLQR {
    *                        they are sorted by knot point index.
    * @param[in] precision   Controls the precision of the numerical output.
    */
-  void PrintViolations(bool should_sort = false, int precision = 4) {
+  void PrintViolations(bool should_sort = false, int precision = 4) const {
     std::vector<constraints::ConstraintInfo> coninfo = GetConstraintInfo(should_sort);
     fmt::print("Got {} constraints\n", coninfo.size());
     for (const constraints::ConstraintInfo& info : coninfo) {

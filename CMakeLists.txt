@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.12.1)
-project(altro VERSION 0.3.2)
+project(altro VERSION 0.3.3)
 
 set(CMAKE_CXX_STANDARD 14)
 
@@ -76,7 +76,7 @@ if(NOT googletest_POPULATED)
   FetchContent_Populate(googletest)
   add_subdirectory(${googletest_SOURCE_DIR} ${googletest_BINARY_DIR})
 endif()
-if (${BUILD_TEST})
+if (ALTRO_BUILD_TESTS)
   enable_testing()
 endif()
 include(GoogleTest)

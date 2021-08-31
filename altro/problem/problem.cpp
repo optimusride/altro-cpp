@@ -1,3 +1,5 @@
+// Copyright [2021] Optimus Ride Inc.
+
 #include "altro/problem/problem.hpp"
 
 #include <iostream>

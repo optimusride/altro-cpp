@@ -1,3 +1,5 @@
+// Copyright [2021] Optimus Ride Inc.
+
 #include "examples/problems/unicycle.hpp"
 
 namespace altro {

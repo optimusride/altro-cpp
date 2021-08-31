@@ -1,3 +1,5 @@
+// Copyright [2021] Optimus Ride Inc.
+
 #include "examples/triple_integrator.hpp"
 #include "altro/utils/utils.hpp"
 
