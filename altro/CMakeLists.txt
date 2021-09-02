@@ -31,4 +31,4 @@ target_link_libraries(altro
   threadpool
 )
 
-export_library(altro altroTargets)
+export_library(altro AltroCppTargets)

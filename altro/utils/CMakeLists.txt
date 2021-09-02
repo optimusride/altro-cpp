@@ -10,4 +10,4 @@ target_link_libraries(utils
   PRIVATE
   fmt::fmt
 )
-export_library(utils altroTargets)
+export_library(utils AltroCppTargets)

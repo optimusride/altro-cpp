@@ -35,10 +35,10 @@ This library uses the CMake build system. To build the source code and compile t
 follow the canonical CMake usage.
 
 ```bash
-cd altro         # Change directory into directory root.
-mkdir build      # Create a build directory.
-cmake ..         # Run the CMake configuration step. 
-cmake --build .  # Build all CMake targets
+cd altro-cpp         # Change directory into directory root.
+mkdir build          # Create a build directory.
+cmake ..             # Run the CMake configuration step. 
+cmake --build .      # Build all CMake targets
 ```
 
 To run with a different generator (such as Ninja), you can specify the generator when running the configuration step:
@@ -89,10 +89,10 @@ include/
     ...
 lib/
   cmake/
-    altro/
-      altroConfig.cmake
-      altroConfigVersion.cmake
-      altroTargets.cmake
+    AltroCpp/
+      AltroCppConfig.cmake
+      AltroCppConfigVersion.cmake
+      AltroCppTargets.cmake
       ...
   libaugmented_lagrangian.a  # Assuming static libraries
   libcommon.a
@@ -118,8 +118,8 @@ build/docs/html/index.html
 ## Using the library
 The easiest way to use the library is to pull the CMake targets into an exsiting CMake build system. If the library is installed locally, this is done via `find_package`:
 ```cmake
-set(altro_DIR ~/.local)  # or wherever the user installed the library via CMAKE_INSTALL_PREFIX
-find_library(altro 0.3 REQUIRED EXACT)
+set(AltroCpp_DIR ~/.local)  # or wherever the user installed the library via CMAKE_INSTALL_PREFIX
+find_library(AltroCpp 0.3 REQUIRED EXACT)
 ```
 
 The `REQUIRED` and `EXACT` arguments can be left off, if needed. See

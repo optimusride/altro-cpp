@@ -19,4 +19,4 @@ target_link_libraries(ilqr
   problem
   utils
 )
-export_library(ilqr altroTargets)
+export_library(ilqr AltroCppTargets)

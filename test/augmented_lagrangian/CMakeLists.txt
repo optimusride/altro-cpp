@@ -6,5 +6,6 @@ target_link_libraries(auglag_test
   gtest_main
   augmented_lagrangian
   example_problems
+  utils
 )
 gtest_discover_tests(auglag_test)

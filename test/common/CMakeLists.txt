@@ -6,6 +6,7 @@ target_link_libraries(trajectory_test
   PRIVATE
   gtest_main
   common
+  utils
 )
 gtest_discover_tests(trajectory_test)
 
@@ -17,6 +18,7 @@ target_link_libraries(knotpoint_test
   PRIVATE
   gtest_main
   common
+  utils
 )
 gtest_discover_tests(knotpoint_test)
 
@@ -28,6 +30,7 @@ target_link_libraries(solver_options_test
   PRIVATE
   gtest_main
   common
+  utils
 )
 gtest_discover_tests(solver_options_test)
 
@@ -38,6 +41,7 @@ target_link_libraries(solver_logging_test
   PRIVATE
   gtest_main
   common
+  utils
 )
 gtest_discover_tests(solver_logging_test)
 
@@ -60,6 +64,7 @@ target_link_libraries(functionbase_test
   PRIVATE
   gtest_main
   common
+  utils
 )
 gtest_discover_tests(functionbase_test)
 
@@ -71,6 +76,7 @@ target_link_libraries(threadpool_test
   gtest_main
   common
   threadpool
+  utils
 )
 gtest_discover_tests(threadpool_test TEST_LIST THREADTESTS)
 set_tests_properties(${THREADTESTS} PROPERTIES RUN_SERIAL True)

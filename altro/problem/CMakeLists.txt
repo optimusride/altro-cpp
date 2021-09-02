@@ -19,4 +19,4 @@ target_link_libraries(problem
   common
   constraints
 )
-export_library(problem altroTargets)
+export_library(problem AltroCppTargets)

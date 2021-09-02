@@ -31,7 +31,7 @@ target_compile_definitions(common
   PRIVATE
   LOGDIR="${LOGDIR}"
 )
-export_library(common altroTargets)
+export_library(common AltroCppTargets)
 
 add_library(threadpool
   threadsafe_queue.hpp
@@ -46,4 +46,4 @@ target_link_libraries(threadpool
   fmt::fmt
   utils
 )
-export_library(threadpool altroTargets)
+export_library(threadpool AltroCppTargets)

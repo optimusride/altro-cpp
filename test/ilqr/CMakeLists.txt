@@ -6,6 +6,7 @@ target_link_libraries(cost_expansion_test
   gtest_main
   ilqr
   cost_function_examples
+  utils
 )
 gtest_discover_tests(cost_expansion_test)
 
@@ -17,6 +18,7 @@ target_link_libraries(dynamics_expansion_test
   gtest_main
   ilqr
   dynamics_examples
+  utils
 )
 gtest_discover_tests(dynamics_expansion_test)
 
@@ -29,6 +31,7 @@ target_link_libraries(knot_point_functions_test
   ilqr
   dynamics_examples
   cost_function_examples
+  utils
 )
 gtest_discover_tests(knot_point_functions_test)
 
@@ -42,6 +45,7 @@ target_link_libraries(ilqr_class_test
   dynamics_examples
   cost_function_examples
   example_problems
+  utils
 )
 gtest_discover_tests(ilqr_class_test)
 
@@ -58,6 +62,7 @@ target_link_libraries(ilqr_test
   constraint_examples
   constraints
   augmented_lagrangian
+  utils
 )
 gtest_discover_tests(ilqr_test)
 
@@ -75,5 +80,6 @@ target_link_libraries(unicycle_ilqr_test
   dynamics_examples
   example_problems
   ilqr
+  utils
 )
 gtest_discover_tests(unicycle_ilqr_test)

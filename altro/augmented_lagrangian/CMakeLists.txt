@@ -17,4 +17,4 @@ target_link_libraries(augmented_lagrangian
   ilqr
   utils
 )
-export_library(augmented_lagrangian altroTargets)
+export_library(augmented_lagrangian AltroCppTargets)

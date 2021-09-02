@@ -7,5 +7,6 @@ target_link_libraries(constraints_test
   constraints
   gtest_main
   problem
+  utils
 )
 gtest_discover_tests(constraints_test)

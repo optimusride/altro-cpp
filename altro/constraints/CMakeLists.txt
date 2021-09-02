@@ -9,4 +9,4 @@ target_link_libraries(constraints
   common
   utils
 )
-export_library(constraints altroTargets)
+export_library(constraints AltroCppTargets)

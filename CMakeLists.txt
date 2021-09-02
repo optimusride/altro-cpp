@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.12.1)
-project(altro VERSION 0.3.3)
+project(AltroCpp VERSION 0.3.4)
 
 set(CMAKE_CXX_STANDARD 14)
 
@@ -19,7 +19,7 @@ if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 endif()
 
 # Add custom functions
-include(${altro_SOURCE_DIR}/cmake/Functions.cmake)
+include(${AltroCpp_SOURCE_DIR}/cmake/Functions.cmake)
 
 ################################################################################
 ############################### OPTIONS ########################################
@@ -154,31 +154,31 @@ if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
   set(CMAKE_INSTALL_PREFIX "~/.local" CACHE PATH "..." FORCE)
 endif()
 
-# Export the altroTargets.cmake file
-install(EXPORT altroTargets
-  FILE altroTargets.cmake
+# Export the AltroCppTargets.cmake file
+install(EXPORT AltroCppTargets
+  FILE AltroCppTargets.cmake
   NAMESPACE altro::
-  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/altro
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/AltroCpp
 )
 
 # Generate the package config file that includes the exported targets
 include(CMakePackageConfigHelpers)
-configure_package_config_file(${altro_SOURCE_DIR}/cmake/Config.cmake.in
-  "${CMAKE_CURRENT_BINARY_DIR}/altroConfig.cmake"
-  INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/altro
+configure_package_config_file(${AltroCpp_SOURCE_DIR}/cmake/Config.cmake.in
+  "${CMAKE_CURRENT_BINARY_DIR}/AltroCppConfig.cmake"
+  INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/AltroCpp
 )
 
 # Generate the version file for the config file
 write_basic_package_version_file(
-  "${CMAKE_CURRENT_BINARY_DIR}/altroConfigVersion.cmake"
-  VERSION "${altro_VERSION_MAJOR}.${altro_VERSION_MINOR}.${altro_VERSION_PATCH}"
+  "${CMAKE_CURRENT_BINARY_DIR}/AltroCppConfigVersion.cmake"
+  VERSION "${AltroCpp_VERSION_MAJOR}.${AltroCpp_VERSION_MINOR}.${AltroCpp_VERSION_PATCH}"
   COMPATIBILITY AnyNewerVersion
 )
 
 # Install all of the headers, keeping the source directory
 # Note that leaving off the backslash on DIRECTORY adds `altro` as the top-level
 # directory under the `include` folder.
-install(DIRECTORY ${altro_SOURCE_DIR}/altro # No trailing backslash here
+install(DIRECTORY ${AltroCpp_SOURCE_DIR}/altro # No trailing backslash here
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
   FILES_MATCHING
   PATTERN "*.hpp" # filter all header files
@@ -186,7 +186,7 @@ install(DIRECTORY ${altro_SOURCE_DIR}/altro # No trailing backslash here
 
 # Install the configuration file and the version file
 install(FILES
-  ${CMAKE_CURRENT_BINARY_DIR}/altroConfig.cmake
-  ${CMAKE_CURRENT_BINARY_DIR}/altroConfigVersion.cmake
-  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/altro
+  ${CMAKE_CURRENT_BINARY_DIR}/AltroCppConfig.cmake
+  ${CMAKE_CURRENT_BINARY_DIR}/AltroCppConfigVersion.cmake
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/AltroCpp
 )

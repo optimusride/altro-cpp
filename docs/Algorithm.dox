@@ -429,9 +429,6 @@ The regularization uses a simple first-order system to adaptively add and
 decrease the regularization. This is handled via 
 `ilqr::iLQR::IncreaseRegularization` and `ilqr::iLQR::DecreaseRegularization`.
 
-// TODO(shivang): Export private member documentation
-
-
 */
 
 }  // namespace altro

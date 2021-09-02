@@ -9,6 +9,7 @@ target_link_libraries(dynamics_test
   problem
   common
   fmt::fmt
+  utils
 )
 gtest_discover_tests(dynamics_test)
 
@@ -22,6 +23,7 @@ target_link_libraries(costfunction_test
   problem
   common
   fmt::fmt
+  utils
 )
 gtest_discover_tests(costfunction_test)
 
@@ -76,5 +78,6 @@ target_link_libraries(quadratic_cost_test
   gtest_main
   cost_function_examples
   common
+  utils
 )
 gtest_discover_tests(quadratic_cost_test)
