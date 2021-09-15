@@ -31,9 +31,15 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 ```
 
 ## Building from Source
+### Install Build Dependencies
+The build depends on cmake, Eigen, fmt and doxygen. On Debian based systems, use the following command to install build dependencies:
+```bash
+sudo apt-get install cmake libeigen3-dev libfmt-dev doxygen
+```
+
+### Build
 This library uses the CMake build system. To build the source code and compile the library,
 follow the canonical CMake usage.
-
 ```bash
 cd altro-cpp         # Change directory into directory root.
 mkdir build          # Create a build directory.

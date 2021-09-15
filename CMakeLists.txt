@@ -52,7 +52,7 @@ find_package(Eigen3 3.3 REQUIRED NO_MODULE)
 # NOTE(bjackson): Can we use a newer version? Should we bundle it with the 
 # source code?
 set(fmt_ROOT "/opt/fmt")
-set(fmt_REQUIRED_VERSION 6.2.1)
+set(fmt_REQUIRED_VERSION 6.1.2)
 set(fmt_REQUIRED_DEBIAN_VERSION ${fmt_REQUIRED_VERSION})
 find_package(fmt ${fmt_REQUIRED_VERSION} REQUIRED)
 

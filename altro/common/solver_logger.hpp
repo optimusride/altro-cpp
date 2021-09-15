@@ -6,6 +6,7 @@
 #include <fmt/format.h>
 #include <fmt/ostream.h>
 #include <limits>
+#include <vector>
 #include <map>
 #include <unordered_map>
 
