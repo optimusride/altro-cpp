@@ -11,3 +11,4 @@ target_link_libraries(example_problems
   cost_function_examples
   dynamics_examples
 )
+
