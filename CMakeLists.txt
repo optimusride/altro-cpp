@@ -33,7 +33,7 @@ option(ALTRO_SET_POSITION_INDEPENDENT "Set the -fPIC option on all targets" ON)
 option(ALTRO_BUILD_SHARED_LIBS "Build shared libraries" OFF)
 
 # Set (and create) log file directory
-set(LOGDIR "${PROJECT_BINARY_DIR}/logs" CACHE FILESTRING "Location of log files")
+set(LOGDIR ${PROJECT_BINARY_DIR}/logs CACHE FILESTRING "Location of log files")
 file(MAKE_DIRECTORY ${LOGDIR})
 
 # Examples are required to build the tests

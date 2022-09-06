@@ -39,3 +39,18 @@ target_link_libraries(constraint_examples
 )
 
 add_subdirectory(problems)
+
+# Example Executables
+add_executable(unicycle
+  unicycle_main.cpp
+  )
+target_link_libraries(unicycle
+  PRIVATE
+  altro
+  constraint_examples
+  cost_function_examples
+  dynamics_examples
+  example_problems
+)
+
+add_subdirectory(cartpole)
