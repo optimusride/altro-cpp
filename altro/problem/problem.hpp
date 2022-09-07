@@ -270,7 +270,7 @@ class Problem {
    */
   std::shared_ptr<DiscreteDynamics> GetDynamics(int k) const {
     ALTRO_ASSERT((k >= 0) && (k <= N_), "Invalid knot point index.");
-    ALTRO_ASSERT(models_[k] != nullptr, "Dynamics have not been defined at this knot point.");
+    ALTRO_ASSERT(models_[k] != nullptr, fmt::format("Dynamics have not been defined at knot point {}.", k));
     return models_[k];
   }
 

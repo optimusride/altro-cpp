@@ -178,7 +178,4 @@ void Cartpole::Hessian(const altro::VectorXdRef& x, const altro::VectorXdRef& u,
 
   hess(4,1) = xddot_dudt * b[2] + tddot_dudt * b[3];
 
-  fmt::print("t1_dtdw = {}\n", t1_dtdw);
-  fmt::print("xddot_dtdw = {}\n", xddot_dtdw);
-  fmt::print("tddot_dtdw = {}\n", tddot_dtdw);
 }

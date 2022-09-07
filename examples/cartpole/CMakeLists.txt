@@ -4,4 +4,5 @@ add_executable(cartpole
 target_link_libraries(cartpole
   PRIVATE
   altro
+  cost_function_examples
 )
