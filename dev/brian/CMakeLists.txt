@@ -1,0 +1,9 @@
+add_executable(dev_brian
+  brian.cpp
+)
+target_link_libraries(dev_brian
+  PRIVATE
+  altro
+  fmt::fmt
+  Eigen3::Eigen
+)

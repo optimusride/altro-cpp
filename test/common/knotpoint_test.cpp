@@ -6,7 +6,7 @@
 #include <gtest/gtest.h>
 #include <fmt/format.h>
 #include <fmt/ostream.h>
-#include <eigen3/Eigen/Dense>
+#include <Eigen/Dense>
 
 #include "altro/common/knotpoint.hpp"
 #include "altro/utils/assert.hpp"

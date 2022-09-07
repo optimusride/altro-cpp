@@ -16,6 +16,7 @@ add_executable(derivative_checker_test
 )
 target_link_libraries(derivative_checker_test
   PRIVATE
+  Eigen3::Eigen
   gtest_main
   util
 )

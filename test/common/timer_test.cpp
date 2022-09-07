@@ -184,8 +184,8 @@ TEST(TimerTest, TimerBenchmark) {
 
   // These numbers can vary a lot, so these are some pretty high tolerances for sanity checks
   // Typically they're around 2%, or 10us.
-  EXPECT_LT(inactive_overhead, 10);
-  EXPECT_LT(active_overhead, 10);
+  EXPECT_LT(inactive_overhead, 20);
+  EXPECT_LT(active_overhead, 20);
 }
 
 }  // namespace altro

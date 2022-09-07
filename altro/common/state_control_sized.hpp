@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <eigen3/Eigen/Dense>
+#include "altro/eigentypes.hpp"
 
 #include "altro/utils/assert.hpp"
 

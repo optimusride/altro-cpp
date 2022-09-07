@@ -32,6 +32,7 @@ option(ALTRO_BUILD_TESTS "Build the tests" ON)
 option(ALTRO_BUILD_EXAMPLES "Build the examples" ON)
 option(ALTRO_BUILD_COVERAGE "Build test coverage" OFF)
 option(ALTRO_BUILD_BENCHMARKS "Build the benchmark problems" ON)
+option(ALTRO_BUILD_DOCS "Build the altro documentation" OFF)
 option(ALTRO_SET_POSITION_INDEPENDENT "Set the -fPIC option on all targets" ON)
 option(ALTRO_BUILD_SHARED_LIBS "Build shared libraries" OFF)
 
@@ -59,14 +60,18 @@ set(BUILD_SHARED_LIBS ${ALTRO_BUILD_SHARED_LIBS})
 include(FetchContent)
 
 # Add libfmt
+list(APPEND CMAKE_MESSAGE_CONTEXT fmt)
 FetchContent_Declare(fmt
   GIT_REPOSITORY https://github.com/fmtlib/fmt
   GIT_TAG a33701196adfad74917046096bf5a2aa0ab0bb50  # version 9.1.0
 )
 FetchContent_MakeAvailable(fmt)
 export_library(fmt AltroCppTargets)
+list(POP_BACK CMAKE_MESSAGE_CONTEXT)
 
 # Add Eigen
+list(APPEND CMAKE_MESSAGE_CONTEXT eigen)
+set(EIGEN_BUILD_DOC OFF CACHE BOOL "Enable creation of Eigen documentation." FORCE)
 set(BUILD_TESTING OFF CACHE BOOL "Enable creation of Eigen tests." FORCE)
 set(EIGEN_BUILD_TESTING OFF CACHE BOOL "Enable creation of Eigen tests." FORCE)
 FetchContent_Declare(eigen
@@ -74,6 +79,7 @@ FetchContent_Declare(eigen
   GIT_TAG 3147391d946bb4b6c68edd901f2add6ac1f31f8c  # version 3.4.0
 )
 FetchContent_MakeAvailable(eigen)
+list(POP_BACK CMAKE_MESSAGE_CONTEXT)
 
 ################################################################################
 ########################## ENABLE GOOGLE TEST ##################################
@@ -104,7 +110,10 @@ include(GoogleTest)
 ############################ DOCUMENTATION #####################################
 ################################################################################
 
-add_subdirectory(docs)
+if(ALTRO_BUILD_DOCS)
+  message(STATUS "Adding altro_docs target to build documentation.")
+  add_subdirectory(docs EXCLUDE_FROM_ALL)
+endif()
 
 ################################################################################
 ############################ CODE COVERAGE #####################################
@@ -122,13 +131,14 @@ if(ALTRO_BUILD_COVERAGE)
         set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fprofile-instr-generate -fcoverage-mapping")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fprofile-instr-generate -fcoverage-mapping")
     else()
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} --coverage -fprofile-arcs -ftest-coverage")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --coverage -fprofile-arcs -ftest-coverage")
+        add_compile_options(-O0 -g -fprofile-arcs -ftest-coverage)
+        add_link_options(-fprofile-arcs -ftest-coverage)
     endif (MACOSX)
 
-add_custom_target(coverage ALL
-    COMMAND gcovr -r ../ --html-details --exclude-directories='_deps' -o altro_test_coverage.html
-)
+    message(STATUS "Building altro with code coverage")
+#  add_custom_target(coverage ALL
+#      COMMAND gcovr -r ../ --html-details --exclude-directories='_deps' -o altro_test_coverage.html
+#  )
 
 endif()
 

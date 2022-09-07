@@ -5,6 +5,9 @@ add_library(constraints
   constraint_values.cpp
 )
 target_link_libraries(constraints
+  PUBLIC
+  Eigen3::Eigen
+
   PRIVATE
   common
   utils

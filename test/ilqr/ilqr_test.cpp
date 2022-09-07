@@ -3,7 +3,7 @@
 #include <fmt/format.h>
 #include <fmt/ostream.h>
 #include <gtest/gtest.h>
-#include <eigen3/Eigen/Dense>
+#include <Eigen/Dense>
 #include <iostream>
 
 #include "altro/augmented_lagrangian/al_cost.hpp"

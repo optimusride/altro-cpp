@@ -49,7 +49,7 @@ class iLQR {
  public:
   explicit iLQR(int N) : N_(N), knotpoints_() { ResetInternalVariables(); }
   explicit iLQR(const problem::Problem& prob)
-      : N_(prob.NumSegments()), initial_state_(std::move(prob.GetInitialStatePointer())) {
+      : N_(prob.NumSegments()), initial_state_(prob.GetInitialStatePointer()) {
     InitializeFromProblem(prob);
   }
 
@@ -267,6 +267,7 @@ class iLQR {
       }
     }
     ALTRO_ASSERT(is_sorted, "Work inds must be a set of strictly increasing integers.");
+    (void)is_sorted;
     work_inds_ = std::move(inds);
     custom_work_assignment_ = true;
   }

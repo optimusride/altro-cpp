@@ -1,27 +1,76 @@
 name: Build and test
 
-on: [ push, pull_request ]
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
 env:
   BUILD_TYPE: Release
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        compiler:
+          - [gcc, g++]
+          - [clang, clang++]
+
+    runs-on: ubuntu-18.04
 
     steps:
     - uses: actions/checkout@v2
 
-    # TODO: Implement dependency caching
-    - name: Install dependencies
-      run: sudo apt-get install --no-install-recommends libeigen3-dev libfmt-dev doxygen
+#    - name: Install Dependencies
+#      run: |
+#        sudo apt-get update
+#        sudo apt-get install clang -y \
+#        sudo apt-get install doxygen -y
 
     - name: Configure
-      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+      run: |
+        cmake -B ${{ github.workspace }}/build  \
+              -D CMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} \
+              -D CMAKE_C_COMPILER=${{ matrix.compiler[0] }} \
+              -D CMAKE_CXX_COMPILER=${{ matrix.compiler[1] }} \
+              --log-context
 
     - name: Build
-      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+      run: cmake --build ${{ github.workspace }}/build --config ${{ env.BUILD_TYPE }}
 
     - name: Test
       working-directory: ${{github.workspace}}/build
-      run: ctest -C ${{env.BUILD_TYPE}}
+      run: ctest -C ${{ env.BUILD_TYPE }}
+
+  codecov:
+    runs-on: ubuntu-18.04
+
+    steps:
+      - uses: actions/checkout@v2
+
+#      - name: Install Dependencies
+#        run: |
+#          sudo apt-get update
+#          sudo apt-get install doxygen -y
+
+      - name: Configure
+        run: |
+          cmake -B ${{ github.workspace }}/build \
+                -D CMAKE_BUILD_TYPE=DEBUG \
+                -D ALTRO_BUILD_TESTS=ON \
+                -D ALTRO_BUILD_COVERAGE=ON \
+
+      - name: Build
+        run: cmake --build ${{ github.workspace }}/build --config ${{ env.BUILD_TYPE }}
+
+      - name: Run Tests
+        working-directory: ${{ github.workspace }}/build
+        run: ctest .
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          verbose: true
+          gcov: true
+          gcov_ignore: ${{ github.workspace }}/build/_deps
