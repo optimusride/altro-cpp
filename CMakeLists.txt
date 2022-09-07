@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 3.12.1)
+list(APPEND CMAKE_MESSAGE_CONTEXT altro)
 project(AltroCpp VERSION 0.3.4)
 
 set(CMAKE_CXX_STANDARD 14)
@@ -18,6 +19,8 @@ if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
     include_directories( "/opt/homebrew/include/" )
 endif()
 
+cmake_policy(SET CMP0077 NEW)
+
 # Add custom functions
 include(${AltroCpp_SOURCE_DIR}/cmake/Functions.cmake)
 
@@ -31,6 +34,13 @@ option(ALTRO_BUILD_COVERAGE "Build test coverage" OFF)
 option(ALTRO_BUILD_BENCHMARKS "Build the benchmark problems" ON)
 option(ALTRO_SET_POSITION_INDEPENDENT "Set the -fPIC option on all targets" ON)
 option(ALTRO_BUILD_SHARED_LIBS "Build shared libraries" OFF)
+
+# Handle default build type
+set(ALTRO_DEFAULT_BUILD_TYPE "Release")
+if (NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+  message(STATUS "No build type specified. Setting CMAKE_BUILD_TYPE to ${MOCAP_DEFAULT_BUILD_TYPE}")
+  set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
+endif()
 
 # Set (and create) log file directory
 set(LOGDIR ${PROJECT_BINARY_DIR}/logs CACHE FILESTRING "Location of log files")
@@ -46,15 +56,24 @@ set(BUILD_SHARED_LIBS ${ALTRO_BUILD_SHARED_LIBS})
 ################################################################################
 ############################# ADD DEPENDENCIES #################################
 ################################################################################
-# Add eigen
-find_package(Eigen3 3.3 REQUIRED NO_MODULE)
+include(FetchContent)
 
-# NOTE(bjackson): Can we use a newer version? Should we bundle it with the 
-# source code?
-set(fmt_ROOT "/opt/fmt")
-set(fmt_REQUIRED_VERSION 6.1.2)
-set(fmt_REQUIRED_DEBIAN_VERSION ${fmt_REQUIRED_VERSION})
-find_package(fmt ${fmt_REQUIRED_VERSION} REQUIRED)
+# Add libfmt
+FetchContent_Declare(fmt
+  GIT_REPOSITORY https://github.com/fmtlib/fmt
+  GIT_TAG a33701196adfad74917046096bf5a2aa0ab0bb50  # version 9.1.0
+)
+FetchContent_MakeAvailable(fmt)
+export_library(fmt AltroCppTargets)
+
+# Add Eigen
+set(BUILD_TESTING OFF CACHE BOOL "Enable creation of Eigen tests." FORCE)
+set(EIGEN_BUILD_TESTING OFF CACHE BOOL "Enable creation of Eigen tests." FORCE)
+FetchContent_Declare(eigen
+  GIT_REPOSITORY https://gitlab.com/libeigen/eigen.git
+  GIT_TAG 3147391d946bb4b6c68edd901f2add6ac1f31f8c  # version 3.4.0
+)
+FetchContent_MakeAvailable(eigen)
 
 ################################################################################
 ########################## ENABLE GOOGLE TEST ##################################
@@ -138,6 +157,8 @@ endif()
 if (ALTRO_BUILD_BENCHMARKS)
   add_subdirectory(perf)
 endif()
+
+add_subdirectory(dev/brian)
 
 
 ################################################################################

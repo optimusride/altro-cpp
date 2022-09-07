@@ -32,10 +32,15 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 ## Building from Source
 ### Install Build Dependencies
-The build depends on cmake, Eigen, fmt and doxygen. On Debian based systems, use the following command to install build dependencies:
+The build depends on cmake and (optionally) doxygen. On Debian based systems, use the following command to install 
+build dependencies:
 ```bash
-sudo apt-get install cmake libeigen3-dev libfmt-dev doxygen
+sudo apt-get install cmake doxygen
 ```
+
+The following external dependencies are automatically included in the build process:
+* [Eigen](https://eigen.tuxfamily.org/index.php?title=Main_Page) for linear algebra
+* [libfmt](https://fmt.dev/latest/index.html) for string formatting and printing
 
 ### Build
 This library uses the CMake build system. To build the source code and compile the library,
