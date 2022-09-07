@@ -1,12 +1,8 @@
 // Copyright [2021] Optimus Ride Inc.
 
-#include <iostream>
-#include <fmt/format.h>
-#include <fmt/ostream.h>
-
 #include "altro/common/functionbase.hpp"
 #include "altro/utils/derivative_checker.hpp"
-#include "altro/utils/utils.hpp"
+#include "altro/utils/formatting.hpp"
 
 namespace altro {
 

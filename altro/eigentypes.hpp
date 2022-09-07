@@ -27,4 +27,4 @@ using VectorXf = Eigen::VectorXf;
 using MatrixXd = Eigen::MatrixXd;
 using MatrixXf = Eigen::MatrixXf;
 
-}  // namespace altro 
+}  // namespace altro

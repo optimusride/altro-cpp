@@ -2,9 +2,7 @@
 
 #include "altro/constraints/constraint.hpp"
 
-#include <iostream>
-#include <fmt/format.h>
-#include <fmt/ostream.h>
+#include "altro/utils/formatting.hpp"
 
 namespace altro {
 namespace constraints {

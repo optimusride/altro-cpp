@@ -3,8 +3,8 @@
 #include <fmt/format.h>
 #include <fmt/ostream.h>
 #include <gtest/gtest.h>
-#include <cmath>
 #include <chrono>
+#include <cmath>
 
 #include "altro/augmented_lagrangian/al_cost.hpp"
 #include "altro/augmented_lagrangian/al_problem.hpp"
@@ -15,8 +15,9 @@
 #include "altro/ilqr/ilqr.hpp"
 #include "altro/problem/discretized_model.hpp"
 #include "altro/problem/problem.hpp"
-#include "altro/utils/derivative_checker.hpp"
 #include "altro/utils/assert.hpp"
+#include "altro/utils/derivative_checker.hpp"
+#include "altro/utils/formatting.hpp"
 #include "examples/basic_constraints.hpp"
 #include "examples/quadratic_cost.hpp"
 #include "examples/unicycle.hpp"
@@ -168,7 +169,7 @@ TEST_F(AugLagTest, SetALCostPenalty) {
   std::shared_ptr<constraints::ConstraintValues<NStates, NControls, constraints::Inequality>>
       ubnd_vals = alcost0.GetInequalityConstraints()[con_idx];
 
-  // Make sure the penalties update 
+  // Make sure the penalties update
   alcost0.SetPenalty<constraints::Equality>(rho_goal, con_idx);
   alcost0.SetPenalty<constraints::Inequality>(rho_ubnd, con_idx);
   EXPECT_TRUE(goal_vals->GetPenalty().isApprox(goal_penalty));
