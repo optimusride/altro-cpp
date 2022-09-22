@@ -157,7 +157,7 @@ endif()
 # Export the AltroCppTargets.cmake file
 install(EXPORT AltroCppTargets
   FILE AltroCppTargets.cmake
-  NAMESPACE altro::
+  NAMESPACE altrocpp::
   DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/AltroCpp
 )
 
